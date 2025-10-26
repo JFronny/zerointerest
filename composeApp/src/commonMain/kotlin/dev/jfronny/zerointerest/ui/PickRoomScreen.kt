@@ -1,51 +1,71 @@
 package dev.jfronny.zerointerest.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import dev.jfronny.zerointerest.Platform
+import androidx.compose.ui.text.style.TextAlign
+import dev.jfronny.zerointerest.MatrixClientService
+import net.folivo.trixnity.client.flattenValues
+import net.folivo.trixnity.client.room
+import net.folivo.trixnity.client.store.Room
 import net.folivo.trixnity.core.model.RoomId
-import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
-import zerointerest.composeapp.generated.resources.Res
-import zerointerest.composeapp.generated.resources.app_icon
 
 @Composable
 fun PickRoomScreen(onPick: (RoomId) -> Unit) {
-    var showContent by remember { mutableStateOf(false) }
-    Column(
-        modifier = Modifier
-            .background(MaterialTheme.colorScheme.primaryContainer)
-            .safeContentPadding()
-            .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Button(onClick = { showContent = !showContent }) {
-            Text("Click me!")
+    val rooms by koinInject<MatrixClientService>().get().room.getAll().flattenValues().collectAsState(initial = setOf())
+    PickRoomScreen(
+        rooms = rooms,
+        onPick = onPick
+    )
+}
+
+@Composable
+fun PickRoomScreen(
+    rooms: Set<Room>,
+    onPick: (RoomId) -> Unit
+) {
+    val sorted = remember(rooms) {
+        rooms.sortedBy { it.name?.explicitName ?: it.roomId.full }
+    }
+    if (sorted.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Text(
+                text = "No rooms available",
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyLarge,
+            )
         }
-        val platform = koinInject<Platform>()
-        AnimatedVisibility(showContent) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Image(painterResource(Res.drawable.app_icon), null)
-                Text("Compose: ${platform.name}")
-            }
+        return
+    }
+    LazyColumn {
+        items(sorted) {
+            RoomListItem(
+                room = it,
+                onClick = { onPick(it.roomId) }
+            )
         }
     }
+}
+
+@Composable
+fun RoomListItem(
+    room: Room,
+    onClick: () -> Unit
+) {
+    val name = room.name?.explicitName ?: room.roomId.full
+    ListItem(
+        headlineContent = { Text(name) },
+        modifier = Modifier.clickable { onClick() }
+    )
 }

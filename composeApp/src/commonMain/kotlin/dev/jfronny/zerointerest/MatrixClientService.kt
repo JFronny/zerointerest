@@ -22,12 +22,17 @@ class MatrixClientService(private val platform: Platform) {
     private val repositoriesModule = SuspendLazy { platform.getRepositoriesModule() }
     private val mediaStoreModule = SuspendLazy { platform.getMediaStoreModule() }
 
-    suspend fun login(homeserver: Url, username: String, password: String) {
+    suspend fun restore() {
+        if (matrixClient != null) return
         matrixClient = MatrixClient.fromStore(
             repositoriesModule = repositoriesModule.get(),
             mediaStoreModule = mediaStoreModule.get(),
             configuration = configuration,
-        ).getOrThrow() ?: MatrixClient.login(
+        ).getOrThrow()
+    }
+
+    suspend fun login(homeserver: Url, username: String, password: String) {
+        matrixClient = MatrixClient.login(
             baseUrl = homeserver,
             identifier = IdentifierType.User(username),
             password = password,

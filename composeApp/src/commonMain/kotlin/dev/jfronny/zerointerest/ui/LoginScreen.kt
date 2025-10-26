@@ -20,13 +20,37 @@ import zerointerest.composeapp.generated.resources.app_icon
 @Composable
 fun LoginScreen(onSuccess: () -> Unit) {
     val matrixClient = koinInject<MatrixClientService>()
-    var state by remember { mutableStateOf<State>(State.Idle) }
+    var state by remember { mutableStateOf<State>(State.Loading) }
 
     val scope = rememberCoroutineScope()
 
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var homeserver by remember { mutableStateOf("https://matrix.org") }
+
+    fun tryLogIn(actual: suspend () -> Unit) {
+        state = State.Loading
+        scope.launch {
+            try {
+                actual()
+                onSuccess()
+            } catch (t: Throwable) {
+                state = State.Error(t.message ?: "Login failed")
+                log.error(t) { "Login failed" }
+            }
+        }
+    }
+
+    LaunchedEffect(matrixClient) {
+        tryLogIn {
+            matrixClient.restore()
+        }
+        if (matrixClient.loggedIn) {
+            onSuccess()
+        } else {
+            state = State.Idle
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -91,19 +115,12 @@ fun LoginScreen(onSuccess: () -> Unit) {
         } else {
             Button(
                 onClick = {
-                    state = State.Loading
-                    scope.launch {
-                        try {
-                            matrixClient.login(
-                                homeserver = Url(homeserver),
-                                username = username,
-                                password = password
-                            )
-                            onSuccess()
-                        } catch (t: Throwable) {
-                            state = State.Error(t.message ?: "Login failed")
-                            log.error(t) { "Login failed" }
-                        }
+                    tryLogIn {
+                        matrixClient.login(
+                            homeserver = Url(homeserver),
+                            username = username,
+                            password = password
+                        )
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
