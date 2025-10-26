@@ -49,6 +49,7 @@ class MatrixClientService(private val platform: Platform) {
     private val configuration: MatrixClientConfiguration.() -> Unit = {
         name = appName
         httpClientEngine = platform.getHttpClientEngine()
+        modulesFactories += ::createAppMatrixModule
     }
 
     val loggedIn get() = matrixClient != null
