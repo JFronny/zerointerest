@@ -7,10 +7,11 @@ import org.koin.dsl.module
 fun createAppModule(): Module {
     return module {
         single { getPlatform() }
+        single { MatrixClientService(get()) }
     }
 }
 
-abstract class SuspendBox<T> {
+class SuspendLazy<T>(private val block: suspend () -> T) {
     private val mutex = Mutex()
     private var value: T? = null
     suspend fun get(): T {
@@ -20,13 +21,11 @@ abstract class SuspendBox<T> {
         try {
             val v2 = value
             if (v2 != null) return v2
-            val created = doGet()
+            val created = block()
             value = created
             return created
         } finally {
             mutex.unlock()
         }
     }
-
-    abstract suspend fun doGet(): T
 }

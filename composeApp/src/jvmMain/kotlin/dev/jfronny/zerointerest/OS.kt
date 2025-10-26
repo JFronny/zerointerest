@@ -1,5 +1,6 @@
 package dev.jfronny.zerointerest
 
+import dev.jfronny.zerointerest.ui.appName
 import java.lang.foreign.*
 import java.lang.foreign.ValueLayout.*
 import java.lang.invoke.MethodHandle
@@ -21,8 +22,8 @@ object OS {
     val stateDir by lazy {
         when (OS.type) {
             Type.WINDOWS -> Path(getDir("{3EB685DB-65F9-4CF6-A03A-E3EF65729F3D}"))
-            Type.MAC_OS -> OS.userDir/"Library/Application Support/$appName"
-            Type.LINUX -> System.getenv("XDG_DATA_HOME")?.let { Path(it)/appName }
+            Type.MAC_OS -> OS.userDir/"Library/Application Support/${appName}"
+            Type.LINUX -> System.getenv("XDG_DATA_HOME")?.let { Path(it)/ appName }
                 ?: (OS.userDir/".local/share/zerointerest")
         }
     }

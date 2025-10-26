@@ -7,6 +7,17 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    alias(libs.plugins.kotlinxSerialization)
+}
+
+repositories {
+    maven("https://maven.frohnmeyer-wds.de/artifacts") {
+        content {
+            includeGroup("io.gitlab.jfronny")
+        }
+    }
+    mavenCentral()
+    google()
 }
 
 kotlin {
@@ -59,6 +70,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.trixnity.client)
+            implementation(libs.ktor.client.core)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -67,15 +79,21 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.trixnity.client.repository.room)
+            implementation(libs.androidx.sqlite.bundled)
             implementation(libs.trixnity.client.media.okio)
+            implementation(libs.ktor.client.java)
+            implementation(libs.slf4j.over.jpl)
+            implementation(libs.commons.logger)
         }
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.trixnity.client.repository.room)
+            implementation(libs.androidx.sqlite.bundled)
             implementation(libs.trixnity.client.media.okio)
             implementation(libs.koin.android)
             implementation(libs.koin.android.compat)
+            implementation(libs.ktor.client.android)
         }
         jsMain.dependencies {
             implementation(libs.trixnity.client.repository.indexeddb)
@@ -83,7 +101,9 @@ kotlin {
         }
         iosMain.dependencies {
             implementation(libs.trixnity.client.repository.room)
+            implementation(libs.androidx.sqlite.bundled)
             implementation(libs.trixnity.client.media.okio)
+            implementation(libs.ktor.client.darwin)
         }
     }
 }
