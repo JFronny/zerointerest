@@ -29,11 +29,9 @@ fun LoginScreen(onSuccess: () -> Unit) {
     var homeserver by remember { mutableStateOf("https://matrix.org") }
 
     fun tryLogIn(actual: suspend () -> Unit) {
-        state = State.Loading
         scope.launch {
             try {
                 actual()
-                onSuccess()
             } catch (t: Throwable) {
                 state = State.Error(t.message ?: "Login failed")
                 log.error(t) { "Login failed" }
@@ -42,13 +40,14 @@ fun LoginScreen(onSuccess: () -> Unit) {
     }
 
     LaunchedEffect(matrixClient) {
+        state = State.Restoring
         tryLogIn {
             matrixClient.restore()
-        }
-        if (matrixClient.loggedIn) {
-            onSuccess()
-        } else {
-            state = State.Idle
+            if (matrixClient.loggedIn) {
+                onSuccess()
+            } else {
+                state = State.Idle
+            }
         }
     }
 
@@ -65,38 +64,38 @@ fun LoginScreen(onSuccess: () -> Unit) {
             modifier = Modifier.size(96.dp)
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        if (state !is State.Restoring) {
+            Spacer(modifier = Modifier.height(12.dp))
 
-        val isLoading = state is State.Loading
+            OutlinedTextField(
+                value = username,
+                onValueChange = { username = it },
+                label = { Text("Username") },
+                enabled = state !is State.Loading,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        OutlinedTextField(
-            value = username,
-            onValueChange = { username = it },
-            label = { Text("Username") },
-            enabled = !isLoading,
-            modifier = Modifier.fillMaxWidth()
-        )
+            Spacer(modifier = Modifier.height(8.dp))
 
-        Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") },
+                visualTransformation = PasswordVisualTransformation(),
+                enabled = state !is State.Loading,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation(),
-            enabled = !isLoading,
-            modifier = Modifier.fillMaxWidth()
-        )
+            Spacer(modifier = Modifier.height(8.dp))
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = homeserver,
-            onValueChange = { homeserver = it },
-            label = { Text("Homeserver URL") },
-            enabled = !isLoading,
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = homeserver,
+                onValueChange = { homeserver = it },
+                label = { Text("Homeserver URL") },
+                enabled = state !is State.Loading,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -110,17 +109,19 @@ fun LoginScreen(onSuccess: () -> Unit) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        if (isLoading) {
+        if (state is State.Loading || state is State.Restoring) {
             CircularProgressIndicator()
         } else {
             Button(
                 onClick = {
+                    state = State.Loading
                     tryLogIn {
                         matrixClient.login(
                             homeserver = Url(homeserver),
                             username = username,
                             password = password
                         )
+                        onSuccess()
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -134,5 +135,6 @@ fun LoginScreen(onSuccess: () -> Unit) {
 private sealed class State {
     object Idle : State()
     object Loading : State()
+    object Restoring : State()
     data class Error(val message: String) : State()
 }

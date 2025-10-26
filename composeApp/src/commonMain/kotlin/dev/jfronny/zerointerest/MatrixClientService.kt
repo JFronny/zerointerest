@@ -7,6 +7,7 @@ import net.folivo.trixnity.client.MatrixClientConfiguration
 import net.folivo.trixnity.client.fromStore
 import net.folivo.trixnity.client.login
 import net.folivo.trixnity.clientserverapi.model.authentication.IdentifierType
+import net.folivo.trixnity.core.model.events.m.Presence
 
 class MatrixClientService(private val platform: Platform) {
     private var matrixClient: MatrixClient? = null
@@ -29,9 +30,11 @@ class MatrixClientService(private val platform: Platform) {
             mediaStoreModule = mediaStoreModule.get(),
             configuration = configuration,
         ).getOrThrow()
+        matrixClient?.startSync(presence = Presence.OFFLINE)
     }
 
     suspend fun login(homeserver: Url, username: String, password: String) {
+        matrixClient?.stopSync()
         matrixClient = MatrixClient.login(
             baseUrl = homeserver,
             identifier = IdentifierType.User(username),
@@ -40,6 +43,7 @@ class MatrixClientService(private val platform: Platform) {
             mediaStoreModule = mediaStoreModule.get(),
             configuration = configuration,
         ).getOrThrow()
+        matrixClient?.startSync(presence = Presence.OFFLINE)
     }
 
     private val configuration: MatrixClientConfiguration.() -> Unit = {

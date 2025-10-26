@@ -18,6 +18,7 @@ import dev.jfronny.zerointerest.MatrixClientService
 import net.folivo.trixnity.client.flattenValues
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.store.Room
+import net.folivo.trixnity.client.store.hasBeenReplaced
 import net.folivo.trixnity.core.model.RoomId
 import org.koin.compose.koinInject
 
@@ -36,7 +37,10 @@ fun PickRoomScreen(
     onPick: (RoomId) -> Unit
 ) {
     val sorted = remember(rooms) {
-        rooms.sortedBy { it.name?.explicitName ?: it.roomId.full }
+        rooms.asSequence()
+            .filterNot { it.hasBeenReplaced }
+            .sortedWith(compareBy({ it.name?.explicitName ?: "\uFFFF" }, { it.roomId.full }))
+            .toList()
     }
     if (sorted.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize()) {

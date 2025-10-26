@@ -106,6 +106,11 @@ kotlin {
             implementation(libs.ktor.client.darwin)
         }
     }
+
+    jvmToolchain {
+        languageVersion = JavaLanguageVersion.of(22)
+        vendor = JvmVendorSpec.ADOPTIUM
+    }
 }
 
 android {

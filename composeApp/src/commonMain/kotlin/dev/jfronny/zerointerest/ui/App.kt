@@ -40,9 +40,9 @@ fun App() = AppTheme {
             )
         }
         composable<Destination.Room>(typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)) {
-            val roomId = it.toRoute<Destination.Room>().roomId
+            val route = it.toRoute<Destination.Room>()
             RoomScreen(
-                onSuccess = { /* TODO */ }
+                roomId = route.roomId
             )
         }
     }
