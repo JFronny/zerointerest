@@ -1,0 +1,4 @@
+- implement room screen
+- implement balances tab
+- implement transactions tab
+- wire up trust service
