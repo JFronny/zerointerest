@@ -1,5 +1,8 @@
-package dev.jfronny.zerointerest
+package dev.jfronny.zerointerest.service
 
+import dev.jfronny.zerointerest.Platform
+import dev.jfronny.zerointerest.SuspendLazy
+import dev.jfronny.zerointerest.createAppMatrixModule
 import dev.jfronny.zerointerest.ui.appName
 import io.ktor.http.Url
 import net.folivo.trixnity.client.MatrixClient

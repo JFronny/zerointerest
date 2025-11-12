@@ -18,7 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import dev.jfronny.zerointerest.MatrixClientService
+import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.Platform
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.core.model.RoomId

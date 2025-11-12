@@ -9,7 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import dev.jfronny.zerointerest.MatrixClientService
+import dev.jfronny.zerointerest.service.MatrixClientService
 import io.ktor.http.*
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource

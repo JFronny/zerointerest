@@ -18,31 +18,23 @@ import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
 import platform.UIKit.UIDevice
 
-class IOSPlatform : Platform {
+class IOSPlatform : AbstractPlatform(documentDirectory().toPath()) {
     override val name: String = UIDevice.currentDevice.systemName() + " " + UIDevice.currentDevice.systemVersion
-    override suspend fun getRepositoriesModule(): Module {
-        return createRoomRepositoriesModule(Room.databaseBuilder<TrixnityRoomDatabase>(documentDirectory() + "/trixnity.db").setDriver(BundledSQLiteDriver()))
-    }
-
-    override suspend fun getMediaStoreModule(): Module {
-        return createOkioMediaStoreModule((documentDirectory() + "/media").toPath())
-    }
-
-    override fun getHttpClientEngine(): HttpClientEngine = Darwin.create {}
-
-    @OptIn(ExperimentalForeignApi::class)
-    private fun documentDirectory(): String {
-        val documentDirectory = NSFileManager.defaultManager.URLForDirectory(
-            directory = NSDocumentDirectory,
-            inDomain = NSUserDomainMask,
-            appropriateForURL = null,
-            create = false,
-            error = null,
-        )
-        return requireNotNull(documentDirectory?.path)
-    }
+    override fun trixnityDatabaseBuilder() = Room.databaseBuilder<TrixnityRoomDatabase>(documentDirectory() + "/trixnity.db")
+    override fun getHttpClientEngine() = Darwin.create {}
 }
 
+@OptIn(ExperimentalForeignApi::class)
+private fun documentDirectory(): String {
+    val documentDirectory = NSFileManager.defaultManager.URLForDirectory(
+        directory = NSDocumentDirectory,
+        inDomain = NSUserDomainMask,
+        appropriateForURL = null,
+        create = false,
+        error = null,
+    )
+    return requireNotNull(documentDirectory?.path)
+}
 actual fun Scope.getPlatform(): Platform = IOSPlatform()
 
 @Composable

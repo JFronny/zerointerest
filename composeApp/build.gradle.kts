@@ -39,7 +39,7 @@ kotlin {
 
     jvm {
         compilerOptions {
-            jvmTarget = JvmTarget.JVM_22
+            jvmTarget = JvmTarget.JVM_25
         }
     }
 
@@ -53,8 +53,15 @@ kotlin {
 //        browser()
 //        binaries.executable()
 //    }
+    
+    applyDefaultHierarchyTemplate()
 
     sourceSets {
+        val nonJsMain by creating { dependsOn(commonMain.get()) }
+        jvmMain { dependsOn(nonJsMain) }
+        androidMain { dependsOn(nonJsMain) }
+        iosMain { dependsOn(nonJsMain) }
+
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -78,9 +85,6 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
-            implementation(libs.trixnity.client.repository.room)
-            implementation(libs.androidx.sqlite.bundled)
-            implementation(libs.trixnity.client.media.okio)
             implementation(libs.ktor.client.java)
             implementation(libs.slf4j.over.jpl)
             implementation(libs.commons.logger)
@@ -88,9 +92,6 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
-            implementation(libs.trixnity.client.repository.room)
-            implementation(libs.androidx.sqlite.bundled)
-            implementation(libs.trixnity.client.media.okio)
             implementation(libs.koin.android)
             implementation(libs.koin.android.compat)
             implementation(libs.ktor.client.android)
@@ -100,15 +101,17 @@ kotlin {
             implementation(libs.trixnity.client.media.indexeddb)
         }
         iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
+        }
+        nonJsMain.dependencies {
+            implementation(libs.trixnity.client.media.okio)
             implementation(libs.trixnity.client.repository.room)
             implementation(libs.androidx.sqlite.bundled)
-            implementation(libs.trixnity.client.media.okio)
-            implementation(libs.ktor.client.darwin)
         }
     }
 
     jvmToolchain {
-        languageVersion = JavaLanguageVersion.of(22)
+        languageVersion = JavaLanguageVersion.of(25)
         vendor = JvmVendorSpec.ADOPTIUM
     }
 }

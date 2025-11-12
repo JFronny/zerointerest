@@ -9,7 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.jfronny.zerointerest.Destination
-import dev.jfronny.zerointerest.MatrixClientService
+import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import dev.jfronny.zerointerest.util.RoomIdNavType
 import io.github.oshai.kotlinlogging.KotlinLogging

@@ -14,7 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
-import dev.jfronny.zerointerest.MatrixClientService
+import dev.jfronny.zerointerest.service.MatrixClientService
 import net.folivo.trixnity.client.flattenValues
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.store.Room
