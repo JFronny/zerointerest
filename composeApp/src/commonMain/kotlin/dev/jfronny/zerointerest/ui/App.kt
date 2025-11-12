@@ -1,6 +1,9 @@
 package dev.jfronny.zerointerest.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -10,6 +13,7 @@ import dev.jfronny.zerointerest.MatrixClientService
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import dev.jfronny.zerointerest.util.RoomIdNavType
 import io.github.oshai.kotlinlogging.KotlinLogging
+import net.folivo.trixnity.client.verification
 import net.folivo.trixnity.core.model.RoomId
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.koinInject
@@ -45,5 +49,17 @@ fun App() = AppTheme {
                 roomId = route.roomId
             )
         }
+    }
+
+    val client = koinInject<MatrixClientService>().matrixClient
+
+    if (client != null) {
+        val verification by client.verification.activeDeviceVerification.collectAsState()
+        var mutVer = verification
+        LaunchedEffect(verification) {
+            mutVer = verification
+            log.info { "Verification changed to $verification" }
+        }
+        mutVer?.let { VerificationDialog(client, it) { mutVer = null } }
     }
 }

@@ -24,7 +24,8 @@ import org.koin.compose.koinInject
 
 @Composable
 fun PickRoomScreen(onPick: (RoomId) -> Unit) {
-    val rooms by koinInject<MatrixClientService>().get().room.getAll().flattenValues().collectAsState(initial = setOf())
+    val client = koinInject<MatrixClientService>().get()
+    val rooms by client.room.getAll().flattenValues().collectAsState(initial = setOf())
     PickRoomScreen(
         rooms = rooms,
         onPick = onPick

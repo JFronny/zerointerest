@@ -10,7 +10,8 @@ import net.folivo.trixnity.clientserverapi.model.authentication.IdentifierType
 import net.folivo.trixnity.core.model.events.m.Presence
 
 class MatrixClientService(private val platform: Platform) {
-    private var matrixClient: MatrixClient? = null
+    var matrixClient: MatrixClient? = null
+        private set
 
     fun get(): MatrixClient {
         return matrixClient ?: throw IllegalStateException("MatrixClient not initialized")
