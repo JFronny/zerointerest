@@ -5,6 +5,8 @@ import dev.jfronny.zerointerest.SuspendLazy
 import dev.jfronny.zerointerest.createAppMatrixModule
 import dev.jfronny.zerointerest.ui.appName
 import io.ktor.http.Url
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.MatrixClientConfiguration
 import net.folivo.trixnity.client.fromStore
@@ -13,33 +15,33 @@ import net.folivo.trixnity.clientserverapi.model.authentication.IdentifierType
 import net.folivo.trixnity.core.model.events.m.Presence
 
 class MatrixClientService(private val platform: Platform) {
-    var matrixClient: MatrixClient? = null
-        private set
+    private val flow: MutableStateFlow<MatrixClient?> = MutableStateFlow(null)
+    val client: StateFlow<MatrixClient?> = flow
 
     fun get(): MatrixClient {
-        return matrixClient ?: throw IllegalStateException("MatrixClient not initialized")
+        return flow.value ?: throw IllegalStateException("MatrixClient not initialized")
     }
 
     fun set(client: MatrixClient) {
-        matrixClient = client
+        flow.value = client
     }
 
     private val repositoriesModule = SuspendLazy { platform.getRepositoriesModule() }
     private val mediaStoreModule = SuspendLazy { platform.getMediaStoreModule() }
 
     suspend fun restore() {
-        if (matrixClient != null) return
-        matrixClient = MatrixClient.fromStore(
+        if (flow.value != null) return
+        flow.value = MatrixClient.fromStore(
             repositoriesModule = repositoriesModule.get(),
             mediaStoreModule = mediaStoreModule.get(),
             configuration = configuration,
         ).getOrThrow()
-        matrixClient?.startSync(presence = Presence.OFFLINE)
+        flow.value?.startSync(presence = Presence.OFFLINE)
     }
 
     suspend fun login(homeserver: Url, username: String, password: String) {
-        matrixClient?.stopSync()
-        matrixClient = MatrixClient.login(
+        flow.value?.stopSync()
+        flow.value = MatrixClient.login(
             baseUrl = homeserver,
             identifier = IdentifierType.User(username),
             password = password,
@@ -47,7 +49,7 @@ class MatrixClientService(private val platform: Platform) {
             mediaStoreModule = mediaStoreModule.get(),
             configuration = configuration,
         ).getOrThrow()
-        matrixClient?.startSync(presence = Presence.OFFLINE)
+        flow.value?.startSync(presence = Presence.OFFLINE)
     }
 
     private val configuration: MatrixClientConfiguration.() -> Unit = {
@@ -56,5 +58,5 @@ class MatrixClientService(private val platform: Platform) {
         modulesFactories += ::createAppMatrixModule
     }
 
-    val loggedIn get() = matrixClient != null
+    val loggedIn get() = flow.value != null
 }

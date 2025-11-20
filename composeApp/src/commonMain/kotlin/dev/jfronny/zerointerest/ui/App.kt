@@ -51,7 +51,7 @@ fun App() = AppTheme {
         }
     }
 
-    val client = koinInject<MatrixClientService>().matrixClient
+    val client = koinInject<MatrixClientService>().client.collectAsState().value
 
     if (client != null) {
         val verification by client.verification.activeDeviceVerification.collectAsState()
