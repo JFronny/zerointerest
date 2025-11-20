@@ -29,8 +29,9 @@ import zerointerest.composeapp.generated.resources.app_icon
 
 @Composable
 fun RoomScreen(roomId: RoomId) {
-    val matrixClient = koinInject<MatrixClientService>()
-    val room by matrixClient.get().room.getById(roomId).collectAsState(null)
+    val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
+    val client = rxclient ?: return
+    val room by client.room.getById(roomId).collectAsState(null)
     var showContent by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier

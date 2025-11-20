@@ -18,18 +18,20 @@ private data class Timed<T>(val ts: Long, val value: T)
 
 private const val rejectionKey = "\uD83D\uDC4E"
 class SummaryTrustService(
-    private val client: MatrixClientService,
+    private val clientService: MatrixClientService,
     private val database: SummaryTrustDatabase
 ) {
+    private val client get() = clientService.get()
+
     suspend fun checkTrusted(roomId: RoomId, messageId: EventId, timestamp: Long, content: ZeroInterestSummaryEvent): SummaryTrustDatabase.TrustState {
         val dbState = database.checkTrust(roomId, messageId)
         if (dbState != SummaryTrustDatabase.TrustState.UNTRUSTED) return dbState
         // 1. If a rejection for the summary exists, the summary is always rejected.
-        val reactions = client.get().room.getTimelineEventReactionAggregation(roomId, messageId).last()
+        val reactions = client.room.getTimelineEventReactionAggregation(roomId, messageId).last()
         if (reactions.reactions[rejectionKey]?.isNotEmpty() ?: false) return reject(roomId, messageId, send = false)
         // 2. Otherwise, if the summary event is the first summary event ever encountered in a room, it is trusted.
         if (content.parents.isEmpty()) {
-            val hasPrevious = client.get().room.getTimelineEvents(roomId, messageId, direction = GetEvents.Direction.BACKWARDS) {
+            val hasPrevious = client.room.getTimelineEvents(roomId, messageId, direction = GetEvents.Direction.BACKWARDS) {
                 maxSize = 1024 // trixnity doesn't easily allow us to filter just for ZeroInterestSummaryEvents, and this should be fine
             }.last().any {
                 it.eventId != messageId && it.content?.getOrNull() is ZeroInterestSummaryEvent
@@ -39,13 +41,13 @@ class SummaryTrustService(
         // Prefetch events as the next steps need them
         val summaries = mutableMapOf<EventId, Timed<ZeroInterestSummaryEvent>>()
         for (eventId in content.parents.keys) {
-            val event = client.get().room.getTimelineEvent(roomId, eventId).last()
+            val event = client.room.getTimelineEvent(roomId, eventId).last()
             val content = event?.content?.getOrNull() as? ZeroInterestSummaryEvent ?: continue
             summaries[eventId] = Timed(event.originTimestamp, content)
         }
         val transactions = mutableMapOf<EventId, Timed<ZeroInterestTransactionEvent>>()
         for (eventId in content.parents.values.flatten()) {
-            val event = client.get().room.getTimelineEvent(roomId, eventId).last()
+            val event = client.room.getTimelineEvent(roomId, eventId).last()
             val content = event?.content?.getOrNull() as? ZeroInterestTransactionEvent ?: continue
             transactions[eventId] = Timed(event.originTimestamp, content)
         }
@@ -102,7 +104,7 @@ class SummaryTrustService(
     private suspend fun reject(roomId: RoomId, messageId: EventId, send: Boolean = true): SummaryTrustDatabase.TrustState {
         database.markRejected(roomId, messageId)
         if (send) {
-            client.get().room.sendMessage(roomId) {
+            client.room.sendMessage(roomId) {
                 react(messageId, rejectionKey)
             }
         }

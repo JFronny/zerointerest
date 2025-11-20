@@ -22,10 +22,6 @@ class MatrixClientService(private val platform: Platform) {
         return flow.value ?: throw IllegalStateException("MatrixClient not initialized")
     }
 
-    fun set(client: MatrixClient) {
-        flow.value = client
-    }
-
     private val repositoriesModule = SuspendLazy { platform.getRepositoriesModule() }
     private val mediaStoreModule = SuspendLazy { platform.getMediaStoreModule() }
 
