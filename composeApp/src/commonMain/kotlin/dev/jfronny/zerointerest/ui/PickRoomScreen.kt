@@ -5,9 +5,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -33,10 +36,17 @@ fun PickRoomScreen(onPick: (RoomId) -> Unit) {
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PickRoomScreen(
     rooms: Set<Room>,
     onPick: (RoomId) -> Unit
+) = Scaffold(
+    topBar = {
+        TopAppBar(
+            title = { Text("Pick a Room") }
+        )
+    }
 ) {
     val sorted = remember(rooms) {
         rooms.asSequence()
@@ -52,7 +62,7 @@ fun PickRoomScreen(
                 style = MaterialTheme.typography.bodyLarge,
             )
         }
-        return
+        return@Scaffold
     }
     LazyColumn {
         items(sorted) {

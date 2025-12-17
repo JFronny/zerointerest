@@ -13,4 +13,5 @@ sealed class Destination {
             @Serializable object Transactions : RoomDestination()
         }
     }
+    @Serializable data class CreateTransaction(val roomId: RoomId) : Destination()
 }

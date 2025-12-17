@@ -11,10 +11,11 @@ import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import dev.jfronny.zerointerest.service.SummaryTrustDatabase
 
-@Database(entities = [SummaryTrustEntity::class], version = 1)
+@Database(entities = [SummaryTrustEntity::class, SummaryHeadEntity::class], version = 2)
 @TypeConverters(ZeroInterestTypeConverters::class)
 abstract class ZeroInterestRoomDatabase : RoomDatabase() {
     abstract fun summaryTrustDao(): SummaryTrustDao
+    abstract fun summaryHeadDao(): SummaryHeadDao
 }
 
 @Entity(primaryKeys = ["roomId", "eventId"])
@@ -39,4 +40,25 @@ class ZeroInterestTypeConverters {
 
     @TypeConverter
     fun fromTrustState(value: SummaryTrustDatabase.TrustState) = value.name
+}
+
+@Entity(primaryKeys = ["roomId", "eventId"])
+data class SummaryHeadEntity(
+    val roomId: String,
+    val eventId: String
+)
+
+@Dao
+interface SummaryHeadDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(entity: SummaryHeadEntity)
+
+    @Query("DELETE FROM SummaryHeadEntity WHERE roomId = :roomId")
+    suspend fun clear(roomId: String)
+
+    @Query("SELECT eventId FROM SummaryHeadEntity WHERE roomId = :roomId")
+    suspend fun getHeads(roomId: String): List<String>
+
+    @Query("DELETE FROM SummaryHeadEntity WHERE roomId = :roomId AND eventId = :head")
+    suspend fun removeHead(roomId: String, head: String)
 }

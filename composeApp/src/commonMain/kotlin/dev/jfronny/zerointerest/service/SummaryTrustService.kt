@@ -2,6 +2,7 @@ package dev.jfronny.zerointerest.service
 
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.any
@@ -21,6 +22,8 @@ import net.folivo.trixnity.core.model.events.ClientEvent
 private data class Timed<T>(val ts: Long, val value: T)
 
 private const val rejectionKey = "\uD83D\uDC4E"
+private val log = KotlinLogging.logger {}
+
 class SummaryTrustService(
     private val clientService: MatrixClientService,
     private val database: SummaryTrustDatabase
@@ -58,7 +61,7 @@ class SummaryTrustService(
             }.last().any {
                 it.eventId != messageId && it.content?.getOrNull() is ZeroInterestSummaryEvent
             }
-            if (!hasPrevious) return accept(roomId, messageId)
+            if (!hasPrevious) return accept(roomId, messageId, content)
         }
         // Prefetch events as the next steps need them
         val summaries = mutableMapOf<EventId, Timed<ZeroInterestSummaryEvent>>()
@@ -120,7 +123,7 @@ class SummaryTrustService(
             }
         }
         // 7. Otherwise, the summary event is trusted.
-        return accept(roomId, messageId)
+        return accept(roomId, messageId, content)
     }
 
     private suspend fun reject(roomId: RoomId, messageId: EventId, send: Boolean = true): SummaryTrustDatabase.TrustState {
@@ -133,11 +136,141 @@ class SummaryTrustService(
         return SummaryTrustDatabase.TrustState.REJECTED
     }
 
-    private suspend fun accept(roomId: RoomId, messageId: EventId): SummaryTrustDatabase.TrustState {
+    private suspend fun accept(roomId: RoomId, messageId: EventId, content: ZeroInterestSummaryEvent): SummaryTrustDatabase.TrustState {
         database.markTrusted(roomId, messageId)
+        database.addHead(roomId, messageId)
+        database.removeHeads(roomId, content.parents.keys)
         return SummaryTrustDatabase.TrustState.TRUSTED
     }
 
     private fun <T> List<T>.combinations(): List<Pair<T, T>> =
         this.flatMapIndexed { index, a -> this.drop(index + 1).map { b -> a to b } }
+
+    suspend fun createSummary(roomId: RoomId, newTransactionId: EventId, content: ZeroInterestTransactionEvent) {
+        val heads = database.getHeads(roomId)
+        if (heads.isEmpty()) {
+            log.info { "No heads found for room $roomId, creating initial summary" }
+            val parent = client.api.room.sendStateEvent(roomId, ZeroInterestSummaryEvent(
+                balances = emptyMap(),
+                parents = emptyMap()
+            )).getOrThrow()
+            database.markTrusted(roomId, parent)
+            database.setHeads(roomId, setOf(parent))
+
+            val balances = mutableMapOf<UserId, Long>()
+            balances[content.sender] = (balances[content.sender] ?: 0L) - content.total
+            for ((receiver, delta) in content.receivers) {
+                balances[receiver] = (balances[receiver] ?: 0L) + delta
+            }
+
+            log.info { "Creating summary for first transaction $newTransactionId in room $roomId" }
+            val response = client.api.room.sendStateEvent(roomId, ZeroInterestSummaryEvent(
+                balances = balances,
+                parents = mapOf(parent to setOf(newTransactionId))
+            )).getOrThrow()
+            database.markTrusted(roomId, response)
+            database.setHeads(roomId, setOf(response))
+        } else {
+            log.info { "Merging ${heads.size} heads for new transaction $newTransactionId in room $roomId" }
+            // Merge heads
+            // 1. Fetch all heads
+            val headEvents = heads.associateWith {
+                client.room.getTimelineEvent(roomId, it).last()?.content?.getOrNull() as? ZeroInterestSummaryEvent
+            }.filterValues { it != null }.mapValues { it.value!! }
+
+            if (headEvents.isEmpty()) {
+                log.warn { "Head set is empty!" }
+                return // Should not happen if heads is not empty
+            }
+
+            // 2. Calculate the union of history for all heads
+            val allVisitedSummaries = mutableSetOf<EventId>()
+            val summaryQueue = ArrayDeque<EventId>()
+            summaryQueue.addAll(heads)
+
+            val summaryGraph = mutableMapOf<EventId, ZeroInterestSummaryEvent>()
+
+            // Load graph
+            log.info { "Building summary graph for room $roomId" }
+            while (summaryQueue.isNotEmpty()) {
+                val currentId = summaryQueue.removeFirst()
+                if (currentId in allVisitedSummaries) continue
+                allVisitedSummaries.add(currentId)
+
+                val event = if (currentId in heads) headEvents[currentId]!! else {
+                    client.room.getTimelineEvent(roomId, currentId).last()?.content?.getOrNull() as? ZeroInterestSummaryEvent
+                } ?: continue
+
+                summaryGraph[currentId] = event
+                summaryQueue.addAll(event.parents.keys)
+            }
+
+            // Now we have a subgraph in summaryGraph.
+            // We need to compute the set of transactions for each head.
+            // We can do this by propagating sets of transactions up from the leaves (or common ancestors).
+
+            // Topological sort or just recursive memoized calculation.
+            val headTransactions = mutableMapOf<EventId, Set<EventId>>()
+
+            // Helper to get transactions for a summary node (relative to the bottom of our graph)
+            val memoizedHistory = mutableMapOf<EventId, Set<EventId>>()
+
+            fun getHistory(id: EventId): Set<EventId> {
+                if (id in memoizedHistory) return memoizedHistory[id]!!
+                val event = summaryGraph[id] ?: return emptySet() // Should be in graph if we visited it
+
+                val myHistory = mutableSetOf<EventId>()
+                for ((parentId, txs) in event.parents) {
+                    myHistory.addAll(txs)
+                    myHistory.addAll(getHistory(parentId))
+                }
+                memoizedHistory[id] = myHistory
+                return myHistory
+            }
+
+            // Compute history for all heads
+            val allTransactions = mutableSetOf<EventId>()
+            for (headId in heads) {
+                val h = getHistory(headId)
+                headTransactions[headId] = h
+                allTransactions.addAll(h)
+            }
+
+            // Now compute the new parents map
+            val newParents = mutableMapOf<EventId, Set<EventId>>()
+            for (headId in heads) {
+                val missing = allTransactions - headTransactions[headId]!!
+                newParents[headId] = missing + newTransactionId
+            }
+
+            // Compute new balances
+            // Take the first head, apply its missing transactions + new transaction
+            val baseHeadId = heads.first()
+            val baseHeadEvent = headEvents[baseHeadId]!!
+            val baseBalances = baseHeadEvent.balances.toMutableMap()
+
+            val toApply = newParents[baseHeadId]!!
+
+            // We need to fetch the transaction contents to apply them
+            log.info { "Applying ${toApply.size} transactions to compute new balances for room $roomId" }
+            for (txId in toApply) {
+                val tx = client.room.getTimelineEvent(roomId, txId).last()?.content?.getOrNull() as? ZeroInterestTransactionEvent
+                if (tx != null) {
+                    baseBalances[tx.sender] = (baseBalances[tx.sender] ?: 0L) - tx.total
+                    for ((receiver, delta) in tx.receivers) {
+                        baseBalances[receiver] = (baseBalances[receiver] ?: 0L) + delta
+                    }
+                }
+            }
+
+            log.info { "Creating merged summary for new transaction $newTransactionId in room $roomId" }
+            val response = client.api.room.sendStateEvent(roomId, ZeroInterestSummaryEvent(
+                balances = baseBalances,
+                parents = newParents
+            )).getOrThrow()
+            database.markTrusted(roomId, response)
+            database.setHeads(roomId, setOf(response))
+        }
+        log.info { "Summary creation for new transaction $newTransactionId in room $roomId completed" }
+    }
 }

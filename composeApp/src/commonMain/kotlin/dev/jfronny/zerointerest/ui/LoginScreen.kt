@@ -20,8 +20,15 @@ import zerointerest.composeapp.generated.resources.app_icon
 
 private val log = KotlinLogging.logger {}
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(onSuccess: () -> Unit) {
+fun LoginScreen(onSuccess: () -> Unit) = Scaffold(
+    topBar = {
+        TopAppBar(
+            title = { Text("zerointerest") }
+        )
+    }
+) {
     val matrixClient = koinInject<MatrixClientService>()
     var state by remember { mutableStateOf<State>(State.Loading) }
 
