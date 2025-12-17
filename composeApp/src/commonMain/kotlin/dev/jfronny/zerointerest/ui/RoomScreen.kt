@@ -17,6 +17,9 @@ import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
@@ -53,6 +56,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.RoomService
@@ -121,10 +125,12 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit) {
                 val eventNB by trust.getSummary(roomId).collectAsState(null)
                 val event = eventNB // needed for smart cast
                 if (event == null) {
-                    CircularProgressIndicator()
+                    Box(Modifier.fillMaxSize()) {
+                        CircularProgressIndicator(Modifier.align(Alignment.TopCenter))
+                    }
                 } else {
                     BalancesTab(
-                        event = event,
+                        summary = event,
                         getName = nameResolver(client = client, roomId = roomId)
                     )
                 }
@@ -146,14 +152,14 @@ private fun nameResolver(client: MatrixClient, roomId: RoomId): (UserId) -> Flow
 @Composable
 private fun BalancesTabPreview() = AppTheme {
     BalancesTab(
-        event = ZeroInterestSummaryEvent(
+        summary = SummaryTrustService.Summary.Trusted(ZeroInterestSummaryEvent(
             balances = mapOf(
                 UserId("@alice:example.org") to 4200,
                 UserId("@bob:example.org") to -1550,
                 UserId("@carol:example.org") to 0,
             ),
             parents = emptyMap()
-        ),
+        )),
         getName = { userId ->
             flowOf(when (userId.full) {
                 "@alice:example.org" -> "Alice"
@@ -167,24 +173,42 @@ private fun BalancesTabPreview() = AppTheme {
 
 @Composable
 private fun BalancesTab(
-    event: ZeroInterestSummaryEvent,
+    summary: SummaryTrustService.Summary,
     getName: (UserId) -> Flow<String?>,
 ) {
-    val balances = event.balances
-    LazyColumn(modifier = Modifier.fillMaxWidth()) {
-        items(balances.entries.toList()) { entry ->
-            val usernameNB by getName(entry.key).collectAsState(null)
-            val username = usernameNB ?: entry.key.full
-            val balance = entry.value
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = username)
-                Spacer(modifier = Modifier.weight(1f))
-                Text(text = formatBalance(balance))
+    when (summary) {
+        SummaryTrustService.Summary.Empty -> {
+            Box(Modifier.fillMaxSize()) {
+                ProvideTextStyle(MaterialTheme.typography.bodyLarge) {
+                    Text("No balances yet", Modifier.align(Alignment.Center))
+                }
+            }
+        }
+        SummaryTrustService.Summary.Untrusted -> {
+            Box(Modifier.fillMaxSize()) {
+                ProvideTextStyle(MaterialTheme.typography.bodyLarge) {
+                    Text("Latest Summary not trusted", Modifier.align(Alignment.Center))
+                }
+            }
+        }
+        is SummaryTrustService.Summary.Trusted -> {
+            val balances = summary.event.balances
+            LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                items(balances.entries.toList()) { entry ->
+                    val usernameNB by getName(entry.key).collectAsState(null)
+                    val username = usernameNB ?: entry.key.full
+                    val balance = entry.value
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = username)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(text = formatBalance(balance))
+                    }
+                }
             }
         }
     }

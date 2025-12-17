@@ -28,15 +28,21 @@ class SummaryTrustService(
     private val client get() = clientService.get()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun getSummary(roomId: RoomId): Flow<ZeroInterestSummaryEvent?> {
+    fun getSummary(roomId: RoomId): Flow<Summary> {
         return client.room
             .getState(roomId, ZeroInterestSummaryEvent::class, ZeroInterestSummaryEvent.TYPE)
             .mapLatest {
-                if (it !is ClientEvent.RoomEvent.StateEvent) return@mapLatest null
+                if (it !is ClientEvent.RoomEvent.StateEvent) return@mapLatest Summary.Empty
                 val trust = checkTrusted(roomId, it.id, it.originTimestamp, it.content)
                 //TODO actually handle trust and properly send rejections + new summaries
-                if (trust == SummaryTrustDatabase.TrustState.TRUSTED) it.content else null
+                if (trust == SummaryTrustDatabase.TrustState.TRUSTED) Summary.Trusted(it.content) else Summary.Untrusted
             }
+    }
+
+    sealed interface Summary {
+        object Untrusted : Summary
+        object Empty : Summary
+        data class Trusted(val event: ZeroInterestSummaryEvent) : Summary
     }
 
     suspend fun checkTrusted(roomId: RoomId, messageId: EventId, timestamp: Long, content: ZeroInterestSummaryEvent): SummaryTrustDatabase.TrustState {
