@@ -7,7 +7,7 @@ import org.koin.core.context.loadKoinModules
 
 fun MainViewController() = ComposeUIViewController {
     KoinApplication(application = {
-        loadKoinModules(createAppModule())
+        loadKoinModules(listOf(createAppModule(), createExtraModule()))
     }) {
         App()
     }

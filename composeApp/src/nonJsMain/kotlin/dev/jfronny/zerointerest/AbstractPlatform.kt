@@ -8,10 +8,13 @@ import net.folivo.trixnity.client.store.repository.room.createRoomRepositoriesMo
 import okio.Path
 import org.koin.core.module.Module
 
-abstract class AbstractPlatform(private val stateDir: Path) : Platform {
-    protected val trixnityDbDir get() = stateDir.resolve("trixnity.db")
+abstract class AbstractPlatform(protected val stateDir: Path) : Platform {
+    protected val TRIXNITY_NAME = "trixnity.db"
+    protected val ZEROINTEREST_NAME = "zerointerest.db"
+
     final override suspend fun getRepositoriesModule(): Module = createRoomRepositoriesModule(trixnityDatabaseBuilder().setDriver(BundledSQLiteDriver()))
     final override suspend fun getMediaStoreModule(): Module = createOkioMediaStoreModule(stateDir.resolve("media"))
 
     abstract fun trixnityDatabaseBuilder(): RoomDatabase.Builder<TrixnityRoomDatabase>
+    abstract fun zerointerestDatabaseBuilder(): RoomDatabase.Builder<ZeroInterestRoomDatabase>
 }

@@ -20,7 +20,8 @@ import platform.UIKit.UIDevice
 
 class IOSPlatform : AbstractPlatform(documentDirectory().toPath()) {
     override val name: String = UIDevice.currentDevice.systemName() + " " + UIDevice.currentDevice.systemVersion
-    override fun trixnityDatabaseBuilder() = Room.databaseBuilder<TrixnityRoomDatabase>(documentDirectory() + "/trixnity.db")
+    override fun trixnityDatabaseBuilder() = Room.databaseBuilder<TrixnityRoomDatabase>("${documentDirectory()}/$TRIXNITY_NAME")
+    override fun zerointerestDatabaseBuilder() = Room.databaseBuilder<ZeroInterestRoomDatabase>("${documentDirectory()}/$ZEROINTEREST_NAME")
     override fun getHttpClientEngine() = Darwin.create {}
 }
 

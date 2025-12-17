@@ -16,7 +16,8 @@ import org.koin.core.scope.Scope
 
 class AndroidPlatform(private val context: Context) : AbstractPlatform(context.dataDir.toOkioPath()) {
     override val name: String = "Android ${Build.VERSION.SDK_INT}"
-    override fun trixnityDatabaseBuilder() = Room.databaseBuilder(context, TrixnityRoomDatabase::class.java, "trixnity.db")
+    override fun trixnityDatabaseBuilder() = Room.databaseBuilder(context, TrixnityRoomDatabase::class.java, TRIXNITY_NAME)
+    override fun zerointerestDatabaseBuilder() = Room.databaseBuilder(context, ZeroInterestRoomDatabase::class.java, ZEROINTEREST_NAME)
     override fun getHttpClientEngine() = Android.create {}
 }
 

@@ -10,6 +10,7 @@ import net.folivo.trixnity.core.model.events.m.RelatesTo
 
 @Serializable
 data class ZeroInterestTransactionEvent(
+    val description: String,
     val sender: UserId,
     val receivers: Map<UserId, Long>,
     @SerialName("m.relates_to") override val relatesTo: RelatesTo? = null,
@@ -39,5 +40,6 @@ data class ZeroInterestTransactionEvent(
 
     companion object {
         const val TYPE = "dev.jfronny.zerointerest.transaction"
+        const val PAYMENT_DESCRIPTION = "Payment"
     }
 }

@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
     alias(libs.plugins.kotlinxSerialization)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room)
 }
 
 repositories {
@@ -69,6 +71,7 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
+            implementation(compose.material3AdaptiveNavigationSuite)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
@@ -116,6 +119,10 @@ kotlin {
     }
 }
 
+dependencies {
+    ksp(libs.androidx.room.compiler)
+}
+
 android {
     namespace = "dev.jfronny.zerointerest"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -145,6 +152,10 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+}
+
+room {
+    schemaDirectory(layout.projectDirectory.dir("schemas"))
 }
 
 compose.desktop {

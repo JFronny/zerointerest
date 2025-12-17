@@ -7,7 +7,7 @@ import org.koin.compose.KoinApplication
 
 fun main() = application {
     KoinApplication(application = {
-        modules(createAppModule())
+        modules(listOf(createAppModule(), createExtraModule()))
     }) {
         Window(
             onCloseRequest = ::exitApplication,

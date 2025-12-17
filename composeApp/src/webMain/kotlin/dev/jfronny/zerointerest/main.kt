@@ -8,7 +8,7 @@ import org.koin.compose.KoinApplication
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() = ComposeViewport {
     KoinApplication(application = {
-        modules(createAppModule())
+        modules(listOf(createAppModule(), createExtraModule()))
     }) {
         App()
     }

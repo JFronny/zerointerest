@@ -2,8 +2,11 @@ package dev.jfronny.zerointerest.service
 
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.any
 import kotlinx.coroutines.flow.last
+import kotlinx.coroutines.flow.mapLatest
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.getTimelineEventReactionAggregation
 import net.folivo.trixnity.client.room.message.react
@@ -13,6 +16,7 @@ import net.folivo.trixnity.clientserverapi.model.rooms.GetEvents
 import net.folivo.trixnity.core.model.EventId
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
+import net.folivo.trixnity.core.model.events.ClientEvent
 
 private data class Timed<T>(val ts: Long, val value: T)
 
@@ -22,6 +26,18 @@ class SummaryTrustService(
     private val database: SummaryTrustDatabase
 ) {
     private val client get() = clientService.get()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getSummary(roomId: RoomId): Flow<ZeroInterestSummaryEvent?> {
+        return client.room
+            .getState(roomId, ZeroInterestSummaryEvent::class, ZeroInterestSummaryEvent.TYPE)
+            .mapLatest {
+                if (it !is ClientEvent.RoomEvent.StateEvent) return@mapLatest null
+                val trust = checkTrusted(roomId, it.id, it.originTimestamp, it.content)
+                //TODO actually handle trust and properly send rejections + new summaries
+                if (trust == SummaryTrustDatabase.TrustState.TRUSTED) it.content else null
+            }
+    }
 
     suspend fun checkTrusted(roomId: RoomId, messageId: EventId, timestamp: Long, content: ZeroInterestSummaryEvent): SummaryTrustDatabase.TrustState {
         val dbState = database.checkTrust(roomId, messageId)

@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
             KoinApplication(application = {
                 androidLogger(Level.ERROR)
                 androidContext(this@MainActivity)
-                modules(createAppModule())
+                modules(listOf(createAppModule(), createExtraModule()))
             }) {
                 App()
             }
