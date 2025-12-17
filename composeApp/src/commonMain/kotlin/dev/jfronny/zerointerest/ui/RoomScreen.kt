@@ -17,7 +17,6 @@ import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
@@ -50,6 +49,7 @@ import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import dev.jfronny.zerointerest.util.formatBalance
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -68,6 +68,8 @@ import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.koinInject
+
+private val log = KotlinLogging.logger {}
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -238,6 +240,7 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId) {
 
     // Small helper to load one page from a start event id going backwards
     suspend fun loadPage(startFrom: EventId) {
+        log.info { "Loading transactions page content from $startFrom" }
         isLoading = true
         try {
             val newItems = mutableListOf<Pair<EventId, ZeroInterestTransactionEvent>>()
@@ -253,6 +256,7 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId) {
                     maxSize = pageSize.toLong()
                 }
             ).collect { timelineEventFlow ->
+                log.info { "Got one timeline event flow" }
                 emittedCount++
                 val firstEvent = timelineEventFlow.first()
                 lastSeenId = firstEvent.eventId
@@ -282,11 +286,12 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId) {
                 oldestLoadedId = lastSeenId
             }
 
+            log.info { "Successfully loaded $emittedCount of $pageSize elements" }
             // Decide if there may be more events to load
-            hasMore = emittedCount >= pageSize
+            hasMore = emittedCount > pageSize
         } catch (e: Exception) {
             // Error while loading a page should stop further paging in this session
-            println("Error loading transactions page: ${e.message}")
+            log.error(e) { "Error loading transactions page" }
             hasMore = false
         } finally {
             isLoading = false
@@ -313,7 +318,7 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId) {
                 hasMore = false
             }
         } catch (e: Exception) {
-            println("Error loading transactions: ${e.message}")
+            log.error(e) { "Error loading transactions" }
             isLoading = false
             hasMore = false
         }

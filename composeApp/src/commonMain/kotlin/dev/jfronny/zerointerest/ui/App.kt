@@ -20,7 +20,7 @@ import org.koin.compose.koinInject
 import kotlin.reflect.typeOf
 
 const val appName = "zerointerest"
-val log = KotlinLogging.logger {}
+private val log = KotlinLogging.logger {}
 
 @Composable
 @Preview

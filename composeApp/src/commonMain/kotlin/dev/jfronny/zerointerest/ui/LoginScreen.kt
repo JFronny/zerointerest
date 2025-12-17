@@ -10,12 +10,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.jfronny.zerointerest.service.MatrixClientService
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.*
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import zerointerest.composeapp.generated.resources.Res
 import zerointerest.composeapp.generated.resources.app_icon
+
+private val log = KotlinLogging.logger {}
 
 @Composable
 fun LoginScreen(onSuccess: () -> Unit) {
