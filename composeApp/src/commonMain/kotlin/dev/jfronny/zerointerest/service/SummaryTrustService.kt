@@ -6,6 +6,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.any
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapLatest
 import net.folivo.trixnity.client.room
@@ -66,14 +67,14 @@ class SummaryTrustService(
         // Prefetch events as the next steps need them
         val summaries = mutableMapOf<EventId, Timed<ZeroInterestSummaryEvent>>()
         for (eventId in content.parents.keys) {
-            val event = client.room.getTimelineEvent(roomId, eventId).first()
-            val content = event?.content?.getOrNull() as? ZeroInterestSummaryEvent ?: continue
+            val event = client.room.getTimelineEvent(roomId, eventId).filterNotNull().first()
+            val content = event.content?.getOrNull() as? ZeroInterestSummaryEvent ?: continue
             summaries[eventId] = Timed(event.originTimestamp, content)
         }
         val transactions = mutableMapOf<EventId, Timed<ZeroInterestTransactionEvent>>()
         for (eventId in content.parents.values.flatten()) {
-            val event = client.room.getTimelineEvent(roomId, eventId).first()
-            val content = event?.content?.getOrNull() as? ZeroInterestTransactionEvent ?: continue
+            val event = client.room.getTimelineEvent(roomId, eventId).filterNotNull().first()
+            val content = event.content?.getOrNull() as? ZeroInterestTransactionEvent ?: continue
             transactions[eventId] = Timed(event.originTimestamp, content)
         }
         // 3. Otherwise, if the summary event has no trusted parents, it is rejected.
@@ -163,7 +164,9 @@ class SummaryTrustService(
             // Merge heads
             // 1. Fetch all heads
             val headEvents = heads.associateWith {
-                client.room.getTimelineEvent(roomId, it).first()?.content?.getOrNull() as? ZeroInterestSummaryEvent
+                val first = client.room.getTimelineEvent(roomId, it).filterNotNull().first()
+                log.info { "Fetched head $first" }
+                first.content?.getOrNull() as? ZeroInterestSummaryEvent
             }.filterValues { it != null }.mapValues { it.value!! }
 
             if (headEvents.isEmpty()) {
@@ -186,7 +189,7 @@ class SummaryTrustService(
                 allVisitedSummaries.add(currentId)
 
                 val event = if (currentId in heads) headEvents[currentId]!! else {
-                    client.room.getTimelineEvent(roomId, currentId).first()?.content?.getOrNull() as? ZeroInterestSummaryEvent
+                    client.room.getTimelineEvent(roomId, currentId).filterNotNull().first().content?.getOrNull() as? ZeroInterestSummaryEvent
                 } ?: continue
 
                 summaryGraph[currentId] = event
@@ -242,7 +245,7 @@ class SummaryTrustService(
             // We need to fetch the transaction contents to apply them
             log.info { "Applying ${toApply.size} transactions to compute new balances for room $roomId" }
             for (txId in toApply) {
-                val tx = client.room.getTimelineEvent(roomId, txId).first()?.content?.getOrNull() as? ZeroInterestTransactionEvent
+                val tx = client.room.getTimelineEvent(roomId, txId).filterNotNull().first().content?.getOrNull() as? ZeroInterestTransactionEvent
                 tx?.apply(baseBalances)
             }
 
