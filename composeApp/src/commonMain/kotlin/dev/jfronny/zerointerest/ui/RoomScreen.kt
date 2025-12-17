@@ -56,13 +56,12 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.RoomService
-import net.folivo.trixnity.client.store.RoomDisplayName
 import net.folivo.trixnity.client.store.eventId
 import net.folivo.trixnity.client.store.originTimestamp
 import net.folivo.trixnity.client.user
@@ -70,7 +69,6 @@ import net.folivo.trixnity.clientserverapi.model.rooms.GetEvents
 import net.folivo.trixnity.core.model.EventId
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
-import net.folivo.trixnity.core.model.events.m.room.NameEventContent
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.koinInject
 
@@ -102,8 +100,8 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit,
             topBar = {
                 TopAppBar(
                     title = {
-                        val name by client.room.getState(roomId, NameEventContent::class).collectAsState(null)
-                        Text(name?.content?.name ?: "Room")
+                        val room by client.room.getById(roomId).collectAsState(null)
+                        Text(room?.name?.explicitName ?: "Room")
                     },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
@@ -257,7 +255,7 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, trust: Summary
                     minSize = pageSize.toLong()
                     maxSize = pageSize.toLong()
                 }
-            ).lastOrNull()?.let { timelineEventFlow ->
+            ).firstOrNull()?.let { timelineEventFlow ->
                 log.info { "Got one timeline event flow" }
                 emittedCount++
                 timelineEventFlow.map { event ->

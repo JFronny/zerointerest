@@ -38,6 +38,13 @@ data class ZeroInterestTransactionEvent(
 
     private fun UserId.mention() = """<a href="${URLBuilder("https://matrix.to/#").appendPathSegments(full, encodeSlash = true).build()}">${localpart}</a>"""
 
+    fun apply(balances: MutableMap<UserId, Long>) {
+        balances[sender] = (balances[sender] ?: 0L) - total
+        for ((receiver, amount) in receivers) {
+            balances[receiver] = (balances[receiver] ?: 0L) + amount
+        }
+    }
+
     companion object {
         const val TYPE = "dev.jfronny.zerointerest.transaction"
         const val PAYMENT_DESCRIPTION = "Payment"

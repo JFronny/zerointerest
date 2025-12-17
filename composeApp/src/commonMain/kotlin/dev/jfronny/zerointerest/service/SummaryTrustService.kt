@@ -6,7 +6,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.any
-import kotlinx.coroutines.flow.last
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapLatest
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.getTimelineEventReactionAggregation
@@ -52,13 +52,13 @@ class SummaryTrustService(
         val dbState = database.checkTrust(roomId, messageId)
         if (dbState != SummaryTrustDatabase.TrustState.UNTRUSTED) return dbState
         // 1. If a rejection for the summary exists, the summary is always rejected.
-        val reactions = client.room.getTimelineEventReactionAggregation(roomId, messageId).last()
+        val reactions = client.room.getTimelineEventReactionAggregation(roomId, messageId).first()
         if (reactions.reactions[rejectionKey]?.isNotEmpty() ?: false) return reject(roomId, messageId, send = false)
         // 2. Otherwise, if the summary event is the first summary event ever encountered in a room, it is trusted.
         if (content.parents.isEmpty()) {
             val hasPrevious = client.room.getTimelineEvents(roomId, messageId, direction = GetEvents.Direction.BACKWARDS) {
                 maxSize = 1024 // trixnity doesn't easily allow us to filter just for ZeroInterestSummaryEvents, and this should be fine
-            }.last().any {
+            }.first().any {
                 it.eventId != messageId && it.content?.getOrNull() is ZeroInterestSummaryEvent
             }
             if (!hasPrevious) return accept(roomId, messageId, content)
@@ -66,13 +66,13 @@ class SummaryTrustService(
         // Prefetch events as the next steps need them
         val summaries = mutableMapOf<EventId, Timed<ZeroInterestSummaryEvent>>()
         for (eventId in content.parents.keys) {
-            val event = client.room.getTimelineEvent(roomId, eventId).last()
+            val event = client.room.getTimelineEvent(roomId, eventId).first()
             val content = event?.content?.getOrNull() as? ZeroInterestSummaryEvent ?: continue
             summaries[eventId] = Timed(event.originTimestamp, content)
         }
         val transactions = mutableMapOf<EventId, Timed<ZeroInterestTransactionEvent>>()
         for (eventId in content.parents.values.flatten()) {
-            val event = client.room.getTimelineEvent(roomId, eventId).last()
+            val event = client.room.getTimelineEvent(roomId, eventId).first()
             val content = event?.content?.getOrNull() as? ZeroInterestTransactionEvent ?: continue
             transactions[eventId] = Timed(event.originTimestamp, content)
         }
@@ -95,10 +95,7 @@ class SummaryTrustService(
             if (transactions.size < transactionIds.size) return reject(roomId, messageId)
             val computedBalances = mutableMapOf<UserId, Long>()
             for (event in transactions) {
-                computedBalances[event.sender] = (computedBalances[event.sender] ?: 0L) - event.total
-                for ((receiver, delta) in event.receivers) {
-                    computedBalances[receiver] = (computedBalances[receiver] ?: 0L) + delta
-                }
+                event.apply(computedBalances)
             }
             if (computedBalances != balances) return reject(roomId, messageId)
         }
@@ -150,23 +147,14 @@ class SummaryTrustService(
         val heads = database.getHeads(roomId)
         if (heads.isEmpty()) {
             log.info { "No heads found for room $roomId, creating initial summary" }
-            val parent = client.api.room.sendStateEvent(roomId, ZeroInterestSummaryEvent(
-                balances = emptyMap(),
-                parents = emptyMap()
-            )).getOrThrow()
-            database.markTrusted(roomId, parent)
-            database.setHeads(roomId, setOf(parent))
 
             val balances = mutableMapOf<UserId, Long>()
-            balances[content.sender] = (balances[content.sender] ?: 0L) - content.total
-            for ((receiver, delta) in content.receivers) {
-                balances[receiver] = (balances[receiver] ?: 0L) + delta
-            }
+            content.apply(balances)
 
             log.info { "Creating summary for first transaction $newTransactionId in room $roomId" }
             val response = client.api.room.sendStateEvent(roomId, ZeroInterestSummaryEvent(
                 balances = balances,
-                parents = mapOf(parent to setOf(newTransactionId))
+                parents = emptyMap()
             )).getOrThrow()
             database.markTrusted(roomId, response)
             database.setHeads(roomId, setOf(response))
@@ -175,7 +163,7 @@ class SummaryTrustService(
             // Merge heads
             // 1. Fetch all heads
             val headEvents = heads.associateWith {
-                client.room.getTimelineEvent(roomId, it).last()?.content?.getOrNull() as? ZeroInterestSummaryEvent
+                client.room.getTimelineEvent(roomId, it).first()?.content?.getOrNull() as? ZeroInterestSummaryEvent
             }.filterValues { it != null }.mapValues { it.value!! }
 
             if (headEvents.isEmpty()) {
@@ -198,7 +186,7 @@ class SummaryTrustService(
                 allVisitedSummaries.add(currentId)
 
                 val event = if (currentId in heads) headEvents[currentId]!! else {
-                    client.room.getTimelineEvent(roomId, currentId).last()?.content?.getOrNull() as? ZeroInterestSummaryEvent
+                    client.room.getTimelineEvent(roomId, currentId).first()?.content?.getOrNull() as? ZeroInterestSummaryEvent
                 } ?: continue
 
                 summaryGraph[currentId] = event
@@ -254,13 +242,8 @@ class SummaryTrustService(
             // We need to fetch the transaction contents to apply them
             log.info { "Applying ${toApply.size} transactions to compute new balances for room $roomId" }
             for (txId in toApply) {
-                val tx = client.room.getTimelineEvent(roomId, txId).last()?.content?.getOrNull() as? ZeroInterestTransactionEvent
-                if (tx != null) {
-                    baseBalances[tx.sender] = (baseBalances[tx.sender] ?: 0L) - tx.total
-                    for ((receiver, delta) in tx.receivers) {
-                        baseBalances[receiver] = (baseBalances[receiver] ?: 0L) + delta
-                    }
-                }
+                val tx = client.room.getTimelineEvent(roomId, txId).first()?.content?.getOrNull() as? ZeroInterestTransactionEvent
+                tx?.apply(baseBalances)
             }
 
             log.info { "Creating merged summary for new transaction $newTransactionId in room $roomId" }
