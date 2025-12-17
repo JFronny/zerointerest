@@ -8,7 +8,6 @@ import kotlin.io.path.Path
 import kotlin.io.path.absolute
 import kotlin.io.path.div
 
-
 object OS {
     val type by lazy {
         val osName = System.getProperty("os.name").lowercase()

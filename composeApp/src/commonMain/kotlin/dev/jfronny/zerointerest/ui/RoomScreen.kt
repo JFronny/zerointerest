@@ -41,7 +41,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import dev.jfronny.zerointerest.Destination
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
@@ -50,7 +49,6 @@ import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import dev.jfronny.zerointerest.util.NavigationHelper
 import dev.jfronny.zerointerest.util.formatBalance
-import dev.jfronny.zerointerest.util.has
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -64,6 +62,7 @@ import kotlinx.coroutines.flow.toList
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.RoomService
+import net.folivo.trixnity.client.store.RoomDisplayName
 import net.folivo.trixnity.client.store.eventId
 import net.folivo.trixnity.client.store.originTimestamp
 import net.folivo.trixnity.client.user
@@ -71,6 +70,7 @@ import net.folivo.trixnity.clientserverapi.model.rooms.GetEvents
 import net.folivo.trixnity.core.model.EventId
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
+import net.folivo.trixnity.core.model.events.m.room.NameEventContent
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.koinInject
 
@@ -78,23 +78,21 @@ private val log = KotlinLogging.logger {}
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit) {
+fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit, navHelper: NavigationHelper) {
     val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
     val client = rxclient ?: return
     val trust = koinInject<SummaryTrustService>()
-    val navController = rememberNavController()
-    val navHelper = remember(navController) { NavigationHelper(navController) }
-    val navBackStackEntry = navHelper.currentBackStackEntry
+    val roomIs = navHelper.roomIs()
 
     NavigationSuiteScaffold(navigationItems = {
         NavigationSuiteItem(
-            selected = navBackStackEntry.has(Destination.Room.RoomDestination.Balance),
+            selected = roomIs(Destination.Room.RoomDestination.Balance),
             onClick = { navHelper.navigateTab(Destination.Room.RoomDestination.Balance) },
             icon = { Icon(Icons.Default.Paid, "Balances") },
             label = { Text("Balances") }
         )
         NavigationSuiteItem(
-            selected = navBackStackEntry.has(Destination.Room.RoomDestination.Transactions),
+            selected = roomIs(Destination.Room.RoomDestination.Transactions),
             onClick = { navHelper.navigateTab(Destination.Room.RoomDestination.Transactions) },
             icon = { Icon(Icons.AutoMirrored.Filled.CompareArrows, "Transactions") },
             label = { Text("Transactions") }
@@ -103,7 +101,10 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit)
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Room") },
+                    title = {
+                        val name by client.room.getState(roomId, NameEventContent::class).collectAsState(null)
+                        Text(name?.content?.name ?: "Room")
+                    },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -118,7 +119,7 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit)
             }
         ) { padding ->
             NavHost(
-                navController = navController,
+                navController = navHelper.room,
                 startDestination = Destination.Room.RoomDestination.Balance,
                 typeMap = mapOf(),
                 modifier = Modifier.padding(padding)

@@ -8,7 +8,7 @@ import net.folivo.trixnity.client.store.repository.room.createRoomRepositoriesMo
 import okio.Path
 import org.koin.core.module.Module
 
-abstract class AbstractPlatform(protected val stateDir: Path) : Platform {
+abstract class AbstractPlatform(val stateDir: Path) : Platform {
     protected val TRIXNITY_NAME = "trixnity.db"
     protected val ZEROINTEREST_NAME = "zerointerest.db"
 

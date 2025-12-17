@@ -3,15 +3,10 @@ package dev.jfronny.zerointerest
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.room.Room
-import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
 import kotlinx.cinterop.ExperimentalForeignApi
-import net.folivo.trixnity.client.media.okio.createOkioMediaStoreModule
 import net.folivo.trixnity.client.store.repository.room.TrixnityRoomDatabase
-import net.folivo.trixnity.client.store.repository.room.createRoomRepositoriesModule
 import okio.Path.Companion.toPath
-import org.koin.core.module.Module
 import org.koin.core.scope.Scope
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager

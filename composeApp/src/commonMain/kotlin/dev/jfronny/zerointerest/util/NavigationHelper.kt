@@ -2,23 +2,23 @@ package dev.jfronny.zerointerest.util
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.navigation.NavBackStackEntry
-import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import dev.jfronny.zerointerest.Destination
 
-class NavigationHelper(val navController: NavController) {
-    val currentBackStackEntry: NavBackStackEntry?
-        @Composable get() {
-            val entry by navController.currentBackStackEntryAsState()
-            return entry
-        }
-
-    fun navigateTab(route: Any) {
-        navController.navigate(route) {
-            popUpTo(navController.graph.findStartDestination().id) {
+class NavigationHelper(
+    val main: NavHostController,
+    val room: NavHostController
+) {
+    fun navigateTab(route: Destination.Room.RoomDestination) {
+        room.navigate(route) {
+            popUpTo(room.graph.findStartDestination().id) {
                 saveState = true
             }
             launchSingleTop = true
@@ -26,17 +26,31 @@ class NavigationHelper(val navController: NavController) {
         }
     }
 
-    fun navigate(route: Any) {
-        navController.navigate(route)
+    @Composable
+    fun roomIs(): ((route: Destination.Room.RoomDestination) -> Boolean) {
+        val entry by main.currentBackStackEntryAsState()
+        return { route -> entry?.has(route) == true }
     }
 
-    fun popBackStack() {
-        navController.popBackStack()
+    fun navigate(route: Destination) {
+        main.navigate(route)
+    }
+
+    fun popMainBackStack() {
+        main.popBackStack()
     }
 }
 
-fun NavBackStackEntry?.has(destination: Any): Boolean {
+private fun NavBackStackEntry?.has(destination: Any): Boolean {
     if (this == null) return false
     return this.destination.hierarchy.any { it.hasRoute(route = destination::class) }
 }
 
+@Composable
+fun rememberNavigationHelper() : NavigationHelper {
+    val mainNavController = rememberNavController()
+    val roomNavController = rememberNavController()
+    return remember(mainNavController, roomNavController) {
+        NavigationHelper(mainNavController, roomNavController)
+    }
+}

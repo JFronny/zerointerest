@@ -22,7 +22,7 @@ private val log = KotlinLogging.logger {}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(onSuccess: () -> Unit) = Scaffold(
+fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
     topBar = {
         TopAppBar(
             title = { Text("zerointerest") }
