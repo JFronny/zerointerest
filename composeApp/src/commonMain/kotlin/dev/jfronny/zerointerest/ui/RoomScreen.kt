@@ -50,13 +50,15 @@ import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import dev.jfronny.zerointerest.util.formatBalance
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.toList
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.RoomService
@@ -216,6 +218,7 @@ private fun BalancesTab(
     }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @Composable
 private fun TransactionsTab(client: MatrixClient, roomId: RoomId) {
     val roomService: RoomService = client.room
@@ -243,11 +246,10 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId) {
         log.info { "Loading transactions page content from $startFrom" }
         isLoading = true
         try {
-            val newItems = mutableListOf<Pair<EventId, ZeroInterestTransactionEvent>>()
             var emittedCount = 0
             var lastSeenId: EventId? = null
 
-            roomService.getTimelineEvents(
+            val newItems = roomService.getTimelineEvents(
                 roomId = roomId,
                 startFrom = startFrom,
                 direction = GetEvents.Direction.BACKWARDS,
@@ -255,27 +257,29 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId) {
                     minSize = pageSize.toLong()
                     maxSize = pageSize.toLong()
                 }
-            ).collect { timelineEventFlow ->
+            ).lastOrNull()?.let { timelineEventFlow ->
                 log.info { "Got one timeline event flow" }
                 emittedCount++
-                val firstEvent = timelineEventFlow.first()
-                lastSeenId = firstEvent.eventId
+                timelineEventFlow.map { event ->
+                    lastSeenId = event.eventId
 
-                // Get the first emission with a usable content for this timeline event
-                val pair: Pair<EventId, ZeroInterestTransactionEvent>? = timelineEventFlow
-                    .map { te ->
-                        val content = te.content?.getOrNull()
-                        if (content is ZeroInterestTransactionEvent) (te.eventId to content) else null
+                    // Get the first emission with a usable content for this timeline event
+                    val pair: Pair<EventId, ZeroInterestTransactionEvent>? = timelineEventFlow
+                        .map { te ->
+                            val content = te.content?.getOrNull()
+                            if (content is ZeroInterestTransactionEvent) (te.eventId to content) else null
+                        }
+                        .filterNotNull()
+                        .firstOrNull()
+                    if (pair != null) {
+                        val (eventId, content) = pair
+                        if (loadedIds.add(eventId)) {
+                            return@map eventId to content
+                        }
                     }
-                    .filterNotNull()
-                    .firstOrNull()
-                if (pair != null) {
-                    val (eventId, content) = pair
-                    if (loadedIds.add(eventId)) {
-                        newItems.add(eventId to content)
-                    }
-                }
-            }
+                    return@map null
+                }.filterNotNull().toList()
+            } ?: emptyList()
 
             if (newItems.isNotEmpty()) {
                 // Append to the end to keep newest-to-oldest ordering
