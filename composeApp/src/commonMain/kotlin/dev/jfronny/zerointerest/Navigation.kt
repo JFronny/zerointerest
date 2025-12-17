@@ -7,5 +7,10 @@ import net.folivo.trixnity.core.model.RoomId
 sealed class Destination {
     @Serializable object Login : Destination()
     @Serializable object PickRoom : Destination()
-    @Serializable data class Room(val roomId: RoomId) : Destination()
+    @Serializable data class Room(val roomId: RoomId) : Destination() {
+        @Serializable sealed class RoomDestination {
+            @Serializable object Balance : RoomDestination()
+            @Serializable object Transactions : RoomDestination()
+        }
+    }
 }

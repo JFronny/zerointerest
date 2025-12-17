@@ -46,6 +46,7 @@ fun App() = AppTheme {
         composable<Destination.Room>(typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)) {
             val route = it.toRoute<Destination.Room>()
             RoomScreen(
+                onBack = { navController.popBackStack() },
                 roomId = route.roomId
             )
         }

@@ -10,8 +10,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Surface
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
@@ -24,8 +29,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import dev.jfronny.zerointerest.Destination
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.service.MatrixClientService
@@ -33,8 +48,8 @@ import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import dev.jfronny.zerointerest.util.formatBalance
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -50,53 +65,72 @@ import net.folivo.trixnity.core.model.UserId
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.koinInject
 
-private enum class RoomTab { Balances, Transactions }
-
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun RoomScreen(roomId: RoomId) {
+fun RoomScreen(roomId: RoomId, onBack: () -> Unit) {
     val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
     val client = rxclient ?: return
     val trust = koinInject<SummaryTrustService>()
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
 
-    var selectedTab by remember { mutableStateOf(RoomTab.Balances) }
+    fun NavBackStackEntry.has(destination: Destination.Room.RoomDestination) =
+        this.destination.hierarchy.any { it.hasRoute(route = destination::class) }
+
+    fun navigate(route: Destination.Room.RoomDestination) {
+        navController.navigate(route) {
+            // Pop up to the start destination of the graph to
+            // avoid building up a large stack of destinations
+            // on the back stack as users select items
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            // Avoid multiple copies of the same destination when
+            // reselecting the same item
+            launchSingleTop = true
+            // Restore state when reselecting a previously selected item
+            restoreState = true
+        }
+    }
+
 
     NavigationSuiteScaffold(navigationItems = {
         NavigationSuiteItem(
-            selected = selectedTab == RoomTab.Balances,
-            onClick = { selectedTab = RoomTab.Balances },
-            icon = { Text("B") },
+            selected = navBackStackEntry?.has(Destination.Room.RoomDestination.Balance) == true,
+            onClick = { navigate(Destination.Room.RoomDestination.Balance) },
+            icon = { Icon(Icons.Default.Paid, "Balances") },
             label = { Text("Balances") }
         )
         NavigationSuiteItem(
-            selected = selectedTab == RoomTab.Transactions,
-            onClick = { selectedTab = RoomTab.Transactions },
-            icon = { Text("T") },
+            selected = navBackStackEntry?.has(Destination.Room.RoomDestination.Transactions) == true,
+            onClick = { navigate(Destination.Room.RoomDestination.Transactions) },
+            icon = { Icon(Icons.AutoMirrored.Filled.CompareArrows, "Transactions") },
             label = { Text("Transactions") }
         )
+    }, primaryActionContent = {
+        FloatingActionButton(onClick = { onBack() }) {
+            Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Back")
+        }
     }) {
-        Box(
-            modifier = Modifier.fillMaxSize()
+        NavHost(
+            navController = navController,
+            startDestination = Destination.Room.RoomDestination.Balance,
+            typeMap = mapOf()
         ) {
-            Surface(
-                modifier = Modifier.align(Alignment.TopCenter)
-            ) {
-                when (selectedTab) {
-                    RoomTab.Balances -> {
-                        val eventNB by trust.getSummary(roomId).collectAsState(null)
-                        val event = eventNB // needed for smart cast
-                        if (event == null) {
-                            CircularProgressIndicator()
-                        } else {
-                            BalancesTab(
-                                event = event,
-                                getName = nameResolver(client = client, roomId = roomId)
-                            )
-                        }
-                    }
-                    RoomTab.Transactions -> {
-                        TransactionsTab(client, roomId)
-                    }
+            composable<Destination.Room.RoomDestination.Balance> {
+                val eventNB by trust.getSummary(roomId).collectAsState(null)
+                val event = eventNB // needed for smart cast
+                if (event == null) {
+                    CircularProgressIndicator()
+                } else {
+                    BalancesTab(
+                        event = event,
+                        getName = nameResolver(client = client, roomId = roomId)
+                    )
                 }
+            }
+            composable<Destination.Room.RoomDestination.Transactions> {
+                TransactionsTab(client, roomId)
             }
         }
     }
