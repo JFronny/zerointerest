@@ -1,5 +1,6 @@
 package dev.jfronny.zerointerest.ui
 
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.compose.NavHost
@@ -25,7 +26,7 @@ private suspend fun Settings.startDestination() = rememberedRoom()?.let { Destin
 
 @Composable
 @Preview
-fun App() = AppTheme {
+fun App() = AppTheme { Surface {
     val navHelper = rememberNavigationHelper()
     val service = koinInject<MatrixClientService>()
     val settings = koinInject<Settings>()
@@ -100,4 +101,4 @@ fun App() = AppTheme {
     }
 
     VerificationDialog()
-}
+} }
