@@ -1,6 +1,6 @@
 package dev.jfronny.zerointerest.ui
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,9 +23,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
@@ -42,12 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.decodeToImageBitmap
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import dev.jfronny.zerointerest.Destination
@@ -61,21 +53,11 @@ import dev.jfronny.zerointerest.util.formatBalance
 import dev.jfronny.zerointerest.util.room
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
 import net.folivo.trixnity.client.MatrixClient
-import net.folivo.trixnity.client.media
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.RoomService
-import net.folivo.trixnity.client.store.avatarUrl
 import net.folivo.trixnity.client.store.eventId
-import net.folivo.trixnity.client.store.originTimestamp
-import net.folivo.trixnity.client.user
 import net.folivo.trixnity.clientserverapi.model.rooms.GetEvents
 import net.folivo.trixnity.core.model.EventId
 import net.folivo.trixnity.core.model.RoomId
@@ -91,19 +73,19 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit,
     val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
     val client = rxclient ?: return
     val trust = koinInject<SummaryTrustService>()
-    val navHelper = navHelper.room()
-    val roomIs = navHelper.roomIs()
+    val roomNavHelper = navHelper.room()
+    val roomIs = roomNavHelper.roomIs()
 
     NavigationSuiteScaffold(navigationItems = {
         NavigationSuiteItem(
             selected = roomIs(Destination.Room.RoomDestination.Balance),
-            onClick = { navHelper.navigateTab(Destination.Room.RoomDestination.Balance) },
+            onClick = { roomNavHelper.navigateTab(Destination.Room.RoomDestination.Balance) },
             icon = { Icon(Icons.Default.Paid, "Balances") },
             label = { Text("Balances") }
         )
         NavigationSuiteItem(
             selected = roomIs(Destination.Room.RoomDestination.Transactions),
-            onClick = { navHelper.navigateTab(Destination.Room.RoomDestination.Transactions) },
+            onClick = { roomNavHelper.navigateTab(Destination.Room.RoomDestination.Transactions) },
             icon = { Icon(Icons.AutoMirrored.Filled.CompareArrows, "Transactions") },
             label = { Text("Transactions") }
         )
@@ -129,7 +111,7 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit,
             }
         ) { padding ->
             NavHost(
-                navController = navHelper.room,
+                navController = roomNavHelper.room,
                 startDestination = Destination.Room.RoomDestination.Balance,
                 typeMap = mapOf(),
                 modifier = Modifier.padding(padding)
@@ -144,68 +126,13 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit,
                     } else {
                         BalancesTab(
                             summary = event,
-                            getUIData = uiResolver(client = client, roomId = roomId),
-                            userIcon = userIcon(client)
+                            userUI = UserUI(client, roomId)
                         )
                     }
                 }
                 composable<Destination.Room.RoomDestination.Transactions> {
-                    TransactionsTab(client, roomId, trust)
+                    TransactionsTab(client, roomId, navHelper)
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun uiResolver(client: MatrixClient, roomId: RoomId): (UserId) -> Flow<UserUIData> {
-    val users by client.user.getAll(roomId).collectAsState(emptyMap())
-    return { id -> users[id]?.map { UserUIData(it?.name ?: id.full, it?.avatarUrl) }
-        ?: flowOf(UserUIData(id.full, null)) }
-}
-
-data class UserUIData(val name: String, val avatarUrl: String?)
-
-fun userIcon(client: MatrixClient): @Composable (data: UserUIData) -> Unit = { data ->
-    Surface(
-        modifier = Modifier.size(40.dp),
-        shape = androidx.compose.foundation.shape.CircleShape,
-        color = MaterialTheme.colorScheme.primary
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            @Composable
-            fun Fallback() {
-                val initials = data.name
-                    .split(Regex("\\s+"))
-                    .filter { it.isNotBlank() }
-                    .mapNotNull { it.firstOrNull()?.uppercaseChar()?.toString() }
-                    .take(2)
-                    .joinToString("")
-                    .ifEmpty { data.name.take(2).uppercase() }
-                Text(
-                    text = initials,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            if (data.avatarUrl == null) {
-                Fallback()
-            } else {
-                var media by remember { mutableStateOf<ImageBitmap?>(null) }
-                LaunchedEffect(data.avatarUrl) {
-                    media = client.media
-                        .getMedia(data.avatarUrl)
-                        .getOrNull()
-                        ?.toByteArray(coroutineScope = this, maxSize = 1024 * 1024 * 8)
-                        ?.decodeToImageBitmap()
-                }
-                media?.let { Image(it, "Avatar") } ?: Fallback()
             }
         }
     }
@@ -223,23 +150,14 @@ private fun BalancesTabPreview() = AppTheme {
             ),
             parents = emptyMap()
         )),
-        getUIData = { userId ->
-            flowOf(UserUIData(when (userId.full) {
-                "@alice:example.org" -> "Alice"
-                "@bob:example.org" -> "Bob"
-                "@carol:example.org" -> "Carol"
-                else -> userId.full
-            }, null))
-        },
-        userIcon = {}
+        userUI = PreviewUserUI
     )
 }
 
 @Composable
 private fun BalancesTab(
     summary: SummaryTrustService.Summary,
-    getUIData: (UserId) -> Flow<UserUIData>,
-    userIcon: @Composable (data: UserUIData) -> Unit,
+    userUI: UserUI,
 ) {
     when (summary) {
         SummaryTrustService.Summary.Empty -> {
@@ -256,7 +174,6 @@ private fun BalancesTab(
             val balances = summary.event.balances
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
                 items(balances.entries.toList()) { entry ->
-                    val uiData by getUIData(entry.key).collectAsState(UserUIData(entry.key.full, null))
                     val balance = entry.value
                     Row(
                         modifier = Modifier
@@ -264,9 +181,7 @@ private fun BalancesTab(
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        userIcon(uiData)
-                        Spacer(Modifier.width(8.dp))
-                        Text(text = uiData.name)
+                        userUI(entry.key)
                         Spacer(modifier = Modifier.weight(1f))
                         Text(text = formatBalance(balance))
                     }
@@ -278,7 +193,7 @@ private fun BalancesTab(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @Composable
-private fun TransactionsTab(client: MatrixClient, roomId: RoomId, trust: SummaryTrustService) {
+private fun TransactionsTab(client: MatrixClient, roomId: RoomId, navHelper: NavigationHelper) {
     val roomService: RoomService = client.room
 
     // State to hold the list of transaction events
@@ -292,8 +207,7 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, trust: Summary
     val loadedIds = remember(roomId) { mutableSetOf<EventId>() }
 
     // Reuse name resolver so it isn't created per-row
-    val getUIData = uiResolver(client = client, roomId = roomId)
-    val userIcon = userIcon(client = client)
+    val userUI = UserUI(client, roomId)
 
     // Track the oldest loaded event id to continue paging from there
     var oldestLoadedId by remember(roomId) { mutableStateOf<EventId?>(null) }
@@ -318,7 +232,6 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, trust: Summary
                     maxSize = pageSize.toLong()
                 }
             ).collect { timelineEventFlow ->
-                log.info { "Got one timeline event flow" }
                 emittedCount++
                 val firstEvent = timelineEventFlow.first()
                 lastSeenId = firstEvent.eventId
@@ -417,11 +330,11 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, trust: Summary
                 items(
                     items = transactionEvents,
                     key = { it.first.full }
-                ) { (_, transaction) ->
+                ) { (eventId, transaction) ->
                     TransactionTabItem(
                         transaction = transaction,
-                        getUIData = getUIData,
-                        userIcon = userIcon,
+                        userUI = userUI,
+                        onClick = { navHelper.navigate(Destination.TransactionDetails(roomId, eventId)) }
                     )
                 }
 
@@ -459,17 +372,18 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, trust: Summary
 @Composable
 private fun TransactionTabItem(
     transaction: ZeroInterestTransactionEvent,
-    getUIData: (UserId) -> Flow<UserUIData>,
-    userIcon: @Composable (data: UserUIData) -> Unit,
+    userUI: UserUI,
+    onClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val uiData by getUIData(transaction.sender).collectAsState(UserUIData(transaction.sender.full, null))
-        userIcon(uiData)
+        val component = userUI.component(transaction.sender)
+        component.Icon()
         Spacer(Modifier.width(8.dp))
         Column {
             if (transaction.description == ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION) {
@@ -479,8 +393,7 @@ private fun TransactionTabItem(
                 Text(text = transaction.description,
                     style = MaterialTheme.typography.titleMedium)
             }
-            Text(text = uiData.name,
-                style = MaterialTheme.typography.bodySmall)
+            Text(text = component.name, style = MaterialTheme.typography.bodySmall)
         }
         Spacer(modifier = Modifier.weight(1f))
         Text(text = formatBalance(transaction.total))

@@ -9,17 +9,17 @@ import dev.jfronny.zerointerest.Destination
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.ui.theme.AppTheme
+import dev.jfronny.zerointerest.util.EventIdNavType
 import dev.jfronny.zerointerest.util.RoomIdNavType
 import dev.jfronny.zerointerest.util.rememberNavigationHelper
-import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.launch
+import net.folivo.trixnity.core.model.EventId
 import net.folivo.trixnity.core.model.RoomId
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.koinInject
 import kotlin.reflect.typeOf
 
 const val appName = "zerointerest"
-private val log = KotlinLogging.logger {}
 
 private suspend fun Settings.startDestination() = rememberedRoom()?.let { Destination.Room(it) } ?: Destination.PickRoom
 
@@ -80,6 +80,20 @@ fun App() = AppTheme {
                 client = service.get(),
                 roomId = route.roomId,
                 onDone = { navHelper.popMainBackStack() },
+                onBack = { navHelper.popMainBackStack() }
+            )
+        }
+        composable<Destination.TransactionDetails>(
+            typeMap = mapOf(
+                typeOf<RoomId>() to RoomIdNavType,
+                typeOf<EventId>() to EventIdNavType
+            )
+        ) {
+            val route = it.toRoute<Destination.TransactionDetails>()
+            TransactionDetailsScreen(
+                client = service.get(),
+                roomId = route.roomId,
+                transactionId = route.transactionId,
                 onBack = { navHelper.popMainBackStack() }
             )
         }

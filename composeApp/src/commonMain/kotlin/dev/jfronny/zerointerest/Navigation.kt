@@ -1,6 +1,7 @@
 package dev.jfronny.zerointerest
 
 import kotlinx.serialization.Serializable
+import net.folivo.trixnity.core.model.EventId
 import net.folivo.trixnity.core.model.RoomId
 
 @Serializable
@@ -14,4 +15,5 @@ sealed class Destination {
         }
     }
     @Serializable data class CreateTransaction(val roomId: RoomId) : Destination()
+    @Serializable data class TransactionDetails(val roomId: RoomId, val transactionId: EventId) : Destination()
 }
