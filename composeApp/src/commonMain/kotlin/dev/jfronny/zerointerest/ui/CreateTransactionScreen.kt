@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import kotlinx.coroutines.flow.filter
@@ -55,7 +56,6 @@ import net.folivo.trixnity.core.model.UserId
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
-import zerointerest.composeapp.generated.resources.*
 import kotlin.math.roundToLong
 
 @OptIn(ExperimentalMaterial3Api::class)

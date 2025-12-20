@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -40,7 +41,6 @@ import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
-import zerointerest.composeapp.generated.resources.*
 
 private val log = KotlinLogging.logger {}
 

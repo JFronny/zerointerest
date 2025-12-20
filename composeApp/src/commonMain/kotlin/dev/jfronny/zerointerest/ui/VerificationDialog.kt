@@ -10,6 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.service.MatrixClientService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.launch
@@ -22,7 +23,6 @@ import net.folivo.trixnity.client.verification.ActiveVerificationState
 import net.folivo.trixnity.core.model.events.m.key.verification.VerificationMethod
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
-import zerointerest.composeapp.generated.resources.*
 
 private val log = KotlinLogging.logger {}
 

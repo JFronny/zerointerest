@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import dev.jfronny.zerointerest.Destination
+import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.service.MatrixClientService
@@ -71,7 +72,6 @@ import net.folivo.trixnity.core.model.UserId
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.koinInject
-import zerointerest.composeapp.generated.resources.*
 
 private val log = KotlinLogging.logger {}
 

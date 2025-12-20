@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.util.formatBalance
 import kotlinx.coroutines.flow.filterNotNull
@@ -35,7 +36,6 @@ import net.folivo.trixnity.client.room
 import net.folivo.trixnity.core.model.EventId
 import net.folivo.trixnity.core.model.RoomId
 import org.jetbrains.compose.resources.stringResource
-import zerointerest.composeapp.generated.resources.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

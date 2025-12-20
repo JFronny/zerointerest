@@ -25,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.jfronny.zerointerest.composeapp.generated.resources.Res
+import dev.jfronny.zerointerest.composeapp.generated.resources.avatar
 import kotlinx.coroutines.flow.Flow
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.media
@@ -34,8 +36,6 @@ import net.folivo.trixnity.client.user
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
 import org.jetbrains.compose.resources.stringResource
-import zerointerest.composeapp.generated.resources.Res
-import zerointerest.composeapp.generated.resources.avatar
 
 interface UserUI {
     @Composable

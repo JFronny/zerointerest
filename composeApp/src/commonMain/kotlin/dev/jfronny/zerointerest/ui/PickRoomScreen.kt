@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.service.MatrixClientService
 import net.folivo.trixnity.client.flattenValues
 import net.folivo.trixnity.client.room
@@ -29,7 +30,6 @@ import net.folivo.trixnity.client.store.hasBeenReplaced
 import net.folivo.trixnity.core.model.RoomId
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
-import zerointerest.composeapp.generated.resources.*
 
 @Composable
 fun PickRoomScreen(onPick: (RoomId) -> Unit, logout: () -> Unit) {
