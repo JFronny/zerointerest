@@ -9,3 +9,15 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.kotlinxSerialization) apply false
 }
+
+tasks {
+    val pages by registering(Copy::class) {
+        from(project(":composeApp").tasks["jsBrowserDistribution"])
+        from(project(":composeApp").tasks["packageRelease"]) {
+            rename { if (it.endsWith(".apk")) "android.apk" else it }
+            exclude { !it.name.endsWith(".apk") && it.name != "output-metadata.json" }
+        }
+        into(projectDir.resolve("pages"))
+        duplicatesStrategy = DuplicatesStrategy.WARN
+    }
+}
