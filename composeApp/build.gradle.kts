@@ -107,6 +107,9 @@ kotlin {
             implementation(libs.trixnity.client.repository.indexeddb)
             implementation(libs.trixnity.client.media.indexeddb)
         }
+        webMain.dependencies {
+            implementation(npm("copy-webpack-plugin", libs.versions.copyWebpackPlugin.get()))
+        }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }

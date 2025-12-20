@@ -4,6 +4,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
 import dev.jfronny.zerointerest.ui.App
 import org.koin.compose.KoinApplication
+import org.koin.core.module.Module
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() = ComposeViewport {
@@ -13,3 +14,5 @@ fun main() = ComposeViewport {
         App()
     }
 }
+
+expect fun createExtraModule(): Module

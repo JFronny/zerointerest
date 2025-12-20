@@ -8,12 +8,15 @@ import androidx.datastore.core.okio.WebStorageType
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.PreferencesSerializer
+import dev.jfronny.zerointerest.service.SummaryTrustDatabase
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.js.Js
 import net.folivo.trixnity.client.media.indexeddb.createIndexedDBMediaStoreModule
 import net.folivo.trixnity.client.store.repository.indexeddb.createIndexedDBRepositoriesModule
 import org.koin.core.module.Module
 import org.koin.core.scope.Scope
+import org.koin.dsl.bind
+import org.koin.dsl.module
 
 class JsPlatform : Platform {
     override val name: String = "Web"
@@ -33,3 +36,9 @@ actual fun Scope.getPlatform(): Platform = JsPlatform()
 
 @Composable
 actual fun getPlatformTheme(darkTheme: Boolean): ColorScheme? = null
+
+actual fun createExtraModule() = module {
+    single {
+        WebSummaryTrustDatabase()
+    } bind SummaryTrustDatabase::class
+}

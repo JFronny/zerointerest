@@ -23,6 +23,7 @@ sqlite = "2.6.2"
 ktor = "3.3.3"
 room = "2.8.4"
 ksp = "2.3.3"
+copyWebpackPlugin = "12.0.2" # https://github.com/webpack-contrib/copy-webpack-plugin/releases
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
