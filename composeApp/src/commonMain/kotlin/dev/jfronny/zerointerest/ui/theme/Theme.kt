@@ -1,6 +1,7 @@
 package dev.jfronny.zerointerest.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -256,7 +257,10 @@ fun AppTheme(
             darkTheme -> darkScheme
             else -> lightScheme
         },
-        typography = AppTypography,
-        content = content
-    )
+        typography = AppTypography
+    ) {
+        Surface {
+            content()
+        }
+    }
 }

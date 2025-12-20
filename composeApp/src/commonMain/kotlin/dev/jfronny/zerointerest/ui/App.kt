@@ -1,6 +1,5 @@
 package dev.jfronny.zerointerest.ui
 
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.compose.NavHost
@@ -16,7 +15,6 @@ import dev.jfronny.zerointerest.util.rememberNavigationHelper
 import kotlinx.coroutines.launch
 import net.folivo.trixnity.core.model.EventId
 import net.folivo.trixnity.core.model.RoomId
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.koinInject
 import kotlin.reflect.typeOf
 
@@ -25,8 +23,7 @@ const val appName = "zerointerest"
 private suspend fun Settings.startDestination() = rememberedRoom()?.let { Destination.Room(it) } ?: Destination.PickRoom
 
 @Composable
-@Preview
-fun App() = AppTheme { Surface {
+fun App() = AppTheme {
     val navHelper = rememberNavigationHelper()
     val service = koinInject<MatrixClientService>()
     val settings = koinInject<Settings>()
@@ -101,4 +98,4 @@ fun App() = AppTheme { Surface {
     }
 
     VerificationDialog()
-} }
+}
