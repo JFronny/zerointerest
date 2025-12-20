@@ -68,8 +68,10 @@ import net.folivo.trixnity.clientserverapi.model.rooms.GetEvents
 import net.folivo.trixnity.core.model.EventId
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.koinInject
+import zerointerest.composeapp.generated.resources.*
 
 private val log = KotlinLogging.logger {}
 
@@ -87,14 +89,14 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit,
         NavigationSuiteItem(
             selected = roomIs(Destination.Room.RoomDestination.Balance),
             onClick = { roomNavHelper.navigateTab(Destination.Room.RoomDestination.Balance) },
-            icon = { Icon(Icons.Default.Paid, "Balances") },
-            label = { Text("Balances") }
+            icon = { Icon(Icons.Default.Paid, stringResource(Res.string.balances)) },
+            label = { Text(stringResource(Res.string.balances)) }
         )
         NavigationSuiteItem(
             selected = roomIs(Destination.Room.RoomDestination.Transactions),
             onClick = { roomNavHelper.navigateTab(Destination.Room.RoomDestination.Transactions) },
-            icon = { Icon(Icons.AutoMirrored.Filled.CompareArrows, "Transactions") },
-            label = { Text("Transactions") }
+            icon = { Icon(Icons.AutoMirrored.Filled.CompareArrows, stringResource(Res.string.transactions)) },
+            label = { Text(stringResource(Res.string.transactions)) }
         )
     }) {
         Scaffold(
@@ -102,18 +104,18 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit,
                 TopAppBar(
                     title = {
                         val room by client.room.getById(roomId).collectAsState(null)
-                        Text(room?.name?.explicitName ?: "Room")
+                        Text(room?.name?.explicitName ?: stringResource(Res.string.room))
                     },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.back))
                         }
                     }
                 )
             },
             floatingActionButton = {
                 FloatingActionButton(onClick = onAddTransaction) {
-                    Icon(Icons.Default.Add, "Add Transaction")
+                    Icon(Icons.Default.Add, stringResource(Res.string.add_transaction))
                 }
             }
         ) { padding ->
@@ -178,15 +180,15 @@ private fun BalancesTab(
     when (summary) {
         SummaryTrustService.Summary.Empty -> {
             Box(Modifier.fillMaxSize()) {
-                Text("No balances yet", Modifier.align(Alignment.Center), style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(Res.string.no_balances_yet), Modifier.align(Alignment.Center), style = MaterialTheme.typography.bodyLarge)
             }
         }
         is SummaryTrustService.Summary.Untrusted -> {
             Box(Modifier.fillMaxSize()) {
                 Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Latest Summary not trusted", style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(Res.string.latest_summary_not_trusted), style = MaterialTheme.typography.bodyLarge)
                     Button(onClick = { forceTrust(summary) }) {
-                        Text("Override")
+                        Text(stringResource(Res.string.override))
                     }
                 }
             }
@@ -373,7 +375,7 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, navHelper: Nav
                                 .padding(16.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("No transactions yet")
+                            Text(stringResource(Res.string.no_transactions_yet))
                         }
                     }
                 }
@@ -400,11 +402,9 @@ private fun TransactionTabItem(
         Spacer(Modifier.width(8.dp))
         Column {
             if (transaction.description == ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION) {
-                Text(text = "Payment",
-                    style = MaterialTheme.typography.titleMedium)
+                Text(text = stringResource(Res.string.payment), style = MaterialTheme.typography.titleMedium)
             } else {
-                Text(text = transaction.description,
-                    style = MaterialTheme.typography.titleMedium)
+                Text(text = transaction.description, style = MaterialTheme.typography.titleMedium)
             }
             Text(text = component.name, style = MaterialTheme.typography.bodySmall)
         }

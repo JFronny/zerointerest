@@ -2,9 +2,31 @@ package dev.jfronny.zerointerest.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -12,12 +34,13 @@ import androidx.compose.ui.unit.dp
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.http.*
+import io.ktor.http.Url
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
-import zerointerest.composeapp.generated.resources.Res
-import zerointerest.composeapp.generated.resources.app_icon
+import zerointerest.composeapp.generated.resources.*
 
 private val log = KotlinLogging.logger {}
 
@@ -26,7 +49,7 @@ private val log = KotlinLogging.logger {}
 fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
     topBar = {
         TopAppBar(
-            title = { Text("zerointerest") }
+            title = { Text(stringResource(Res.string.app_name)) }
         )
     }
 ) { paddingValues ->
@@ -53,7 +76,7 @@ fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
             try {
                 actual()
             } catch (t: Throwable) {
-                state = State.Error(t.message ?: "Login failed")
+                state = State.Error(t.message ?: getString(Res.string.login_failed))
                 log.error(t) { "Login failed" }
             }
         }
@@ -94,7 +117,7 @@ fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Use access token", modifier = Modifier.weight(1f))
+                Text(stringResource(Res.string.use_access_token), modifier = Modifier.weight(1f))
                 Switch(
                     checked = useToken,
                     onCheckedChange = { useToken = it },
@@ -109,7 +132,7 @@ fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
                 OutlinedTextField(
                     value = token,
                     onValueChange = { token = it },
-                    label = { Text("Access Token") },
+                    label = { Text(stringResource(Res.string.access_token)) },
                     enabled = state !is State.Loading,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -117,7 +140,7 @@ fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
                 OutlinedTextField(
                     value = username,
                     onValueChange = { username = it },
-                    label = { Text("Username") },
+                    label = { Text(stringResource(Res.string.username)) },
                     enabled = state !is State.Loading,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -127,7 +150,7 @@ fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("Password") },
+                    label = { Text(stringResource(Res.string.password)) },
                     visualTransformation = PasswordVisualTransformation(),
                     enabled = state !is State.Loading,
                     modifier = Modifier.fillMaxWidth()
@@ -139,7 +162,7 @@ fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
             OutlinedTextField(
                 value = homeserver,
                 onValueChange = { homeserver = it },
-                label = { Text("Homeserver URL") },
+                label = { Text(stringResource(Res.string.homeserver_url)) },
                 enabled = state !is State.Loading,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -182,7 +205,7 @@ fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Login")
+                Text(stringResource(Res.string.login))
             }
         }
     }

@@ -27,7 +27,9 @@ import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.store.Room
 import net.folivo.trixnity.client.store.hasBeenReplaced
 import net.folivo.trixnity.core.model.RoomId
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import zerointerest.composeapp.generated.resources.*
 
 @Composable
 fun PickRoomScreen(onPick: (RoomId) -> Unit, logout: () -> Unit) {
@@ -50,10 +52,10 @@ fun PickRoomScreen(
 ) = Scaffold(
     topBar = {
         TopAppBar(
-            title = { Text("Pick a Room") },
+            title = { Text(stringResource(Res.string.pick_a_room)) },
             actions = {
                 IconButton(onClick = logout) {
-                    Icon(Icons.AutoMirrored.Filled.Logout, "Logout")
+                    Icon(Icons.AutoMirrored.Filled.Logout, stringResource(Res.string.logout))
                 }
             }
         )
@@ -68,7 +70,7 @@ fun PickRoomScreen(
     if (sorted.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize()) {
             Text(
-                text = "No rooms available",
+                text = stringResource(Res.string.no_rooms_available),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodyLarge,
             )

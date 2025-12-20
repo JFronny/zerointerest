@@ -10,7 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
-import io.ktor.client.engine.android.*
+import io.ktor.client.engine.android.Android
 import net.folivo.trixnity.client.store.repository.room.TrixnityRoomDatabase
 import okio.Path.Companion.toOkioPath
 import org.koin.android.ext.koin.androidContext

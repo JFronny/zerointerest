@@ -1,3 +1,3 @@
 <resources>
-    <string name="app_name">zerointerest</string>
+    <string name="app_name" translatable="false">zerointerest</string>
 </resources>

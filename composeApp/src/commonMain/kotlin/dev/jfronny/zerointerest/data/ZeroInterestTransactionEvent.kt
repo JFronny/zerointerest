@@ -1,6 +1,7 @@
 package dev.jfronny.zerointerest.data
 
-import io.ktor.http.*
+import io.ktor.http.URLBuilder
+import io.ktor.http.appendPathSegments
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import net.folivo.trixnity.core.model.UserId

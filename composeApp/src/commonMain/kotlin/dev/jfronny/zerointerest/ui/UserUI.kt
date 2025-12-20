@@ -33,6 +33,9 @@ import net.folivo.trixnity.client.store.avatarUrl
 import net.folivo.trixnity.client.user
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
+import org.jetbrains.compose.resources.stringResource
+import zerointerest.composeapp.generated.resources.Res
+import zerointerest.composeapp.generated.resources.avatar
 
 interface UserUI {
     @Composable
@@ -105,7 +108,7 @@ class UserUIImpl(private val client: MatrixClient, private val users: Map<UserId
                 }
                 media?.let {
                     IconWrapper {
-                        Image(it, "Avatar")
+                        Image(it, stringResource(Res.string.avatar))
                     }
                 } ?: FallbackIcon(name)
             }

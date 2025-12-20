@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -34,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
@@ -49,7 +51,10 @@ import net.folivo.trixnity.client.user
 import net.folivo.trixnity.clientserverapi.client.SyncState
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import zerointerest.composeapp.generated.resources.*
 import kotlin.math.roundToLong
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,7 +68,7 @@ fun CreateTransactionScreen(
     val scope = rememberCoroutineScope()
     val trustService = koinInject<SummaryTrustService>()
     val users by client.user.getAll(roomId).collectAsState(emptyMap())
-    val userIds = users.keys.toList()
+    val userIds = remember(users) { users.keys.toList() }
 
     var description by remember { mutableStateOf("") }
     var sender by remember { mutableStateOf(client.userId) }
@@ -130,10 +135,10 @@ fun CreateTransactionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("New Transaction") },
+                title = { Text(stringResource(Res.string.new_transaction)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.back))
                     }
                 }
             )
@@ -147,7 +152,7 @@ fun CreateTransactionScreen(
                 if (recipientAmounts.isNotEmpty() && total > 0) {
                     scope.launch {
                         if (client.syncState.value != SyncState.RUNNING) {
-                            error = "Device is offline"
+                            error = getString(Res.string.device_offline)
                             return@launch
                         }
 
@@ -164,25 +169,25 @@ fun CreateTransactionScreen(
                             .filter { it.eventId != null || it.sendError != null }
                             .firstOrNull()
                         if (outbox == null) {
-                            error = "Failed to send message"
+                            error = getString(Res.string.failed_send_message)
                             return@launch
                         }
                         if (outbox.sendError != null) {
-                            error = "Failed to send message: ${outbox.sendError}"
+                            error = getString(Res.string.failed_send_message_with_error, outbox.sendError.toString())
                             return@launch
                         }
 
                         try {
                             trustService.createSummary(roomId, outbox.eventId!!, content)
                         } catch (e: Exception) {
-                            error = "Failed to create trust summary: ${e.message}"
+                            error = getString(Res.string.failed_create_trust_summary, e.message.toString())
                             return@launch
                         }
                         onDone()
                     }
                 }
             }) {
-                Icon(Icons.Default.Check, "Save")
+                Icon(Icons.Default.Check, stringResource(Res.string.save))
             }
         }
     ) { padding ->
@@ -199,8 +204,8 @@ fun CreateTransactionScreen(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Description") },
-                    placeholder = { Text("Payment") },
+                    label = { Text(stringResource(Res.string.description)) },
+                    placeholder = { Text(stringResource(Res.string.payment)) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -211,14 +216,16 @@ fun CreateTransactionScreen(
 
                 ExposedDropdownMenuBox(
                     expanded = expanded,
-                    onExpandedChange = { expanded = !expanded },
+                    onExpandedChange = { expanded = it },
                 ) {
                     OutlinedTextField(
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        modifier = Modifier
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                            .fillMaxWidth(),
                         readOnly = true,
                         value = senderName ?: sender.full,
                         onValueChange = {},
-                        label = { Text("Sender") },
+                        label = { Text(stringResource(Res.string.sender)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                     )
@@ -245,14 +252,14 @@ fun CreateTransactionScreen(
                 OutlinedTextField(
                     value = totalAmountStr,
                     onValueChange = { onTotalChanged(it) },
-                    label = { Text("Total Amount") },
+                    label = { Text(stringResource(Res.string.total_amount)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
 
             item {
-                Text("Recipients", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(Res.string.recipients), style = MaterialTheme.typography.titleMedium)
             }
 
             items(userIds) { userId ->
@@ -281,7 +288,7 @@ fun CreateTransactionScreen(
                     OutlinedTextField(
                         value = amountStr,
                         onValueChange = { onIndividualAmountChanged(userId, it) },
-                        label = { Text("Amount") },
+                        label = { Text(stringResource(Res.string.amount)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier.fillMaxWidth().padding(start = 48.dp)
                     )

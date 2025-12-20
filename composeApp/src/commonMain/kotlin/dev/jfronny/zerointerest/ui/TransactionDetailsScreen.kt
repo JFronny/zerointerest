@@ -34,6 +34,8 @@ import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.core.model.EventId
 import net.folivo.trixnity.core.model.RoomId
+import org.jetbrains.compose.resources.stringResource
+import zerointerest.composeapp.generated.resources.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,10 +56,10 @@ fun TransactionDetailsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Transaction Details") },
+                title = { Text(stringResource(Res.string.transaction_details)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.back))
                     }
                 }
             )
@@ -74,15 +76,15 @@ fun TransactionDetailsScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    Text("Description", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(Res.string.description), style = MaterialTheme.typography.labelMedium)
                     Text(
-                        text = if (tx.description == ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION) "Payment" else tx.description,
+                        text = if (tx.description == ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION) stringResource(Res.string.payment) else tx.description,
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
 
                 item {
-                    Text("Sender", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(Res.string.sender), style = MaterialTheme.typography.labelMedium)
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -92,12 +94,12 @@ fun TransactionDetailsScreen(
                 }
 
                 item {
-                    Text("Total Amount", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(Res.string.total_amount), style = MaterialTheme.typography.labelMedium)
                     Text(formatBalance(tx.total), style = MaterialTheme.typography.bodyLarge)
                 }
 
                 item {
-                    Text("Recipients", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(Res.string.recipients), style = MaterialTheme.typography.titleMedium)
                 }
 
                 items(tx.receivers.entries.toList()) { (userId, amount) ->

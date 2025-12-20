@@ -19,7 +19,9 @@ import net.folivo.trixnity.client.verification.ActiveSasVerificationMethod
 import net.folivo.trixnity.client.verification.ActiveSasVerificationState
 import net.folivo.trixnity.client.verification.ActiveVerificationState
 import net.folivo.trixnity.core.model.events.m.key.verification.VerificationMethod
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import zerointerest.composeapp.generated.resources.*
 
 private val log = KotlinLogging.logger {}
 
@@ -52,11 +54,11 @@ fun VerificationDialog(
         is ActiveVerificationState.OwnRequest -> {
             AlertDialog(
                 onDismissRequest = { coroutineScope.launch { verification.cancel() } },
-                title = { Text("Verification Request Sent") },
-                text = { Text("Waiting for other device to accept the verification request.") },
+                title = { Text(stringResource(Res.string.verification_request_sent)) },
+                text = { Text(stringResource(Res.string.waiting_for_other_device_accept)) },
                 confirmButton = {
                     Button(onClick = { coroutineScope.launch { verification.cancel() } }) {
-                        Text("Cancel")
+                        Text(stringResource(Res.string.cancel))
                     }
                 }
             )
@@ -65,16 +67,16 @@ fun VerificationDialog(
         is ActiveVerificationState.TheirRequest -> {
             AlertDialog(
                 onDismissRequest = { coroutineScope.launch { verification.cancel() } },
-                title = { Text("Verification Request") },
-                text = { Text("Another device is requesting verification.") },
+                title = { Text(stringResource(Res.string.verification_request)) },
+                text = { Text(stringResource(Res.string.another_device_requesting_verification)) },
                 confirmButton = {
                     Button(onClick = { coroutineScope.launch { state.ready() } }) {
-                        Text("Accept")
+                        Text(stringResource(Res.string.accept))
                     }
                 },
                 dismissButton = {
                     Button(onClick = { coroutineScope.launch { verification.cancel() } }) {
-                        Text("Decline")
+                        Text(stringResource(Res.string.decline))
                     }
                 }
             )
@@ -89,7 +91,7 @@ fun VerificationDialog(
             } else {
                 AlertDialog(
                     onDismissRequest = { coroutineScope.launch { verification.cancel() } },
-                    title = { Text("Choose Verification Method") },
+                    title = { Text(stringResource(Res.string.choose_verification_method)) },
                     text = {
                         Column {
                             state.methods.forEach { method ->
@@ -113,21 +115,23 @@ fun VerificationDialog(
                     is ActiveSasVerificationState.ComparisonByUser -> {
                         AlertDialog(
                             onDismissRequest = { coroutineScope.launch { verification.cancel() } },
-                            title = { Text("Compare") },
+                            title = { Text(stringResource(Res.string.compare)) },
                             text = {
                                 Text(
-                                    "Compare this emoji sequence with the other device:\n" +
-                                            activeSasState.emojis.joinToString(" ") { it.second }
+                                    stringResource(
+                                        Res.string.compare_emoji_sequence,
+                                        activeSasState.emojis.joinToString(" ") { it.second }
+                                    )
                                 )
                             },
                             confirmButton = {
                                 Button(onClick = { coroutineScope.launch { activeSasState.match() } }) {
-                                    Text("Match")
+                                    Text(stringResource(Res.string.match))
                                 }
                             },
                             dismissButton = {
                                 Button(onClick = { coroutineScope.launch { activeSasState.noMatch() } }) {
-                                    Text("Mismatch")
+                                    Text(stringResource(Res.string.mismatch))
                                 }
                             }
                         )
@@ -136,11 +140,11 @@ fun VerificationDialog(
                     else -> {
                         AlertDialog(
                             onDismissRequest = { coroutineScope.launch { verification.cancel() } },
-                            title = { Text("Verification in Progress") },
-                            text = { Text("Please follow the instructions on your other device.") },
+                            title = { Text(stringResource(Res.string.verification_in_progress)) },
+                            text = { Text(stringResource(Res.string.follow_instructions_other_device)) },
                             confirmButton = {
                                 Button(onClick = { coroutineScope.launch { verification.cancel() } }) {
-                                    Text("Cancel")
+                                    Text(stringResource(Res.string.cancel))
                                 }
                             }
                         )
@@ -152,8 +156,8 @@ fun VerificationDialog(
         is ActiveVerificationState.WaitForDone -> {
             AlertDialog(
                 onDismissRequest = { },
-                title = { Text("Waiting for other device") },
-                text = { Text("Waiting for the other device to finish the verification process.") },
+                title = { Text(stringResource(Res.string.waiting_for_other_device)) },
+                text = { Text(stringResource(Res.string.waiting_for_other_device_finish)) },
                 confirmButton = {}
             )
         }
@@ -161,11 +165,11 @@ fun VerificationDialog(
         ActiveVerificationState.Done -> {
             AlertDialog(
                 onDismissRequest = onClose,
-                title = { Text("Verification Successful") },
-                text = { Text("Your device has been successfully verified.") },
+                title = { Text(stringResource(Res.string.verification_successful)) },
+                text = { Text(stringResource(Res.string.device_verified_successfully)) },
                 confirmButton = {
                     Button(onClick = onClose) {
-                        Text("OK")
+                        Text(stringResource(Res.string.ok))
                     }
                 }
             )
@@ -174,11 +178,14 @@ fun VerificationDialog(
         is ActiveVerificationState.Cancel -> {
             AlertDialog(
                 onDismissRequest = onClose,
-                title = { Text("Verification Cancelled") },
-                text = { Text("The verification was cancelled by ${if (state.isOurOwn) "you" else "the other device"}.\nReason: ${state.content.reason}") },
+                title = { Text(stringResource(Res.string.verification_cancelled)) },
+                text = {
+                    val who = if (state.isOurOwn) stringResource(Res.string.you) else stringResource(Res.string.the_other_device)
+                    Text(stringResource(Res.string.verification_cancelled_by, who, state.content.reason))
+                },
                 confirmButton = {
                     Button(onClick = onClose) {
-                        Text("OK")
+                        Text(stringResource(Res.string.ok))
                     }
                 }
             )
@@ -187,11 +194,11 @@ fun VerificationDialog(
         ActiveVerificationState.AcceptedByOtherDevice -> {
             AlertDialog(
                 onDismissRequest = onClose,
-                title = { Text("Verification Accepted") },
-                text = { Text("Another device has accepted the verification request.") },
+                title = { Text(stringResource(Res.string.verification_accepted)) },
+                text = { Text(stringResource(Res.string.another_device_accepted_verification)) },
                 confirmButton = {
                     Button(onClick = onClose) {
-                        Text("OK")
+                        Text(stringResource(Res.string.ok))
                     }
                 }
             )
@@ -200,11 +207,11 @@ fun VerificationDialog(
         ActiveVerificationState.Undefined -> {
             AlertDialog(
                 onDismissRequest = onClose,
-                title = { Text("Error") },
-                text = { Text("An unexpected error occurred during verification.") },
+                title = { Text(stringResource(Res.string.error)) },
+                text = { Text(stringResource(Res.string.unexpected_error_verification)) },
                 confirmButton = {
                     Button(onClick = onClose) {
-                        Text("OK")
+                        Text(stringResource(Res.string.ok))
                     }
                 }
             )
