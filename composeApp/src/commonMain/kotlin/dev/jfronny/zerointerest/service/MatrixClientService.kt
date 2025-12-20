@@ -11,6 +11,7 @@ import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.MatrixClientConfiguration
 import net.folivo.trixnity.client.fromStore
 import net.folivo.trixnity.client.loginWithPassword
+import net.folivo.trixnity.client.loginWithToken
 import net.folivo.trixnity.clientserverapi.model.authentication.IdentifierType
 
 class MatrixClientService(private val platform: Platform) {
@@ -35,12 +36,26 @@ class MatrixClientService(private val platform: Platform) {
         }
     }
 
-    suspend fun login(homeserver: Url, username: String, password: String) {
+    suspend fun loginWithPassword(homeserver: Url, username: String, password: String) {
         close()
         flow.value = MatrixClient.loginWithPassword(
             baseUrl = homeserver,
             identifier = IdentifierType.User(username),
             password = password,
+            repositoriesModule = repositoriesModule.get(),
+            mediaStoreModule = mediaStoreModule.get(),
+            configuration = configuration,
+            initialDeviceDisplayName = "ZeroInterest ${platform.name}",
+        ).getOrThrow().apply {
+            startSync()
+        }
+    }
+
+    suspend fun loginWithToken(homeserver: Url, token: String) {
+        close()
+        flow.value = MatrixClient.loginWithToken(
+            baseUrl = homeserver,
+            token = token,
             repositoriesModule = repositoriesModule.get(),
             mediaStoreModule = mediaStoreModule.get(),
             configuration = configuration,

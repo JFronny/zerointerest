@@ -40,6 +40,10 @@ fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
     var password by remember { mutableStateOf("") }
     var homeserver by remember { mutableStateOf(Settings.FALLBACK_HOMESERVER) }
 
+    // Added states for token login
+    var useToken by remember { mutableStateOf(false) }
+    var token by remember { mutableStateOf("") }
+
     LaunchedEffect(settings) {
         homeserver = settings.defaultHomeserver()
     }
@@ -85,24 +89,50 @@ fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
         if (state !is State.Restoring) {
             Spacer(modifier = Modifier.height(12.dp))
 
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("Username") },
-                enabled = state !is State.Loading,
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Toggle between password and token login
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Use access token", modifier = Modifier.weight(1f))
+                Switch(
+                    checked = useToken,
+                    onCheckedChange = { useToken = it },
+                    enabled = state !is State.Loading
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                enabled = state !is State.Loading,
-                modifier = Modifier.fillMaxWidth()
-            )
+            if (useToken) {
+                // Token field
+                OutlinedTextField(
+                    value = token,
+                    onValueChange = { token = it },
+                    label = { Text("Access Token") },
+                    enabled = state !is State.Loading,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = { Text("Username") },
+                    enabled = state !is State.Loading,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Password") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    enabled = state !is State.Loading,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -134,11 +164,19 @@ fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
                 onClick = {
                     state = State.Loading
                     tryLogIn {
-                        matrixClient.login(
-                            homeserver = Url(homeserver),
-                            username = username,
-                            password = password
-                        )
+                        if (useToken) {
+                            matrixClient.loginWithToken(
+                                homeserver = Url(homeserver),
+                                token = token
+                            )
+                        } else {
+                            matrixClient.loginWithPassword(
+                                homeserver = Url(homeserver),
+                                username = username,
+                                password = password
+                            )
+                        }
+                        settings.setDefaultHomeserver(homeserver)
                         onSuccess()
                     }
                 },
