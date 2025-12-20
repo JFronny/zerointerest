@@ -13,31 +13,32 @@ import androidx.navigation.compose.rememberNavController
 import dev.jfronny.zerointerest.Destination
 
 class NavigationHelper(
-    val main: NavHostController,
-    val room: NavHostController
+    val main: NavHostController
 ) {
-    fun navigateTab(route: Destination.Room.RoomDestination) {
-        room.navigate(route) {
-            popUpTo(room.graph.findStartDestination().id) {
-                saveState = true
-            }
-            launchSingleTop = true
-            restoreState = true
-        }
-    }
-
-    @Composable
-    fun roomIs(): ((route: Destination.Room.RoomDestination) -> Boolean) {
-        val entry by main.currentBackStackEntryAsState()
-        return { route -> entry?.has(route) == true }
-    }
-
     fun navigate(route: Destination) {
         main.navigate(route)
     }
 
     fun popMainBackStack() {
         main.popBackStack()
+    }
+
+    class Room(val main: NavigationHelper, val room: NavHostController) {
+        fun navigateTab(route: Destination.Room.RoomDestination) {
+            room.navigate(route) {
+                popUpTo(room.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+
+        @Composable
+        fun roomIs(): ((route: Destination.Room.RoomDestination) -> Boolean) {
+            val entry by room.currentBackStackEntryAsState()
+            return { route -> entry?.has(route) == true }
+        }
     }
 }
 
@@ -49,8 +50,15 @@ private fun NavBackStackEntry?.has(destination: Any): Boolean {
 @Composable
 fun rememberNavigationHelper() : NavigationHelper {
     val mainNavController = rememberNavController()
+    return remember(mainNavController) {
+        NavigationHelper(mainNavController)
+    }
+}
+
+@Composable
+fun NavigationHelper.room() : NavigationHelper.Room {
     val roomNavController = rememberNavController()
-    return remember(mainNavController, roomNavController) {
-        NavigationHelper(mainNavController, roomNavController)
+    return remember(this, roomNavController) {
+        NavigationHelper.Room(this, roomNavController)
     }
 }

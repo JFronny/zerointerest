@@ -5,7 +5,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -26,13 +30,14 @@ import net.folivo.trixnity.core.model.RoomId
 import org.koin.compose.koinInject
 
 @Composable
-fun PickRoomScreen(onPick: (RoomId) -> Unit) {
+fun PickRoomScreen(onPick: (RoomId) -> Unit, logout: () -> Unit) {
     val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
     val client = rxclient ?: return
     val rooms by client.room.getAll().flattenValues().collectAsState(initial = setOf())
     PickRoomScreen(
         rooms = rooms,
-        onPick = onPick
+        onPick = onPick,
+        logout = logout,
     )
 }
 
@@ -40,11 +45,17 @@ fun PickRoomScreen(onPick: (RoomId) -> Unit) {
 @Composable
 fun PickRoomScreen(
     rooms: Set<Room>,
-    onPick: (RoomId) -> Unit
+    onPick: (RoomId) -> Unit,
+    logout: () -> Unit,
 ) = Scaffold(
     topBar = {
         TopAppBar(
-            title = { Text("Pick a Room") }
+            title = { Text("Pick a Room") },
+            actions = {
+                IconButton(onClick = logout) {
+                    Icon(Icons.AutoMirrored.Filled.Logout, "Logout")
+                }
+            }
         )
     }
 ) {

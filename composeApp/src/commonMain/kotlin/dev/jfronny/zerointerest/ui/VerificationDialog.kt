@@ -5,16 +5,39 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import dev.jfronny.zerointerest.service.MatrixClientService
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
+import net.folivo.trixnity.client.verification
 import net.folivo.trixnity.client.verification.ActiveDeviceVerification
 import net.folivo.trixnity.client.verification.ActiveSasVerificationMethod
 import net.folivo.trixnity.client.verification.ActiveSasVerificationState
 import net.folivo.trixnity.client.verification.ActiveVerificationState
 import net.folivo.trixnity.core.model.events.m.key.verification.VerificationMethod
+import org.koin.compose.koinInject
+
+private val log = KotlinLogging.logger {}
+
+@Composable
+fun VerificationDialog() {
+    val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
+    val client = rxclient
+
+    if (client != null) {
+        val verification by client.verification.activeDeviceVerification.collectAsState()
+        var mutVer = verification
+        LaunchedEffect(verification) {
+            mutVer = verification
+            log.info { "Verification changed to $verification" }
+        }
+        mutVer?.let { VerificationDialog(client, it) { mutVer = null } }
+    }
+}
 
 @Composable
 fun VerificationDialog(

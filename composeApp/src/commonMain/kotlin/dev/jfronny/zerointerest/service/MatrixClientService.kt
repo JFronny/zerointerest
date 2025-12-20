@@ -10,9 +10,8 @@ import kotlinx.coroutines.flow.StateFlow
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.MatrixClientConfiguration
 import net.folivo.trixnity.client.fromStore
-import net.folivo.trixnity.client.login
+import net.folivo.trixnity.client.loginWithPassword
 import net.folivo.trixnity.clientserverapi.model.authentication.IdentifierType
-import net.folivo.trixnity.core.model.events.m.Presence
 
 class MatrixClientService(private val platform: Platform) {
     private val flow: MutableStateFlow<MatrixClient?> = MutableStateFlow(null)
@@ -31,21 +30,37 @@ class MatrixClientService(private val platform: Platform) {
             repositoriesModule = repositoriesModule.get(),
             mediaStoreModule = mediaStoreModule.get(),
             configuration = configuration,
-        ).getOrThrow()
-        flow.value?.startSync(presence = Presence.OFFLINE)
+        ).getOrThrow()?.apply {
+            startSync()
+        }
     }
 
     suspend fun login(homeserver: Url, username: String, password: String) {
-        flow.value?.stopSync()
-        flow.value = MatrixClient.login(
+        close()
+        flow.value = MatrixClient.loginWithPassword(
             baseUrl = homeserver,
             identifier = IdentifierType.User(username),
             password = password,
             repositoriesModule = repositoriesModule.get(),
             mediaStoreModule = mediaStoreModule.get(),
             configuration = configuration,
-        ).getOrThrow()
-        flow.value?.startSync(presence = Presence.OFFLINE)
+            initialDeviceDisplayName = "ZeroInterest",
+        ).getOrThrow().apply {
+            startSync()
+        }
+    }
+
+    suspend fun logout() {
+        flow.value?.logout()
+        close()
+    }
+
+    private suspend fun close() {
+        flow.value?.let {
+            it.stopSync()
+            it.closeSuspending()
+        }
+        flow.value = null
     }
 
     private val configuration: MatrixClientConfiguration.() -> Unit = {

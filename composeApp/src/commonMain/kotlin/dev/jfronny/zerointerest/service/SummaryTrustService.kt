@@ -36,10 +36,19 @@ class SummaryTrustService(
         return client.room
             .getState(roomId, ZeroInterestSummaryEvent::class, ZeroInterestSummaryEvent.TYPE)
             .mapLatest {
-                if (it !is ClientEvent.RoomEvent.StateEvent) return@mapLatest Summary.Empty
+                if (it !is ClientEvent.RoomEvent.StateEvent) {
+                    log.info { "No summary found for room $roomId" }
+                    return@mapLatest Summary.Empty
+                }
                 val trust = checkTrusted(roomId, it.id, it.originTimestamp, it.content)
                 //TODO actually handle trust and properly send rejections + new summaries
-                if (trust == SummaryTrustDatabase.TrustState.TRUSTED) Summary.Trusted(it.content) else Summary.Untrusted
+                if (trust == SummaryTrustDatabase.TrustState.TRUSTED) {
+                    log.info { "Trusted summary found for room $roomId" }
+                    Summary.Trusted(it.content)
+                } else {
+                    log.warn { "Latest summary found for room $roomId is not trusted" }
+                    Summary.Untrusted
+                }
             }
     }
 
@@ -156,7 +165,7 @@ class SummaryTrustService(
             val response = client.api.room.sendStateEvent(roomId, ZeroInterestSummaryEvent(
                 balances = balances,
                 parents = emptyMap()
-            )).getOrThrow()
+            ), ZeroInterestSummaryEvent.TYPE).getOrThrow()
             database.markTrusted(roomId, response)
             database.setHeads(roomId, setOf(response))
         } else {
@@ -253,7 +262,7 @@ class SummaryTrustService(
             val response = client.api.room.sendStateEvent(roomId, ZeroInterestSummaryEvent(
                 balances = baseBalances,
                 parents = newParents
-            )).getOrThrow()
+            ), ZeroInterestSummaryEvent.TYPE).getOrThrow()
             database.markTrusted(roomId, response)
             database.setHeads(roomId, setOf(response))
         }
