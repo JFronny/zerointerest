@@ -41,8 +41,9 @@ class SummaryTrustService(
                     log.info { "No summary found for room $roomId" }
                     return@mapLatest Summary.Empty
                 }
+                log.info { "Received summary event: $it" }
                 val trust = checkTrusted(roomId, it.id, it.originTimestamp, it.content)
-                //TODO actually handle trust and properly send rejections + new summaries
+                log.info { "Checked trust" }
                 if (trust == SummaryTrustDatabase.TrustState.TRUSTED) {
                     log.info { "Trusted summary found for room $roomId" }
                     Summary.Trusted(it.content)
@@ -62,19 +63,25 @@ class SummaryTrustService(
     suspend fun checkTrusted(roomId: RoomId, messageId: EventId, timestamp: Long, content: ZeroInterestSummaryEvent): SummaryTrustDatabase.TrustState {
         val dbState = database.checkTrust(roomId, messageId)
         if (dbState != SummaryTrustDatabase.TrustState.UNTRUSTED) return dbState
-        // 1. If a rejection for the summary exists, the summary is always rejected.
+
+        log.info { "1. If a rejection for the summary exists, the summary is always rejected." }
         val reactions = client.room.getTimelineEventReactionAggregation(roomId, messageId).first()
         if (reactions.reactions[rejectionKey]?.isNotEmpty() ?: false) return reject(roomId, messageId, send = false)
-        // 2. Otherwise, if the summary event is the first summary event ever encountered in a room, it is trusted.
+
+        log.info { "2. Otherwise, if the summary event is the first summary event ever encountered in a room, it is trusted." }
         if (content.parents.isEmpty()) {
+            log.info { "Get events before $messageId" }
             val hasPrevious = client.room.getTimelineEvents(roomId, messageId, direction = GetEvents.Direction.BACKWARDS) {
                 maxSize = 1024 // trixnity doesn't easily allow us to filter just for ZeroInterestSummaryEvents, and this should be fine
-            }.first().any {
-                it.eventId != messageId && it.content?.getOrNull() is ZeroInterestSummaryEvent
+            }.any { timelineEventFlow ->
+                val event = timelineEventFlow.first()
+                event.eventId != messageId && event.content?.getOrNull() is ZeroInterestSummaryEvent
             }
+            log.info { "Got events before $messageId" }
             if (!hasPrevious) return accept(roomId, messageId, content)
         }
-        // Prefetch events as the next steps need them
+
+        log.info { "Prefetch events as the next steps need them" }
         val summaries = mutableMapOf<EventId, Timed<ZeroInterestSummaryEvent>>()
         for (eventId in content.parents.keys) {
             val event = client.room.getTimelineEvent(roomId, eventId).filterNotNull().first()
@@ -87,7 +94,8 @@ class SummaryTrustService(
             val content = event.content?.getOrNull() as? ZeroInterestTransactionEvent ?: continue
             transactions[eventId] = Timed(event.originTimestamp, content)
         }
-        // 3. Otherwise, if the summary event has no trusted parents, it is rejected.
+
+        log.info { "3. Otherwise, if the summary event has no trusted parents, it is rejected." }
         val trustedParents = mutableMapOf<EventId, Set<EventId>>()
         for ((summaryId, transactionIds) in content.parents) {
             val summary = summaries[summaryId] ?: continue
@@ -99,7 +107,8 @@ class SummaryTrustService(
         if (trustedParents.isEmpty()) {
             return reject(roomId, messageId)
         }
-        // 4. Otherwise, if the sum of transactions from a parent does not result in the balances, the event is rejected.
+
+        log.info { "4. Otherwise, if the sum of transactions from a parent does not result in the balances, the event is rejected." }
         for ((summaryId, transactionIds) in content.parents) {
             val balances = summaries[summaryId]?.value?.balances ?: continue
             val transactions = transactionIds.mapNotNull { transactions[it]?.value }
@@ -110,7 +119,8 @@ class SummaryTrustService(
             }
             if (computedBalances != balances) return reject(roomId, messageId)
         }
-        // 5. Otherwise, if a common ancestor exists between two parents, and the following transactions differ between them, the event is rejected.
+
+        log.info { "5. Otherwise, if a common ancestor exists between two parents, and the following transactions differ between them, the event is rejected." }
         for ((summaryId1, summaryId2) in content.parents.keys.toList().combinations()) {
             val summary1 = summaries[summaryId1]?.value ?: continue
             val summary2 = summaries[summaryId2]?.value ?: continue
@@ -121,7 +131,8 @@ class SummaryTrustService(
                 if (transactions1 != transactions2) return reject(roomId, messageId)
             }
         }
-        // 6. Otherwise, if transactions that are not between the summaries temporally are referenced, the event is rejected.
+
+        log.info { "6. Otherwise, if transactions that are not between the summaries temporally are referenced, the event is rejected." }
         for ((summaryId, transactionIds) in content.parents) {
             val summary = summaries[summaryId] ?: continue
             val transactions = transactionIds.mapNotNull { transactions[it] }
@@ -130,11 +141,13 @@ class SummaryTrustService(
                 if (transaction.ts > timestamp) return reject(roomId, messageId)
             }
         }
-        // 7. Otherwise, the summary event is trusted.
+
+        log.info { "7. Otherwise, the summary event is trusted." }
         return accept(roomId, messageId, content)
     }
 
     private suspend fun reject(roomId: RoomId, messageId: EventId, send: Boolean = true): SummaryTrustDatabase.TrustState {
+        log.info { "Rejecting $messageId" }
         database.markRejected(roomId, messageId)
         if (send) {
             client.room.sendMessage(roomId) {
@@ -145,6 +158,7 @@ class SummaryTrustService(
     }
 
     private suspend fun accept(roomId: RoomId, messageId: EventId, content: ZeroInterestSummaryEvent): SummaryTrustDatabase.TrustState {
+        log.info { "Accepting $messageId" }
         database.markTrusted(roomId, messageId)
         database.addHead(roomId, messageId)
         database.removeHeads(roomId, content.parents.keys)

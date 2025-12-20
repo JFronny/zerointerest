@@ -54,6 +54,8 @@ import dev.jfronny.zerointerest.util.room
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.toList
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.RoomService
@@ -219,11 +221,10 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, navHelper: Nav
         log.info { "Loading transactions page content from $startFrom" }
         isLoading = true
         try {
-            val newItems = mutableListOf<Pair<EventId, ZeroInterestTransactionEvent>>()
             var emittedCount = 0
             var lastSeenId: EventId? = null
 
-            roomService.getTimelineEvents(
+            val newItems = roomService.getTimelineEvents(
                 roomId = roomId,
                 startFrom = startFrom,
                 direction = GetEvents.Direction.BACKWARDS,
@@ -231,23 +232,16 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, navHelper: Nav
                     minSize = pageSize.toLong()
                     maxSize = pageSize.toLong()
                 }
-            ).collect { timelineEventFlow ->
+            ).mapNotNull { timelineEventFlow ->
                 emittedCount++
                 val firstEvent = timelineEventFlow.first()
                 lastSeenId = firstEvent.eventId
 
                 // Get the first emission with a usable content for this timeline event
-                val pair: Pair<EventId, ZeroInterestTransactionEvent>? = run {
-                    val content = firstEvent.content?.getOrNull()
-                    if (content is ZeroInterestTransactionEvent) (firstEvent.eventId to content) else null
-                }
-                if (pair != null) {
-                    val (eventId, content) = pair
-                    if (loadedIds.add(eventId)) {
-                        newItems.add(eventId to content)
-                    }
-                }
-            }
+                val content = firstEvent.content?.getOrNull()
+                if (content is ZeroInterestTransactionEvent && loadedIds.add(firstEvent.eventId)) (firstEvent.eventId to content)
+                else null
+            }.toList()
 
             if (newItems.isNotEmpty()) {
                 // Append to the end to keep newest-to-oldest ordering
