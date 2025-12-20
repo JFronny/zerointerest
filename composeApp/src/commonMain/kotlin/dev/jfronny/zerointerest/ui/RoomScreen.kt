@@ -117,17 +117,17 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit,
                 modifier = Modifier.padding(padding)
             ) {
                 composable<Destination.Room.RoomDestination.Balance> {
-                    val eventNB by trust.getSummary(roomId).collectAsState(null)
-                    val event = eventNB // needed for smart cast
-                    if (event == null) {
+                    val flow = remember(roomId) { trust.getSummary(roomId) }
+                    val event by flow.collectAsState(null)
+                    event?.let {
+                        BalancesTab(
+                            summary = it,
+                            userUI = UserUI(client, roomId)
+                        )
+                    } ?: run {
                         Box(Modifier.fillMaxSize()) {
                             CircularProgressIndicator(Modifier.align(Alignment.TopCenter))
                         }
-                    } else {
-                        BalancesTab(
-                            summary = event,
-                            userUI = UserUI(client, roomId)
-                        )
                     }
                 }
                 composable<Destination.Room.RoomDestination.Transactions> {

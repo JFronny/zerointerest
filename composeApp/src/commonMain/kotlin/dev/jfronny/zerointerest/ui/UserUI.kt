@@ -57,8 +57,9 @@ interface UserUI {
     companion object {
         @Composable
         operator fun invoke(client: MatrixClient, roomId: RoomId): UserUI {
-            val users by client.user.getAll(roomId).collectAsState(emptyMap())
-            return UserUIImpl(client, users)
+            val flow = remember(roomId) { client.user.getAll(roomId) }
+            val users by flow.collectAsState(emptyMap())
+            return remember(users) { UserUIImpl(client, users) }
         }
     }
 }
