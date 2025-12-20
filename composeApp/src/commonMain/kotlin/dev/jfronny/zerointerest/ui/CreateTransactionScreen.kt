@@ -2,6 +2,7 @@ package dev.jfronny.zerointerest.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,7 +36,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
@@ -43,6 +43,7 @@ import dev.jfronny.zerointerest.service.SummaryTrustService
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
@@ -67,7 +68,7 @@ fun CreateTransactionScreen(
 ) {
     val scope = rememberCoroutineScope()
     val trustService = koinInject<SummaryTrustService>()
-    val users by client.user.getAll(roomId).collectAsState(emptyMap())
+    val users by remember(client) { client.user.getAll(roomId) }.collectAsState(emptyMap())
     val userIds = remember(users) { users.keys.toList() }
 
     var description by remember { mutableStateOf("") }
@@ -212,36 +213,37 @@ fun CreateTransactionScreen(
 
             item {
                 var expanded by remember { mutableStateOf(false) }
-                val senderName by (users[sender]?.map { it?.name } ?: kotlinx.coroutines.flow.flowOf(null)).collectAsState(null)
 
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = it },
                 ) {
-                    OutlinedTextField(
-                        modifier = Modifier
-                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                            .fillMaxWidth(),
-                        readOnly = true,
-                        value = senderName ?: sender.full,
-                        onValueChange = {},
-                        label = { Text(stringResource(Res.string.sender)) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                    )
+                    run {
+                        val flow = remember(sender, users) { users[sender]?.map { it?.name } ?: flowOf(null) }
+                        val senderName by flow.collectAsState(null)
+                        OutlinedTextField(
+                            modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+                            readOnly = true,
+                            value = senderName ?: sender.full,
+                            onValueChange = {},
+                            label = { Text("Options") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        )
+                    }
                     ExposedDropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false },
                     ) {
-                        userIds.forEach { userId ->
-                            val name by (users[userId]?.map { it?.name } ?: kotlinx.coroutines.flow.flowOf(null)).collectAsState(null)
+                        for ((userId, user) in users) {
                             DropdownMenuItem(
-                                text = { Text(name ?: userId.full) },
+                                text = { Box {
+                                    val name by user.map { it?.name }.collectAsState(null)
+                                    Text(name ?: userId.full)
+                                } },
                                 onClick = {
                                     sender = userId
                                     expanded = false
                                 },
-                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
                             )
                         }
                     }
@@ -264,7 +266,7 @@ fun CreateTransactionScreen(
 
             items(userIds) { userId ->
                 val isSelected = userId in selectedRecipients
-                val name by (users[userId]?.map { it?.name } ?: kotlinx.coroutines.flow.flowOf(null)).collectAsState(null)
+                val name by (users[userId]?.map { it?.name } ?: flowOf(null)).collectAsState(null)
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

@@ -35,7 +35,7 @@ import zerointerest.composeapp.generated.resources.*
 fun PickRoomScreen(onPick: (RoomId) -> Unit, logout: () -> Unit) {
     val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
     val client = rxclient ?: return
-    val rooms by client.room.getAll().flattenValues().collectAsState(initial = setOf())
+    val rooms by remember(client) { client.room.getAll().flattenValues() }.collectAsState(initial = setOf())
     PickRoomScreen(
         rooms = rooms,
         onPick = onPick,

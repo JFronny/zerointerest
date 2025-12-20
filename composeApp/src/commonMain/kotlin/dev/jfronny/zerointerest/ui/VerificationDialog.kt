@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import dev.jfronny.zerointerest.service.MatrixClientService
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -31,7 +32,7 @@ fun VerificationDialog() {
     val client = rxclient
 
     if (client != null) {
-        val verification by client.verification.activeDeviceVerification.collectAsState()
+        val verification by remember(client) { client.verification.activeDeviceVerification }.collectAsState()
         var mutVer = verification
         LaunchedEffect(verification) {
             mutVer = verification
