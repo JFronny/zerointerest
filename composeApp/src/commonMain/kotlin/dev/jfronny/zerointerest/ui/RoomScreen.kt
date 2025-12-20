@@ -244,16 +244,12 @@ private fun BalancesTab(
     when (summary) {
         SummaryTrustService.Summary.Empty -> {
             Box(Modifier.fillMaxSize()) {
-                ProvideTextStyle(MaterialTheme.typography.bodyLarge) {
-                    Text("No balances yet", Modifier.align(Alignment.Center))
-                }
+                Text("No balances yet", Modifier.align(Alignment.Center), style = MaterialTheme.typography.bodyLarge)
             }
         }
         SummaryTrustService.Summary.Untrusted -> {
             Box(Modifier.fillMaxSize()) {
-                ProvideTextStyle(MaterialTheme.typography.bodyLarge) {
-                    Text("Latest Summary not trusted", Modifier.align(Alignment.Center))
-                }
+                Text("Latest Summary not trusted", Modifier.align(Alignment.Center), style = MaterialTheme.typography.bodyLarge)
             }
         }
         is SummaryTrustService.Summary.Trusted -> {
@@ -309,10 +305,11 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, trust: Summary
         log.info { "Loading transactions page content from $startFrom" }
         isLoading = true
         try {
+            val newItems = mutableListOf<Pair<EventId, ZeroInterestTransactionEvent>>()
             var emittedCount = 0
             var lastSeenId: EventId? = null
 
-            val newItems = roomService.getTimelineEvents(
+            roomService.getTimelineEvents(
                 roomId = roomId,
                 startFrom = startFrom,
                 direction = GetEvents.Direction.BACKWARDS,
@@ -320,35 +317,24 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, trust: Summary
                     minSize = pageSize.toLong()
                     maxSize = pageSize.toLong()
                 }
-            ).firstOrNull()?.let { timelineEventFlow ->
+            ).collect { timelineEventFlow ->
                 log.info { "Got one timeline event flow" }
                 emittedCount++
-                timelineEventFlow.map { event ->
-                    lastSeenId = event.eventId
+                val firstEvent = timelineEventFlow.first()
+                lastSeenId = firstEvent.eventId
 
-                    // Get the first emission with a usable content for this timeline event
-                    val pair: Pair<EventId, ZeroInterestTransactionEvent>? = timelineEventFlow
-                        .map { te ->
-                            when (val content = te.content?.getOrNull()) {
-                                is ZeroInterestTransactionEvent -> te.eventId to content
-                                is ZeroInterestSummaryEvent -> {
-                                    trust.checkTrusted(roomId, te.eventId, te.originTimestamp, content)
-                                    null
-                                }
-                                else -> null
-                            }
-                        }
-                        .filterNotNull()
-                        .firstOrNull()
-                    if (pair != null) {
-                        val (eventId, content) = pair
-                        if (loadedIds.add(eventId)) {
-                            return@map eventId to content
-                        }
+                // Get the first emission with a usable content for this timeline event
+                val pair: Pair<EventId, ZeroInterestTransactionEvent>? = run {
+                    val content = firstEvent.content?.getOrNull()
+                    if (content is ZeroInterestTransactionEvent) (firstEvent.eventId to content) else null
+                }
+                if (pair != null) {
+                    val (eventId, content) = pair
+                    if (loadedIds.add(eventId)) {
+                        newItems.add(eventId to content)
                     }
-                    return@map null
-                }.filterNotNull().toList()
-            } ?: emptyList()
+                }
+            }
 
             if (newItems.isNotEmpty()) {
                 // Append to the end to keep newest-to-oldest ordering
@@ -482,17 +468,19 @@ private fun TransactionTabItem(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        //TODO add an icon
+        val uiData by getUIData(transaction.sender).collectAsState(UserUIData(transaction.sender.full, null))
+        userIcon(uiData)
+        Spacer(Modifier.width(8.dp))
         Column {
             if (transaction.description == ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION) {
-                Text(text = "Payment")
+                Text(text = "Payment",
+                    style = MaterialTheme.typography.titleMedium)
             } else {
-                Text(text = transaction.description)
+                Text(text = transaction.description,
+                    style = MaterialTheme.typography.titleMedium)
             }
-            val uiData by getUIData(transaction.sender).collectAsState(UserUIData(transaction.sender.full, null))
-            Text(text = uiData.name)
-            Spacer(Modifier.width(8.dp))
-            userIcon(uiData)
+            Text(text = uiData.name,
+                style = MaterialTheme.typography.bodySmall)
         }
         Spacer(modifier = Modifier.weight(1f))
         Text(text = formatBalance(transaction.total))
