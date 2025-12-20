@@ -1,5 +1,5 @@
 # zerointerest
-Webapp available [here](https://jfronny.github.io/zerointerest/)\
-Android app available [here](https://jfronny.github.io/zerointerest/android.apk) ([metadata](https://jfronny.github.io/zerointerest/output-metadata.json))
+Webapp available [here](https://zerointerest.jfronny.dev/)\
+Android app available [here](https://zerointerest.jfronny.dev/android.apk) ([metadata](https://zerointerest.jfronny.dev/output-metadata.json))
 
 See [TRUST.md](./TRUST.md) for some information on the protocol
