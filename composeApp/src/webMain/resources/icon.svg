@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   id="a"
+   viewBox="0 0 16 16"
+   version="1.1"
+   sodipodi:docname="arcticons_font.svg"
+   width="16"
+   height="16"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview345"
+     pagecolor="#c09061"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="16"
+     inkscape:cx="8.59375"
+     inkscape:cy="1.28125"
+     inkscape:window-width="2105"
+     inkscape:window-height="1332"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="a" />
+  <defs
+     id="defs1">
+    <style
+       id="style1">.q{fill:#fff;}.r,.s{fill:none;stroke:#fff;stroke-linecap:round;stroke-linejoin:round;}.s{stroke-width:1.0050968px;}</style>
+  </defs>
+  <polyline
+     class="r"
+     points="337.18380544 40.65004656 342.48380544 40.65004656 337.18380544 48.65004656 342.48380544 48.65004656"
+     id="polyline44"
+     transform="translate(-332.60901,-36.630146)" />
+  <circle
+     class="q"
+     cx="11.872593"
+     cy="4.2732706"
+     r="0.69999999"
+     id="circle50" />
+  <line
+     class="r"
+     x1="11.872593"
+     y1="6.7232676"
+     x2="11.872593"
+     y2="12.023271"
+     id="line51" />
+</svg>
