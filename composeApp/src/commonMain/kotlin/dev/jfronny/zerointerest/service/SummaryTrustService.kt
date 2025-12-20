@@ -49,13 +49,13 @@ class SummaryTrustService(
                     Summary.Trusted(it.content)
                 } else {
                     log.warn { "Latest summary found for room $roomId is not trusted" }
-                    Summary.Untrusted
+                    Summary.Untrusted(roomId, it.id, it.content)
                 }
             }
     }
 
     sealed interface Summary {
-        object Untrusted : Summary
+        data class Untrusted(val roomId: RoomId, val messageId: EventId, val content: ZeroInterestSummaryEvent) : Summary
         object Empty : Summary
         data class Trusted(val event: ZeroInterestSummaryEvent) : Summary
     }
@@ -157,7 +157,9 @@ class SummaryTrustService(
         return SummaryTrustDatabase.TrustState.REJECTED
     }
 
-    private suspend fun accept(roomId: RoomId, messageId: EventId, content: ZeroInterestSummaryEvent): SummaryTrustDatabase.TrustState {
+    suspend fun accept(summary: Summary.Untrusted) = accept(summary.roomId, summary.messageId, summary.content)
+
+    suspend fun accept(roomId: RoomId, messageId: EventId, content: ZeroInterestSummaryEvent): SummaryTrustDatabase.TrustState {
         log.info { "Accepting $messageId" }
         database.markTrusted(roomId, messageId)
         database.addHead(roomId, messageId)

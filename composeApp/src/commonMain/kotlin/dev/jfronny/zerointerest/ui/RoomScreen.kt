@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Paid
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -33,8 +34,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -56,6 +59,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.client.room.RoomService
@@ -77,6 +81,7 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit,
     val trust = koinInject<SummaryTrustService>()
     val roomNavHelper = navHelper.room()
     val roomIs = roomNavHelper.roomIs()
+    val scope = rememberCoroutineScope()
 
     NavigationSuiteScaffold(navigationItems = {
         NavigationSuiteItem(
@@ -119,12 +124,19 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit,
                 modifier = Modifier.padding(padding)
             ) {
                 composable<Destination.Room.RoomDestination.Balance> {
-                    val flow = remember(roomId) { trust.getSummary(roomId) }
+                    var forceReload by remember { mutableIntStateOf(0) }
+                    val flow = remember(roomId, forceReload) { trust.getSummary(roomId) }
                     val event by flow.collectAsState(null)
                     event?.let {
                         BalancesTab(
                             summary = it,
-                            userUI = UserUI(client, roomId)
+                            userUI = UserUI(client, roomId),
+                            forceTrust = {
+                                scope.launch {
+                                    trust.accept(it)
+                                    forceReload++
+                                }
+                            }
                         )
                     } ?: run {
                         Box(Modifier.fillMaxSize()) {
@@ -152,7 +164,8 @@ private fun BalancesTabPreview() = AppTheme {
             ),
             parents = emptyMap()
         )),
-        userUI = PreviewUserUI
+        userUI = PreviewUserUI,
+        forceTrust = {},
     )
 }
 
@@ -160,6 +173,7 @@ private fun BalancesTabPreview() = AppTheme {
 private fun BalancesTab(
     summary: SummaryTrustService.Summary,
     userUI: UserUI,
+    forceTrust: (SummaryTrustService.Summary.Untrusted) -> Unit
 ) {
     when (summary) {
         SummaryTrustService.Summary.Empty -> {
@@ -167,9 +181,14 @@ private fun BalancesTab(
                 Text("No balances yet", Modifier.align(Alignment.Center), style = MaterialTheme.typography.bodyLarge)
             }
         }
-        SummaryTrustService.Summary.Untrusted -> {
+        is SummaryTrustService.Summary.Untrusted -> {
             Box(Modifier.fillMaxSize()) {
-                Text("Latest Summary not trusted", Modifier.align(Alignment.Center), style = MaterialTheme.typography.bodyLarge)
+                Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Latest Summary not trusted", style = MaterialTheme.typography.bodyLarge)
+                    Button(onClick = { forceTrust(summary) }) {
+                        Text("Override")
+                    }
+                }
             }
         }
         is SummaryTrustService.Summary.Trusted -> {
