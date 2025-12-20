@@ -11,10 +11,12 @@ androidx-lifecycle = "2.9.6"
 androidx-testExt = "1.3.0"
 composeHotReload = "1.0.0"
 composeMultiplatform = "1.9.3"
+datastore = "1.3.0-alpha03"
 jfcommons = "1.8.0-SNAPSHOT"
 junit = "4.13.2"
 kotlin = "2.3.0"
 kotlinx-coroutines = "1.10.2"
+slf4jAndroid = "1.7.36"
 trixnity = "4.22.7"
 koin = "4.1.1"
 sqlite = "2.6.2"
@@ -36,9 +38,12 @@ androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+androidx-datastore = { module = "androidx.datastore:datastore-core", version.ref = "datastore" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastore" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 
+slf4j-android = { module = "org.slf4j:slf4j-android", version.ref = "slf4jAndroid" }
 trixnity-client = { module = "net.folivo:trixnity-client", version.ref = "trixnity" }
 trixnity-client-repository-room = { module = "net.folivo:trixnity-client-repository-room", version.ref = "trixnity" }
 trixnity-client-repository-indexeddb = { module = "net.folivo:trixnity-client-repository-indexeddb", version.ref = "trixnity" }

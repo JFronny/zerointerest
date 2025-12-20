@@ -82,6 +82,8 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.trixnity.client)
             implementation(libs.ktor.client.core)
+            implementation(libs.androidx.datastore)
+            implementation(libs.androidx.datastore.preferences)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -99,6 +101,7 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.koin.android.compat)
             implementation(libs.ktor.client.android)
+            implementation(libs.slf4j.android)
         }
         jsMain.dependencies {
             implementation(libs.trixnity.client.repository.indexeddb)

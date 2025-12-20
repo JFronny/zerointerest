@@ -7,6 +7,8 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import io.ktor.client.engine.android.*
 import net.folivo.trixnity.client.store.repository.room.TrixnityRoomDatabase
@@ -15,9 +17,13 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.core.scope.Scope
 
 class AndroidPlatform(private val context: Context) : AbstractPlatform(context.dataDir.toOkioPath()) {
-    override val name: String = "Android ${Build.VERSION.SDK_INT}"
+    override val name: String = "Android"
     override fun trixnityDatabaseBuilder() = Room.databaseBuilder(context, TrixnityRoomDatabase::class.java, TRIXNITY_NAME)
     override fun zerointerestDatabaseBuilder() = Room.databaseBuilder(context, ZeroInterestRoomDatabase::class.java, ZEROINTEREST_NAME)
+    override fun createDataStore(): DataStore<Preferences> = createDataStore {
+        context.filesDir.resolve(DATASTORE_NAME).toOkioPath()
+    }
+
     override fun getHttpClientEngine() = Android.create {}
 }
 

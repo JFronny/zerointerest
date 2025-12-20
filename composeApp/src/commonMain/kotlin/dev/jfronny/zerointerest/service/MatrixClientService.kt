@@ -44,7 +44,7 @@ class MatrixClientService(private val platform: Platform) {
             repositoriesModule = repositoriesModule.get(),
             mediaStoreModule = mediaStoreModule.get(),
             configuration = configuration,
-            initialDeviceDisplayName = "ZeroInterest",
+            initialDeviceDisplayName = "ZeroInterest ${platform.name}",
         ).getOrThrow().apply {
             startSync()
         }

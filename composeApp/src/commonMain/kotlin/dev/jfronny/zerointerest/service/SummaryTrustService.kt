@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapLatest
 import net.folivo.trixnity.client.room
+import net.folivo.trixnity.client.room.getState
 import net.folivo.trixnity.client.room.getTimelineEventReactionAggregation
 import net.folivo.trixnity.client.room.message.react
 import net.folivo.trixnity.client.store.eventId
@@ -34,7 +35,7 @@ class SummaryTrustService(
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getSummary(roomId: RoomId): Flow<Summary> {
         return client.room
-            .getState(roomId, ZeroInterestSummaryEvent::class, ZeroInterestSummaryEvent.TYPE)
+            .getState<ZeroInterestSummaryEvent>(roomId, ZeroInterestSummaryEvent.TYPE)
             .mapLatest {
                 if (it !is ClientEvent.RoomEvent.StateEvent) {
                     log.info { "No summary found for room $roomId" }

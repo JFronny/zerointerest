@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.jfronny.zerointerest.service.MatrixClientService
+import dev.jfronny.zerointerest.service.Settings
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.*
 import kotlinx.coroutines.launch
@@ -28,15 +29,20 @@ fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
             title = { Text("zerointerest") }
         )
     }
-) {
+) { paddingValues ->
     val matrixClient = koinInject<MatrixClientService>()
+    val settings = koinInject<Settings>()
     var state by remember { mutableStateOf<State>(State.Loading) }
 
     val scope = rememberCoroutineScope()
 
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var homeserver by remember { mutableStateOf("https://matrix.org") }
+    var homeserver by remember { mutableStateOf(Settings.FALLBACK_HOMESERVER) }
+
+    LaunchedEffect(settings) {
+        homeserver = settings.defaultHomeserver()
+    }
 
     fun tryLogIn(actual: suspend () -> Unit) {
         scope.launch {
@@ -54,6 +60,7 @@ fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
         tryLogIn {
             matrixClient.restore()
             if (matrixClient.loggedIn) {
+                settings.setDefaultHomeserver(homeserver)
                 onSuccess()
             } else {
                 state = State.Idle
@@ -64,6 +71,7 @@ fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .padding(paddingValues)
             .safeContentPadding()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally

@@ -3,6 +3,7 @@ package dev.jfronny.zerointerest
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.service.MatrixClientService
+import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import kotlinx.coroutines.sync.Mutex
 import net.folivo.trixnity.core.serialization.events.DefaultEventContentSerializerMappings
@@ -16,6 +17,7 @@ fun createAppModule() = module {
     single { getPlatform() }
     single { MatrixClientService(get()) }
     single { SummaryTrustService(get(), get()) }
+    single { Settings(get<Platform>().createDataStore()) }
 }
 
 fun createAppMatrixModule() = module {
