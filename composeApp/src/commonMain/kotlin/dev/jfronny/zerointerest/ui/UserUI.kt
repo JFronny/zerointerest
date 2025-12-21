@@ -11,12 +11,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
@@ -27,7 +24,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.jfronny.zerointerest.composeapp.generated.resources.Res
 import dev.jfronny.zerointerest.composeapp.generated.resources.avatar
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.mapLatest
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.media
 import net.folivo.trixnity.client.store.RoomUser
@@ -84,12 +84,25 @@ object PreviewUserUI : UserUI {
     }
 }
 
-class UserUIImpl(private val client: MatrixClient, private val users: Map<UserId, Flow<RoomUser?>>) : UserUI {
+class UserUIImpl(
+    private val client: MatrixClient,
+    private val users: Map<UserId, Flow<RoomUser?>>,
+) : UserUI {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val bitmaps: Map<UserId, Flow<ImageBitmap?>> = users.mapValues { (k, v) ->
+        v.mapLatest {
+            it?.avatarUrl?.let {
+                client.media.getMedia(it).getOrNull()?.toByteArray()?.decodeToImageBitmap()
+            }
+        }
+    }
+
     @Composable
     override fun component(userId: UserId): UserUI.Component {
-        val user = users[userId] ?: return PreviewUserUI.component(userId)
+        val user = remember(userId) { users[userId] } ?: return PreviewUserUI.component(userId)
         val state by user.collectAsState(null)
-        val name = state?.name ?: userId.full
+        val name = remember(state) { state?.name ?: userId.full }
+        val bitmap by remember(userId) { bitmaps[userId] ?: flowOf(null) }.collectAsState(null)
         return object : UserUI.Component {
             @Composable
             override fun Icon() {
@@ -98,15 +111,7 @@ class UserUIImpl(private val client: MatrixClient, private val users: Map<UserId
                     FallbackIcon(name)
                     return
                 }
-                var media by remember { mutableStateOf<ImageBitmap?>(null) }
-                LaunchedEffect(state.avatarUrl) {
-                    media = client.media
-                        .getMedia(state.avatarUrl!!)
-                        .getOrNull()
-                        ?.toByteArray(coroutineScope = this, maxSize = 1024 * 1024 * 8)
-                        ?.decodeToImageBitmap()
-                }
-                media?.let {
+                bitmap?.let {
                     IconWrapper {
                         Image(it, stringResource(Res.string.avatar))
                     }
