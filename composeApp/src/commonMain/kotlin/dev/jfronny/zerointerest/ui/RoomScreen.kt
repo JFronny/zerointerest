@@ -135,7 +135,7 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit,
                             userUI = UserUI(client, roomId),
                             forceTrust = {
                                 scope.launch {
-                                    trust.accept(it)
+                                    trust.forceAccept(it)
                                     forceReload++
                                 }
                             }

@@ -15,6 +15,7 @@ import net.folivo.trixnity.client.room.getTimelineEventReactionAggregation
 import net.folivo.trixnity.client.room.message.react
 import net.folivo.trixnity.client.store.eventId
 import net.folivo.trixnity.client.store.originTimestamp
+import net.folivo.trixnity.client.store.sender
 import net.folivo.trixnity.clientserverapi.model.rooms.GetEvents
 import net.folivo.trixnity.core.model.EventId
 import net.folivo.trixnity.core.model.RoomId
@@ -65,8 +66,8 @@ class SummaryTrustService(
         if (dbState != SummaryTrustDatabase.TrustState.UNTRUSTED) return dbState
 
         log.info { "1. If a rejection for the summary exists, the summary is always rejected." }
-        val reactions = client.room.getTimelineEventReactionAggregation(roomId, messageId).first()
-        if (reactions.reactions[rejectionKey]?.isNotEmpty() ?: false) return reject(roomId, messageId, send = false)
+        val reactions = client.room.getTimelineEventReactionAggregation(roomId, messageId).first().reactions[rejectionKey]
+        if (reactions?.isNotEmpty() ?: false) return reject(roomId, messageId, "rejection in timeline: ${reactions.first().eventId}", send = false)
 
         log.info { "2. Otherwise, if the summary event is the first summary event ever encountered in a room, it is trusted." }
         if (content.parents.isEmpty()) {
@@ -105,19 +106,20 @@ class SummaryTrustService(
             }
         }
         if (trustedParents.isEmpty()) {
-            return reject(roomId, messageId)
+            if (content.parents.isEmpty()) return reject(roomId, messageId, "no parents but not first summary")
+            return reject(roomId, messageId, "untrusted parents: ${content.parents.keys}")
         }
 
         log.info { "4. Otherwise, if the sum of transactions from a parent does not result in the balances, the event is rejected." }
         for ((summaryId, transactionIds) in content.parents) {
             val balances = summaries[summaryId]?.value?.balances ?: continue
             val transactions = transactionIds.mapNotNull { transactions[it]?.value }
-            if (transactions.size < transactionIds.size) return reject(roomId, messageId)
+            if (transactions.size < transactionIds.size) return reject(roomId, messageId, "not enough transactions after summary $summaryId")
             val computedBalances = mutableMapOf<UserId, Long>()
             for (event in transactions) {
                 event.apply(computedBalances)
             }
-            if (computedBalances != balances) return reject(roomId, messageId)
+            if (computedBalances != balances) return reject(roomId, messageId, "balances do not match after summary $summaryId")
         }
 
         log.info { "5. Otherwise, if a common ancestor exists between two parents, and the following transactions differ between them, the event is rejected." }
@@ -128,17 +130,17 @@ class SummaryTrustService(
             for (ancestorId in summary1.parents.keys.intersect(summary2.parents.keys)) {
                 val transactions1 = summary1.parents[ancestorId]!! + content.parents[summaryId1]!!
                 val transactions2 = summary2.parents[ancestorId]!! + content.parents[summaryId2]!!
-                if (transactions1 != transactions2) return reject(roomId, messageId)
+                if (transactions1 != transactions2) return reject(roomId, messageId, "transactions do not match between summaries $summaryId1 and $summaryId2")
             }
         }
 
         log.info { "6. Otherwise, if transactions that are not between the summaries temporally are referenced, the event is rejected." }
         for ((summaryId, transactionIds) in content.parents) {
             val summary = summaries[summaryId] ?: continue
-            val transactions = transactionIds.mapNotNull { transactions[it] }
-            for (transaction in transactions) {
-                if (transaction.ts < summary.ts) return reject(roomId, messageId)
-                if (transaction.ts > timestamp) return reject(roomId, messageId)
+            for (transactionId in transactionIds) {
+                val transaction = transactions[transactionId] ?: continue
+                if (transaction.ts < summary.ts) return reject(roomId, messageId, "transaction $transactionId is before summary $summaryId")
+                if (transaction.ts > timestamp) return reject(roomId, messageId, "transaction $transactionId is after new summary")
             }
         }
 
@@ -146,8 +148,8 @@ class SummaryTrustService(
         return accept(roomId, messageId, content)
     }
 
-    private suspend fun reject(roomId: RoomId, messageId: EventId, send: Boolean = true): SummaryTrustDatabase.TrustState {
-        log.info { "Rejecting $messageId" }
+    private suspend fun reject(roomId: RoomId, messageId: EventId, reason: String, send: Boolean = true): SummaryTrustDatabase.TrustState {
+        log.info { "Rejecting $messageId. Reason: $reason" }
         database.markRejected(roomId, messageId)
         if (send) {
             client.room.sendMessage(roomId) {
@@ -157,13 +159,26 @@ class SummaryTrustService(
         return SummaryTrustDatabase.TrustState.REJECTED
     }
 
-    suspend fun accept(summary: Summary.Untrusted) = accept(summary.roomId, summary.messageId, summary.content)
-
-    suspend fun accept(roomId: RoomId, messageId: EventId, content: ZeroInterestSummaryEvent): SummaryTrustDatabase.TrustState {
+    suspend fun forceAccept(summary: Summary.Untrusted) = accept(summary.roomId, summary.messageId, summary.content, retroactive = true)
+    private suspend fun accept(roomId: RoomId, messageId: EventId, content: ZeroInterestSummaryEvent, retroactive: Boolean = false): SummaryTrustDatabase.TrustState {
+        if (retroactive && database.checkTrust(roomId, messageId) == SummaryTrustDatabase.TrustState.TRUSTED) return SummaryTrustDatabase.TrustState.TRUSTED
         log.info { "Accepting $messageId" }
         database.markTrusted(roomId, messageId)
         database.addHead(roomId, messageId)
         database.removeHeads(roomId, content.parents.keys)
+        if (retroactive) {
+            val reactions = client.room.getTimelineEventReactionAggregation(roomId, messageId).first().reactions[rejectionKey]
+            if (reactions != null) {
+                for (event in reactions) {
+                    if (event.sender == client.userId) {
+                        client.api.room.redactEvent(roomId, event.eventId, "Event became trusted")
+                    }
+                }
+            }
+            for (id in content.parents.keys) {
+                accept(roomId, id, content, retroactive)
+            }
+        }
         return SummaryTrustDatabase.TrustState.TRUSTED
     }
 
