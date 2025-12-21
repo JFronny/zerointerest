@@ -99,10 +99,10 @@ class UserUIImpl(
 
     @Composable
     override fun component(userId: UserId): UserUI.Component {
-        val user = remember(userId) { users[userId] } ?: return PreviewUserUI.component(userId)
+        val user = remember(userId, users) { users[userId] } ?: return PreviewUserUI.component(userId)
         val state by user.collectAsState(null)
         val name = remember(state) { state?.name ?: userId.full }
-        val bitmap by remember(userId) { bitmaps[userId] ?: flowOf(null) }.collectAsState(null)
+        val bitmap by remember(userId, users) { bitmaps[userId] ?: flowOf(null) }.collectAsState(null)
         return object : UserUI.Component {
             @Composable
             override fun Icon() {

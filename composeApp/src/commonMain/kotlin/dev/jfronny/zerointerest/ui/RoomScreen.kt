@@ -206,7 +206,7 @@ private fun BalancesTab(
                     ) {
                         userUI(entry.key)
                         Spacer(modifier = Modifier.weight(1f))
-                        Text(text = formatBalance(balance))
+                        Text(text = formatBalance(-balance))
                     }
                 }
             }
