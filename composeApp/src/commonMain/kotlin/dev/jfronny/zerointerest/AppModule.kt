@@ -13,6 +13,8 @@ import net.folivo.trixnity.core.serialization.events.messageOf
 import net.folivo.trixnity.core.serialization.events.stateOf
 import org.koin.dsl.module
 
+const val SourceCodeUrl = "https://git.jfronny.dev/Johannes/zerointerest"
+
 fun createAppModule() = module {
     single { getPlatform() }
     single { MatrixClientService(get()) }

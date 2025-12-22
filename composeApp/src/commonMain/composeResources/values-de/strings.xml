@@ -60,4 +60,5 @@
     <string name="another_device_accepted_verification">Ein anderes Gerät hat die Verifizierungsanfrage akzeptiert.</string>
     <string name="error">Fehler</string>
     <string name="unexpected_error_verification">Ein unerwarteter Fehler ist während der Verifizierung aufgetreten.</string>
+    <string name="source_code">Quelltext</string>
 </resources>

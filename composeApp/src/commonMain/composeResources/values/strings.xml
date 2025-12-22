@@ -60,4 +60,5 @@
     <string name="another_device_accepted_verification">Another device has accepted the verification request.</string>
     <string name="error">Error</string>
     <string name="unexpected_error_verification">An unexpected error occurred during verification.</string>
+    <string name="source_code">Source Code</string>
 </resources>

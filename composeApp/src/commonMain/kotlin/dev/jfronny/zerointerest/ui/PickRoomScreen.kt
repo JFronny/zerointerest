@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.ForkRight
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -20,7 +21,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
+import dev.jfronny.zerointerest.SourceCodeUrl
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.service.MatrixClientService
 import net.folivo.trixnity.client.flattenValues
@@ -56,6 +59,12 @@ fun PickRoomScreen(
             actions = {
                 IconButton(onClick = logout) {
                     Icon(Icons.AutoMirrored.Filled.Logout, stringResource(Res.string.logout))
+                }
+                val uriHandler = LocalUriHandler.current
+                IconButton(onClick = {
+                    uriHandler.openUri(SourceCodeUrl)
+                }) {
+                    Icon(Icons.Default.ForkRight, stringResource(Res.string.source_code))
                 }
             }
         )

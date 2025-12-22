@@ -15,6 +15,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -29,8 +30,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import dev.jfronny.zerointerest.SourceCodeUrl
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
@@ -207,6 +210,18 @@ fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
             ) {
                 Text(stringResource(Res.string.login))
             }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        val urlHandler = LocalUriHandler.current
+        OutlinedButton(
+            onClick = {
+                urlHandler.openUri(SourceCodeUrl)
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(stringResource(Res.string.source_code))
         }
     }
 }
