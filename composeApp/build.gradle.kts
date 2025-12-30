@@ -154,7 +154,7 @@ kotlin {
 
     jvmToolchain {
         languageVersion = JavaLanguageVersion.of(25)
-        vendor = JvmVendorSpec.ADOPTIUM
+        vendor = JvmVendorSpec.JETBRAINS
     }
 }
 

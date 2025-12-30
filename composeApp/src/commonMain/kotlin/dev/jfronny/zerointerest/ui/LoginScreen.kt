@@ -56,11 +56,10 @@ fun LoginScreen(onSuccess: suspend () -> Unit) = Scaffold(
         )
     }
 ) { paddingValues ->
+    val scope = rememberCoroutineScope() // MUST be before state to not accidentally cancel login
     val matrixClient = koinInject<MatrixClientService>()
     val settings = koinInject<Settings>()
     var state by remember { mutableStateOf<State>(State.Loading) }
-
-    val scope = rememberCoroutineScope()
 
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }

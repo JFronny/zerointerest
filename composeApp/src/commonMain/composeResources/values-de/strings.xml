@@ -24,8 +24,8 @@
     <string name="save">Speichern</string>
     <string name="device_offline">Gerät ist offline</string>
     <string name="failed_send_message">Nachricht konnte nicht gesendet werden</string>
-    <string name="failed_send_message_with_error">Nachricht konnte nicht gesendet werden: %s</string>
-    <string name="failed_create_trust_summary">Vertrauenszusammenfassung konnte nicht erstellt werden: %s</string>
+    <string name="failed_send_message_with_error">Nachricht konnte nicht gesendet werden: %1$s</string>
+    <string name="failed_create_trust_summary">Vertrauenszusammenfassung konnte nicht erstellt werden: %1$s</string>
     <string name="description">Beschreibung</string>
     <string name="sender">Absender</string>
     <string name="total_amount">Gesamtbetrag</string>
@@ -42,7 +42,7 @@
     <string name="decline">Ablehnen</string>
     <string name="choose_verification_method">Verifizierungsmethode wählen</string>
     <string name="compare">Vergleichen</string>
-    <string name="compare_emoji_sequence">Vergleiche diese Emoji-Sequenz mit dem anderen Gerät:\n%s</string>
+    <string name="compare_emoji_sequence">Vergleiche diese Emoji-Sequenz mit dem anderen Gerät:\n%1$s</string>
     <string name="match">Übereinstimmung</string>
     <string name="mismatch">Keine Übereinstimmung</string>
     <string name="verification_in_progress">Verifizierung läuft</string>
@@ -53,7 +53,7 @@
     <string name="device_verified_successfully">Dein Gerät wurde erfolgreich verifiziert.</string>
     <string name="ok">OK</string>
     <string name="verification_cancelled">Verifizierung abgebrochen</string>
-    <string name="verification_cancelled_by">Die Verifizierung wurde von %s abgebrochen.\nGrund: %s</string>
+    <string name="verification_cancelled_by">Die Verifizierung wurde von %1$s abgebrochen.\nGrund: %2$s</string>
     <string name="you">dir</string>
     <string name="the_other_device">dem anderen Gerät</string>
     <string name="verification_accepted">Verifizierung akzeptiert</string>
