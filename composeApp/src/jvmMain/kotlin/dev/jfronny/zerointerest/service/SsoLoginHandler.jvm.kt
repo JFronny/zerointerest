@@ -1,0 +1,104 @@
+package dev.jfronny.zerointerest.service
+
+import com.sun.net.httpserver.HttpServer
+import kotlinx.coroutines.suspendCancellableCoroutine
+import java.awt.Desktop
+import java.net.InetSocketAddress
+import java.net.URI
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+
+/**
+ * JVM SSO login handler using a local HTTP server to receive the callback.
+ */
+class JvmSsoLoginHandler : SsoLoginHandler {
+    companion object {
+        private const val CALLBACK_PORT = 18749
+        private const val CALLBACK_PATH = "/sso-callback"
+    }
+    
+    override fun getCallbackUrl(): String {
+        return "http://localhost:$CALLBACK_PORT$CALLBACK_PATH"
+    }
+    
+    override suspend fun performSsoLogin(ssoUrl: String): SsoCallbackResult {
+        return suspendCancellableCoroutine { continuation ->
+            val server = HttpServer.create(InetSocketAddress(CALLBACK_PORT), 0)
+            
+            server.createContext(CALLBACK_PATH) { exchange ->
+                val query = exchange.requestURI.query ?: ""
+                val params = query.split("&")
+                    .mapNotNull { 
+                        val parts = it.split("=", limit = 2)
+                        if (parts.size == 2) parts[0] to parts[1] else null
+                    }
+                    .toMap()
+                
+                val loginToken = params["loginToken"]
+                
+                val responseHtml = if (loginToken != null) {
+                    """
+                    <!DOCTYPE html>
+                    <html>
+                    <head><title>Login Successful</title></head>
+                    <body>
+                        <h1>Login Successful!</h1>
+                        <p>You can close this window and return to the application.</p>
+                        <script>window.close();</script>
+                    </body>
+                    </html>
+                    """.trimIndent()
+                } else {
+                    """
+                    <!DOCTYPE html>
+                    <html>
+                    <head><title>Login Failed</title></head>
+                    <body>
+                        <h1>Login Failed</h1>
+                        <p>No login token received. Please try again.</p>
+                    </body>
+                    </html>
+                    """.trimIndent()
+                }
+                
+                val responseBytes = responseHtml.toByteArray()
+                exchange.responseHeaders.add("Content-Type", "text/html; charset=UTF-8")
+                exchange.sendResponseHeaders(200, responseBytes.size.toLong())
+                exchange.responseBody.use { it.write(responseBytes) }
+                
+                // Stop the server after processing
+                server.stop(0)
+                
+                if (loginToken != null) {
+                    continuation.resume(SsoCallbackResult(loginToken))
+                } else {
+                    continuation.resumeWithException(
+                        IllegalStateException("No login token received in SSO callback")
+                    )
+                }
+            }
+            
+            server.start()
+            
+            // Open the SSO URL in the default browser
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(URI(ssoUrl))
+            } else {
+                // Fallback: try using xdg-open or similar
+                val os = System.getProperty("os.name").lowercase()
+                val command = when {
+                    os.contains("win") -> listOf("cmd", "/c", "start", ssoUrl)
+                    os.contains("mac") -> listOf("open", ssoUrl)
+                    else -> listOf("xdg-open", ssoUrl)
+                }
+                Runtime.getRuntime().exec(command.toTypedArray())
+            }
+            
+            continuation.invokeOnCancellation {
+                server.stop(0)
+            }
+        }
+    }
+}
+
+actual fun createSsoLoginHandler(): SsoLoginHandler = JvmSsoLoginHandler()

@@ -10,11 +10,17 @@ import kotlinx.coroutines.flow.StateFlow
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.MatrixClientConfiguration
 import net.folivo.trixnity.client.fromStore
+import net.folivo.trixnity.client.loginWith
 import net.folivo.trixnity.client.loginWithPassword
 import net.folivo.trixnity.client.loginWithToken
+import net.folivo.trixnity.clientserverapi.client.MatrixClientServerApiClientFactory
 import net.folivo.trixnity.clientserverapi.model.authentication.IdentifierType
+import net.folivo.trixnity.clientserverapi.model.authentication.LoginType
 
-class MatrixClientService(private val platform: Platform) {
+class MatrixClientService(
+    private val platform: Platform,
+    private val ssoLoginHandler: SsoLoginHandler
+) {
     private val flow: MutableStateFlow<MatrixClient?> = MutableStateFlow(null)
     val client: StateFlow<MatrixClient?> = flow
 
@@ -24,6 +30,19 @@ class MatrixClientService(private val platform: Platform) {
 
     private val repositoriesModule = SuspendLazy { platform.getRepositoriesModule() }
     private val mediaStoreModule = SuspendLazy { platform.getMediaStoreModule() }
+
+    /**
+     * Get available login types for a homeserver.
+     */
+    suspend fun getLoginTypes(homeserver: Url): List<LoginType> {
+        val apiClient = MatrixClientServerApiClientFactory.default.create(
+            baseUrl = homeserver,
+            httpClientEngine = platform.getHttpClientEngine()
+        )
+        return apiClient.use { api ->
+            api.authentication.getLoginTypes().getOrThrow().toList()
+        }
+    }
 
     suspend fun restore() {
         if (flow.value != null) return
@@ -60,6 +79,54 @@ class MatrixClientService(private val platform: Platform) {
             mediaStoreModule = mediaStoreModule.get(),
             configuration = configuration,
             initialDeviceDisplayName = "ZeroInterest ${platform.name}",
+        ).getOrThrow().apply {
+            startSync()
+        }
+    }
+
+    /**
+     * Perform SSO login flow.
+     * Opens a browser/webview for the user to authenticate, then completes login with the token.
+     */
+    suspend fun loginWithSso(homeserver: Url, idpId: String? = null) {
+        close()
+        
+        // Create a temporary API client to get the SSO URL
+        val apiClient = MatrixClientServerApiClientFactory.default.create(
+            baseUrl = homeserver,
+            httpClientEngine = platform.getHttpClientEngine()
+        )
+        
+        // Use loginWith to handle the SSO flow
+        flow.value = MatrixClient.loginWith(
+            baseUrl = homeserver,
+            repositoriesModule = repositoriesModule.get(),
+            mediaStoreModule = mediaStoreModule.get(),
+            configuration = configuration,
+            getLoginInfo = { api ->
+                // Get SSO URL with redirect
+                val ssoUrl = api.authentication.getSsoUrl(
+                    redirectUrl = ssoLoginHandler.getCallbackUrl(),
+                    idpId = idpId
+                )
+                
+                // Perform SSO login flow and get the login token
+                val callbackResult = ssoLoginHandler.performSsoLogin(ssoUrl)
+                
+                // Use the token to login
+                api.authentication.login(
+                    token = callbackResult.loginToken,
+                    type = LoginType.Token(),
+                    initialDeviceDisplayName = "ZeroInterest ${platform.name}"
+                ).map { login ->
+                    MatrixClient.LoginInfo(
+                        userId = login.userId,
+                        deviceId = login.deviceId,
+                        accessToken = login.accessToken,
+                        refreshToken = login.refreshToken
+                    )
+                }
+            }
         ).getOrThrow().apply {
             startSync()
         }

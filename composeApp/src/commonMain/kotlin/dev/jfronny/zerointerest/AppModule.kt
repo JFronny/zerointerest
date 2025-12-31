@@ -5,6 +5,7 @@ import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
+import dev.jfronny.zerointerest.service.createSsoLoginHandler
 import kotlinx.coroutines.sync.Mutex
 import net.folivo.trixnity.core.serialization.events.DefaultEventContentSerializerMappings
 import net.folivo.trixnity.core.serialization.events.EventContentSerializerMappings
@@ -17,7 +18,8 @@ const val SourceCodeUrl = "https://git.jfronny.dev/Johannes/zerointerest"
 
 fun createAppModule() = module {
     single { getPlatform() }
-    single { MatrixClientService(get()) }
+    single { createSsoLoginHandler() }
+    single { MatrixClientService(get(), get()) }
     single { SummaryTrustService(get(), get()) }
     single { Settings(get<Platform>().createDataStore()) }
 }
