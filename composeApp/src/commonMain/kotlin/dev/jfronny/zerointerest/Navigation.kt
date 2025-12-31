@@ -6,7 +6,9 @@ import net.folivo.trixnity.core.model.RoomId
 
 @Serializable
 sealed class Destination {
-    @Serializable object Login : Destination()
+    @Serializable object LoadingScreen : Destination()
+    @Serializable object SelectHomeserver : Destination()
+    @Serializable data class SelectLoginMethod(val homeserver: String) : Destination()
     @Serializable object PickRoom : Destination()
     @Serializable data class Room(val roomId: RoomId) : Destination() {
         @Serializable sealed class RoomDestination {

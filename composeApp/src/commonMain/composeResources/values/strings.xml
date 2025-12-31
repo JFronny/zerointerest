@@ -61,4 +61,13 @@
     <string name="error">Error</string>
     <string name="unexpected_error_verification">An unexpected error occurred during verification.</string>
     <string name="source_code">Source Code</string>
+    <string name="select_homeserver">Select Homeserver</string>
+    <string name="continue_button">Continue</string>
+    <string name="suggested_homeservers">Suggested Homeservers</string>
+    <string name="password_login">Password</string>
+    <string name="sso_login">SSO</string>
+    <string name="login_with_sso">Login with SSO</string>
+    <string name="choose_sso_provider">Choose an identity provider</string>
+    <string name="sso_cancelled">SSO login was cancelled</string>
+    <string name="sso_success">SSO login successful</string>
 </resources>

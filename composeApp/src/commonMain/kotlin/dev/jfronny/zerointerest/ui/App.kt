@@ -30,11 +30,31 @@ fun App() = AppTheme {
 
     NavHost(
         navController = navHelper.main,
-        startDestination = Destination.Login,
+        startDestination = Destination.LoadingScreen,
         typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)
     ) {
-        composable<Destination.Login> {
-            LoginScreen(
+        composable<Destination.LoadingScreen> {
+            LoadingScreen(
+                onSuccess = {
+                    navHelper.navigate(settings.startDestination())
+                },
+                onError = {
+                    navHelper.navigate(Destination.SelectHomeserver)
+                }
+            )
+        }
+        composable<Destination.SelectHomeserver> {
+            HomeserverScreen(
+                onContinue = { homeserver ->
+                    navHelper.navigate(Destination.SelectLoginMethod(homeserver))
+                }
+            )
+        }
+        composable<Destination.SelectLoginMethod> {
+            val route = it.toRoute<Destination.SelectLoginMethod>()
+            LoginMethodScreen(
+                homeserver = route.homeserver,
+                onBack = { navHelper.popMainBackStack() },
                 onSuccess = {
                     navHelper.navigate(settings.startDestination())
                 }
@@ -52,7 +72,7 @@ fun App() = AppTheme {
                 logout = {
                     scope.launch {
                         service.logout()
-                        navHelper.navigate(Destination.Login)
+                        navHelper.navigate(Destination.SelectHomeserver)
                     }
                 }
             )

@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import dev.jfronny.zerointerest.service.setAndroidContext
 import dev.jfronny.zerointerest.ui.App
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -15,6 +16,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         System.setProperty("slf4j.provider", "dev.jfronny.zerointerest.AndroidServiceProvider")
+        
+        // Set context for SSO handler
+        setAndroidContext(applicationContext)
 
         setContent {
             KoinApplication(application = {
