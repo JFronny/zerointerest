@@ -1,5 +1,7 @@
 package dev.jfronny.zerointerest.service
 
+import org.koin.core.scope.Scope
+
 /**
  * Result of an SSO login callback.
  * Contains the login token returned by the Matrix server.
@@ -36,4 +38,4 @@ interface SsoLoginHandler {
 /**
  * Factory function to create platform-specific SSO login handler.
  */
-expect fun createSsoLoginHandler(): SsoLoginHandler
+expect fun Scope.createSsoLoginHandler(): SsoLoginHandler

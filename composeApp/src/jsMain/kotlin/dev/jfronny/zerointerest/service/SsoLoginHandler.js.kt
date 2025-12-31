@@ -2,6 +2,7 @@ package dev.jfronny.zerointerest.service
 
 import kotlinx.browser.window
 import kotlinx.coroutines.suspendCancellableCoroutine
+import org.koin.core.scope.Scope
 import org.w3c.dom.MessageEvent
 import org.w3c.dom.events.Event
 import kotlin.coroutines.resume
@@ -115,4 +116,4 @@ class JsSsoLoginHandler : SsoLoginHandler {
     }
 }
 
-actual fun createSsoLoginHandler(): SsoLoginHandler = JsSsoLoginHandler()
+actual fun Scope.createSsoLoginHandler(): SsoLoginHandler = JsSsoLoginHandler()

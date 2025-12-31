@@ -2,12 +2,15 @@ package dev.jfronny.zerointerest.service
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import org.koin.android.ext.koin.androidContext
+import org.koin.core.scope.Scope
 import java.net.ServerSocket
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -56,8 +59,8 @@ class AndroidSsoLoginHandler(private val context: Context) : SsoLoginHandler {
                         Regex("redirectUrl=[^&]+"),
                         "redirectUrl=${java.net.URLEncoder.encode(getCallbackUrl(), "UTF-8")}"
                     )
-                    
-                    context.mainExecutor.execute {
+
+                    ContextCompat.getMainExecutor(context).execute {
                         try {
                             val customTabsIntent = CustomTabsIntent.Builder()
                                 .setShowTitle(true)
@@ -66,10 +69,10 @@ class AndroidSsoLoginHandler(private val context: Context) : SsoLoginHandler {
                             customTabsIntent.intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             
                             try {
-                                customTabsIntent.launchUrl(context, Uri.parse(actualSsoUrl))
+                                customTabsIntent.launchUrl(context, actualSsoUrl.toUri())
                             } catch (e: Exception) {
                                 // Fallback to regular browser
-                                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(actualSsoUrl))
+                                val browserIntent = Intent(Intent.ACTION_VIEW, actualSsoUrl.toUri())
                                 browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 context.startActivity(browserIntent)
                             }
@@ -91,12 +94,10 @@ class AndroidSsoLoginHandler(private val context: Context) : SsoLoginHandler {
                         val loginToken = if (line.startsWith("GET")) {
                             val path = line.split(" ").getOrNull(1) ?: ""
                             val query = path.substringAfter("?", "")
-                            query.split("&")
-                                .mapNotNull { param ->
-                                    val parts = param.split("=", limit = 2)
-                                    if (parts.size == 2 && parts[0] == "loginToken") parts[1] else null
-                                }
-                                .firstOrNull()
+                            query.split("&").firstNotNullOfOrNull { param ->
+                                val parts = param.split("=", limit = 2)
+                                if (parts.size == 2 && parts[0] == "loginToken") parts[1] else null
+                            }
                         } else null
                         
                         // Send response
@@ -175,18 +176,4 @@ class AndroidSsoLoginHandler(private val context: Context) : SsoLoginHandler {
     }
 }
 
-// Context will be set early in app initialization
-private var appContext: Context? = null
-private val contextLock = Any()
-
-fun setAndroidContext(context: Context) {
-    synchronized(contextLock) {
-        appContext = context.applicationContext
-    }
-}
-
-actual fun createSsoLoginHandler(): SsoLoginHandler {
-    val ctx = synchronized(contextLock) { appContext }
-        ?: throw IllegalStateException("Android context not set. Call setAndroidContext() first.")
-    return AndroidSsoLoginHandler(ctx)
-}
+actual fun Scope.createSsoLoginHandler(): SsoLoginHandler = AndroidSsoLoginHandler(androidContext().applicationContext)

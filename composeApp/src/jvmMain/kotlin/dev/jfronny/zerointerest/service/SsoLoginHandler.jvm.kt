@@ -3,6 +3,7 @@ package dev.jfronny.zerointerest.service
 import com.sun.net.httpserver.HttpServer
 import dev.jfronnz.zerointerest.InternalHelper
 import kotlinx.coroutines.suspendCancellableCoroutine
+import org.koin.core.scope.Scope
 import java.net.InetSocketAddress
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -112,4 +113,4 @@ class JvmSsoLoginHandler : SsoLoginHandler {
     }
 }
 
-actual fun createSsoLoginHandler(): SsoLoginHandler = JvmSsoLoginHandler()
+actual fun Scope.createSsoLoginHandler(): SsoLoginHandler = JvmSsoLoginHandler()
