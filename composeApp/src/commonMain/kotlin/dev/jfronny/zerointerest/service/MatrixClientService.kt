@@ -91,12 +91,6 @@ class MatrixClientService(
     suspend fun loginWithSso(homeserver: Url, idpId: String? = null) {
         close()
         
-        // Create a temporary API client to get the SSO URL
-        val apiClient = MatrixClientServerApiClientFactory.default.create(
-            baseUrl = homeserver,
-            httpClientEngine = platform.getHttpClientEngine()
-        )
-        
         // Use loginWith to handle the SSO flow
         flow.value = MatrixClient.loginWith(
             baseUrl = homeserver,

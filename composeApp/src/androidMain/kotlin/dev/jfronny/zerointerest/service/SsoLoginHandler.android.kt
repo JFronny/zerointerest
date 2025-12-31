@@ -11,12 +11,8 @@ import kotlin.coroutines.resumeWithException
 /**
  * Android SSO login handler using Custom Tabs.
  * 
- * This uses a custom scheme URL for the callback, which requires:
- * 1. An Activity with an intent filter for the custom scheme
- * 2. The Activity to broadcast the result back
- * 
- * For simplicity, this implementation uses a local server approach similar to JVM,
- * but custom tabs provide a better user experience on Android.
+ * This uses a local HTTP server to receive the callback after SSO authentication.
+ * Custom Tabs provide a better user experience compared to opening the browser.
  */
 class AndroidSsoLoginHandler(private val context: Context) : SsoLoginHandler {
     
@@ -25,20 +21,13 @@ class AndroidSsoLoginHandler(private val context: Context) : SsoLoginHandler {
         private const val CALLBACK_PORT = 18749
         private const val CALLBACK_PATH = "/sso-callback"
         
-        // Store pending callback result
-        @Volatile
-        private var pendingResult: SsoCallbackResult? = null
-        
-        @Volatile
-        private var pendingError: Throwable? = null
-        
         @Volatile
         private var continuation: kotlinx.coroutines.CancellableContinuation<SsoCallbackResult>? = null
         
         /**
          * Called when SSO callback is received.
          */
-        fun onSsoCallback(loginToken: String?) {
+        private fun onSsoCallback(loginToken: String?) {
             if (loginToken != null) {
                 continuation?.resume(SsoCallbackResult(loginToken))
             } else {
@@ -52,7 +41,7 @@ class AndroidSsoLoginHandler(private val context: Context) : SsoLoginHandler {
         /**
          * Called when SSO flow is cancelled.
          */
-        fun onSsoCancelled() {
+        private fun onSsoCancelled() {
             continuation?.resumeWithException(
                 IllegalStateException("SSO login was cancelled")
             )
@@ -175,7 +164,7 @@ class AndroidSsoLoginHandler(private val context: Context) : SsoLoginHandler {
     private fun stopLocalServer() {
         try {
             server?.close()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Ignore
         }
         serverThread?.interrupt()

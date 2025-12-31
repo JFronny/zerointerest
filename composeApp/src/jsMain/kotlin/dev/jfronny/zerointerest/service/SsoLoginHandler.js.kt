@@ -33,10 +33,27 @@ class JsSsoLoginHandler : SsoLoginHandler {
             
             var messageHandler: ((Event) -> Unit)? = null
             var pollInterval: Int? = null
+            var completed = false
+            
+            fun cleanup() {
+                messageHandler?.let { window.removeEventListener("message", it) }
+                pollInterval?.let { window.clearInterval(it) }
+            }
+            
+            fun complete(result: Result<SsoCallbackResult>) {
+                if (completed) return
+                completed = true
+                cleanup()
+                popup.close()
+                result.fold(
+                    onSuccess = { continuation.resume(it) },
+                    onFailure = { continuation.resumeWithException(it) }
+                )
+            }
             
             // Listen for postMessage from the popup
             messageHandler = { event: Event ->
-                val messageEvent = event as? MessageEvent ?: return@messageHandler
+                val messageEvent = event as? MessageEvent ?: return@suspendCancellableCoroutine
                 
                 // Check if this is the auth done message
                 val data = messageEvent.data
@@ -47,19 +64,12 @@ class JsSsoLoginHandler : SsoLoginHandler {
                         val loginToken = extractLoginToken(popupUrl)
                         
                         if (loginToken != null) {
-                            cleanup()
-                            popup.close()
-                            continuation.resume(SsoCallbackResult(loginToken))
+                            complete(Result.success(SsoCallbackResult(loginToken)))
                         }
                     } catch (e: Exception) {
                         // Cross-origin access might fail, try alternative methods
                     }
                 }
-            }
-            
-            fun cleanup() {
-                messageHandler?.let { window.removeEventListener("message", it) }
-                pollInterval?.let { window.clearInterval(it) }
             }
             
             window.addEventListener("message", messageHandler!!)
@@ -68,10 +78,7 @@ class JsSsoLoginHandler : SsoLoginHandler {
             pollInterval = window.setInterval({
                 try {
                     if (popup.closed == true) {
-                        cleanup()
-                        continuation.resumeWithException(
-                            IllegalStateException("SSO popup was closed without completing login")
-                        )
+                        complete(Result.failure(IllegalStateException("SSO popup was closed without completing login")))
                         return@setInterval
                     }
                     
@@ -80,9 +87,7 @@ class JsSsoLoginHandler : SsoLoginHandler {
                     val loginToken = extractLoginToken(popupUrl)
                     
                     if (loginToken != null) {
-                        cleanup()
-                        popup.close()
-                        continuation.resume(SsoCallbackResult(loginToken))
+                        complete(Result.success(SsoCallbackResult(loginToken)))
                     }
                 } catch (e: Exception) {
                     // Cross-origin access - ignore and wait for postMessage
