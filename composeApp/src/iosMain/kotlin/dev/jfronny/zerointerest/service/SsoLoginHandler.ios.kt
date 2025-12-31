@@ -21,19 +21,24 @@ class IosSsoLoginHandler : SsoLoginHandler {
     companion object {
         private const val CALLBACK_SCHEME = "zerointerest"
         
-        @Volatile
         private var continuation: kotlinx.coroutines.CancellableContinuation<SsoCallbackResult>? = null
         
         /**
          * Called when the app receives a callback URL.
          * Should be called from AppDelegate or SceneDelegate when handling URL.
+         * Note: This uses non-suspend synchronization since it's called from platform code.
          */
         fun handleCallbackUrl(url: String): Boolean {
             if (!url.startsWith("$CALLBACK_SCHEME://")) return false
             
             val loginToken = extractLoginToken(url)
-            val cont = continuation
-            continuation = null
+            
+            // Use synchronized block for thread safety
+            val cont = synchronized(IosSsoLoginHandler::class) {
+                val c = continuation
+                continuation = null
+                c
+            }
             
             if (loginToken != null && cont != null) {
                 cont.resume(SsoCallbackResult(loginToken))
@@ -68,7 +73,9 @@ class IosSsoLoginHandler : SsoLoginHandler {
     
     override suspend fun performSsoLogin(ssoUrl: String): SsoCallbackResult {
         return suspendCancellableCoroutine { cont ->
-            continuation = cont
+            synchronized(IosSsoLoginHandler::class) {
+                continuation = cont
+            }
             
             // Open SSO URL in Safari
             val url = NSURL.URLWithString(ssoUrl)
@@ -81,7 +88,11 @@ class IosSsoLoginHandler : SsoLoginHandler {
             }
             
             cont.invokeOnCancellation {
-                continuation = null
+                synchronized(IosSsoLoginHandler::class) {
+                    if (continuation === cont) {
+                        continuation = null
+                    }
+                }
             }
         }
     }

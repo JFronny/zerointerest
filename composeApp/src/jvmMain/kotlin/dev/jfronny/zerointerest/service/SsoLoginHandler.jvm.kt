@@ -13,17 +13,23 @@ import kotlin.coroutines.resumeWithException
  */
 class JvmSsoLoginHandler : SsoLoginHandler {
     companion object {
-        private const val CALLBACK_PORT = 18749
         private const val CALLBACK_PATH = "/sso-callback"
+        // Port range to try for local server
+        private const val PORT_START = 18749
+        private const val PORT_END = 18759
     }
     
+    private var currentPort: Int = PORT_START
+    
     override fun getCallbackUrl(): String {
-        return "http://localhost:$CALLBACK_PORT$CALLBACK_PATH"
+        return "http://localhost:$currentPort$CALLBACK_PATH"
     }
     
     override suspend fun performSsoLogin(ssoUrl: String): SsoCallbackResult {
         return suspendCancellableCoroutine { continuation ->
-            val server = HttpServer.create(InetSocketAddress(CALLBACK_PORT), 0)
+            // Find an available port
+            val server = findAvailableServer()
+            currentPort = server.address.port
             
             server.createContext(CALLBACK_PATH) { exchange ->
                 val query = exchange.requestURI.query ?: ""
@@ -80,16 +86,22 @@ class JvmSsoLoginHandler : SsoLoginHandler {
             
             server.start()
             
+            // Update the SSO URL with the correct redirect URL
+            val actualSsoUrl = ssoUrl.replace(
+                Regex("redirectUrl=[^&]+"),
+                "redirectUrl=${java.net.URLEncoder.encode(getCallbackUrl(), "UTF-8")}"
+            )
+            
             // Open the SSO URL in the default browser
             if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                Desktop.getDesktop().browse(URI(ssoUrl))
+                Desktop.getDesktop().browse(URI(actualSsoUrl))
             } else {
                 // Fallback: try using xdg-open or similar
                 val os = System.getProperty("os.name").lowercase()
                 val command = when {
-                    os.contains("win") -> listOf("cmd", "/c", "start", ssoUrl)
-                    os.contains("mac") -> listOf("open", ssoUrl)
-                    else -> listOf("xdg-open", ssoUrl)
+                    os.contains("win") -> listOf("cmd", "/c", "start", actualSsoUrl)
+                    os.contains("mac") -> listOf("open", actualSsoUrl)
+                    else -> listOf("xdg-open", actualSsoUrl)
                 }
                 Runtime.getRuntime().exec(command.toTypedArray())
             }
@@ -98,6 +110,17 @@ class JvmSsoLoginHandler : SsoLoginHandler {
                 server.stop(0)
             }
         }
+    }
+    
+    private fun findAvailableServer(): HttpServer {
+        for (port in PORT_START..PORT_END) {
+            try {
+                return HttpServer.create(InetSocketAddress(port), 0)
+            } catch (_: Exception) {
+                // Port in use, try next
+            }
+        }
+        throw IllegalStateException("Could not find available port for SSO callback server")
     }
 }
 

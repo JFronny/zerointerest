@@ -142,10 +142,10 @@ fun LoginMethodScreen(
                 val loginTypes = matrixClient.getLoginTypes(Url(homeserver))
                 availableLoginMethods = loginTypes
                 
-                // Extract SSO providers if available
-                loginTypes.filterIsInstance<LoginType.SSO>().firstOrNull()?.let { sso ->
-                    ssoProviders = sso.identityProviders.toList()
-                }
+                // Extract SSO providers from all SSO login types
+                ssoProviders = loginTypes
+                    .filterIsInstance<LoginType.SSO>()
+                    .flatMap { it.identityProviders }
                 
                 state = LoginState.Idle
             }

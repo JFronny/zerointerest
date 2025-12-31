@@ -92,7 +92,7 @@ class JsSsoLoginHandler : SsoLoginHandler {
                 } catch (e: Exception) {
                     // Cross-origin access - ignore and wait for postMessage
                 }
-            }, 500)
+            }, 1000)  // Poll every 1 second to reduce CPU overhead
             
             continuation.invokeOnCancellation {
                 cleanup()
