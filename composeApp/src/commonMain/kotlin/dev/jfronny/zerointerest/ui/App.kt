@@ -20,13 +20,18 @@ import kotlin.reflect.typeOf
 
 const val appName = "zerointerest"
 
-private suspend fun Settings.startDestination() = rememberedRoom()?.let { Destination.Room(it) } ?: Destination.PickRoom
-
 @Composable
 fun App() = AppTheme {
     val navHelper = rememberNavigationHelper()
     val service = koinInject<MatrixClientService>()
     val settings = koinInject<Settings>()
+
+    suspend fun onLoginSuccess() {
+        val rememberedRoom = settings.rememberedRoom()
+        navHelper.navigate(Destination.PickRoom)
+        if (rememberedRoom == null) return
+        navHelper.navigate(Destination.Room(rememberedRoom))
+    }
 
     NavHost(
         navController = navHelper.main,
@@ -35,9 +40,7 @@ fun App() = AppTheme {
     ) {
         composable<Destination.LoadingScreen> {
             LoadingScreen(
-                onSuccess = {
-                    navHelper.navigate(settings.startDestination())
-                },
+                onSuccess = ::onLoginSuccess,
                 onError = {
                     navHelper.navigate(Destination.SelectHomeserver)
                 }
@@ -55,9 +58,7 @@ fun App() = AppTheme {
             LoginMethodScreen(
                 homeserver = route.homeserver,
                 onBack = { navHelper.popMainBackStack() },
-                onSuccess = {
-                    navHelper.navigate(settings.startDestination())
-                }
+                onSuccess = ::onLoginSuccess
             )
         }
         composable<Destination.PickRoom> {
