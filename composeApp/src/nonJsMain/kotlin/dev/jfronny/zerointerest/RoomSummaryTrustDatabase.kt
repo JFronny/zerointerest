@@ -23,20 +23,36 @@ class RoomSummaryTrustDatabase(val db: ZeroInterestRoomDatabase) : SummaryTrustD
         return db.summaryHeadDao().getHeads(room.full).map { EventId(it) }.toSet()
     }
 
-    override suspend fun setHeads(room: RoomId, heads: Set<EventId>) {
-        db.summaryHeadDao().clear(room.full)
-        heads.forEach {
-            db.summaryHeadDao().insert(SummaryHeadEntity(room.full, it.full))
-        }
-    }
-
-    override suspend fun addHead(room: RoomId, head: EventId) {
-        db.summaryHeadDao().insert(SummaryHeadEntity(room.full, head.full))
-    }
-
-    override suspend fun removeHeads(room: RoomId, heads: Set<EventId>) {
-        heads.forEach {
+    override suspend fun addTrustedSummary(
+        room: RoomId,
+        summaryId: EventId,
+        parents: Set<EventId>,
+        transactions: Set<EventId>,
+        root: Boolean
+    ) {
+        if (root) db.summaryHeadDao().clear(room.full)
+        db.summaryHeadDao().insert(SummaryHeadEntity(room.full, summaryId.full))
+        parents.forEach {
             db.summaryHeadDao().removeHead(room.full, it.full)
         }
+        db.summaryTrustDao().insert(SummaryTrustEntity(room.full, summaryId.full, TRUSTED))
+        db.summaryDao().insertSummary(parents.map {
+            SummaryEntity(room.full, summaryId.full, it.full)
+        })
+        db.summaryDao().insertTransactions(transactions.map {
+            SummaryTransactionEntity(room.full, summaryId.full, it.full)
+        })
+    }
+
+    override suspend fun getSummaryParents(room: RoomId, summary: EventId): Set<EventId> {
+        return db.summaryDao().getParents(room.full, summary.full).map { EventId(it) }.toSet()
+    }
+
+    override suspend fun getSummariesReferencingTransactions(room: RoomId, transactions: Set<EventId>): Map<EventId, Set<EventId>> {
+        val result = mutableMapOf<EventId, MutableSet<EventId>>()
+        db.summaryDao().getSummariesForTransactions(room.full, transactions.map { it.full }).forEach {
+            result.getOrPut(EventId(it.transactionId)) { mutableSetOf() }.add(EventId(it.summaryId))
+        }
+        return result
     }
 }

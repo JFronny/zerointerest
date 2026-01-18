@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ForkRight
 import androidx.compose.material.icons.filled.Paid
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -61,6 +64,7 @@ import dev.jfronny.zerointerest.util.room
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -73,7 +77,6 @@ import net.folivo.trixnity.core.model.EventId
 import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.koinInject
 
 private val log = KotlinLogging.logger {}
@@ -229,6 +232,7 @@ private fun BalancesTab(
 @Composable
 private fun TransactionsTab(client: MatrixClient, roomId: RoomId, navHelper: NavigationHelper) {
     val roomService: RoomService = client.room
+    val trust = koinInject<SummaryTrustService>()
 
     // State to hold the list of transaction events
     var transactionEvents by remember(roomId) { mutableStateOf<List<Pair<EventId, ZeroInterestTransactionEvent>>>(emptyList()) }
@@ -239,6 +243,13 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, navHelper: Nav
 
     // Keep a set of already loaded ids for deduplication when paging
     val loadedIds = remember(roomId) { mutableSetOf<EventId>() }
+    // Reload included transactions when coming back to the screen
+    val includedTransactionsFlow = remember(roomId, transactionEvents) {
+        flow {
+            emit(trust.getSummariesReferencingTransactions(roomId, transactionEvents.map { it.first }.toSet()))
+        }
+    }
+    val includedTransactions by includedTransactionsFlow.collectAsState(emptyMap())
 
     // Reuse name resolver so it isn't created per-row
     val userUI = UserUI(client, roomId)
@@ -359,6 +370,7 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, navHelper: Nav
                 ) { (eventId, transaction) ->
                     TransactionTabItem(
                         transaction = transaction,
+                        included = includedTransactions[eventId]?.isNotEmpty() ?: false,
                         userUI = userUI,
                         onClick = { navHelper.navigate(Destination.TransactionDetails(roomId, eventId)) }
                     )
@@ -398,6 +410,7 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, navHelper: Nav
 @Composable
 private fun TransactionTabItem(
     transaction: ZeroInterestTransactionEvent,
+    included: Boolean,
     userUI: UserUI,
     onClick: () -> Unit,
 ) {
@@ -412,10 +425,21 @@ private fun TransactionTabItem(
         component.Icon()
         Spacer(Modifier.width(8.dp))
         Column {
-            if (transaction.description == ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION) {
-                Text(text = stringResource(Res.string.payment), style = MaterialTheme.typography.titleMedium)
-            } else {
-                Text(text = transaction.description, style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (transaction.description == ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION) {
+                    Text(text = stringResource(Res.string.payment), style = MaterialTheme.typography.titleMedium)
+                } else {
+                    Text(text = transaction.description, style = MaterialTheme.typography.titleMedium)
+                }
+                if (!included) {
+                    Spacer(Modifier.width(4.dp))
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = stringResource(Res.string.not_included_in_summary),
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
             Text(text = component.name, style = MaterialTheme.typography.bodySmall)
         }

@@ -7,10 +7,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -28,14 +31,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.util.formatBalance
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import net.folivo.trixnity.client.MatrixClient
 import net.folivo.trixnity.client.room
 import net.folivo.trixnity.core.model.EventId
 import net.folivo.trixnity.core.model.RoomId
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,6 +57,13 @@ fun TransactionDetailsScreen(
             .map { it.content?.getOrNull() as? ZeroInterestTransactionEvent }
     }
     val transaction by transactionFlow.collectAsState(null)
+    val trust = koinInject<SummaryTrustService>()
+    val includedFlow = remember(roomId, transactionId) {
+        flow {
+            emit(trust.getSummariesReferencingTransactions(roomId, setOf(transactionId)))
+        }
+    }
+    val included by includedFlow.collectAsState(emptyMap())
     val userUI = UserUI(client, roomId)
 
     Scaffold(
@@ -75,6 +88,25 @@ fun TransactionDetailsScreen(
                 modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                if (included[transactionId]?.isEmpty() != false) {
+                    item {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                stringResource(Res.string.not_included_in_summary),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+
                 item {
                     Text(stringResource(Res.string.description), style = MaterialTheme.typography.labelMedium)
                     Text(

@@ -20,6 +20,7 @@
     <string name="override">Überschreiben</string>
     <string name="no_transactions_yet">Noch keine Transaktionen</string>
     <string name="payment">Zahlung</string>
+    <string name="not_included_in_summary">Eventuell in keiner Zusammenfassung enthalten</string>
     <string name="new_transaction">Neue Transaktion</string>
     <string name="save">Speichern</string>
     <string name="device_offline">Gerät ist offline</string>

@@ -20,6 +20,7 @@
     <string name="override">Override</string>
     <string name="no_transactions_yet">No transactions yet</string>
     <string name="payment">Payment</string>
+    <string name="not_included_in_summary">Might not included in a summary</string>
     <string name="new_transaction">New Transaction</string>
     <string name="save">Save</string>
     <string name="device_offline">Device is offline</string>

@@ -81,7 +81,7 @@ kotlin {
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
-            implementation(libs.components.uiToolingPreview)
+            implementation(libs.compose.preview)
             implementation(libs.compose.material3AdaptiveNavigationSuite)
             implementation(libs.compose.materialIconsExtended)
             implementation(libs.kotlinx.coroutines.core)
@@ -107,7 +107,6 @@ kotlin {
             implementation(libs.commons.logger)
         }
         androidMain.dependencies {
-            implementation(libs.compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.browser)
             implementation(libs.koin.android)

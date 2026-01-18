@@ -163,9 +163,12 @@ class SummaryTrustService(
     private suspend fun accept(roomId: RoomId, messageId: EventId, content: ZeroInterestSummaryEvent, retroactive: Boolean = false): SummaryTrustDatabase.TrustState {
         if (retroactive && database.checkTrust(roomId, messageId) == SummaryTrustDatabase.TrustState.TRUSTED) return SummaryTrustDatabase.TrustState.TRUSTED
         log.info { "Accepting $messageId" }
-        database.markTrusted(roomId, messageId)
-        database.addHead(roomId, messageId)
-        database.removeHeads(roomId, content.parents.keys)
+        database.addTrustedSummary(
+            roomId,
+            messageId,
+            content.parents.keys,
+            content.parents.values.flatten().toSet()
+        )
         if (retroactive) {
             val reactions = client.room.getTimelineEventReactionAggregation(roomId, messageId).first().reactions[rejectionKey]
             if (reactions != null) {
@@ -180,6 +183,10 @@ class SummaryTrustService(
             }
         }
         return SummaryTrustDatabase.TrustState.TRUSTED
+    }
+
+    suspend fun getSummariesReferencingTransactions(roomId: RoomId, transactions: Set<EventId>): Map<EventId, Set<EventId>> {
+        return database.getSummariesReferencingTransactions(roomId, transactions)
     }
 
     private fun <T> List<T>.combinations(): List<Pair<T, T>> =
@@ -198,8 +205,7 @@ class SummaryTrustService(
                 balances = balances,
                 parents = emptyMap()
             ), ZeroInterestSummaryEvent.TYPE).getOrThrow()
-            database.markTrusted(roomId, response)
-            database.setHeads(roomId, setOf(response))
+            database.addTrustedSummary(roomId, response, emptySet(), emptySet())
         } else {
             log.info { "Merging ${heads.size} heads for new transaction $newTransactionId in room $roomId" }
             // Merge heads
@@ -295,8 +301,7 @@ class SummaryTrustService(
                 balances = baseBalances,
                 parents = newParents
             ), ZeroInterestSummaryEvent.TYPE).getOrThrow()
-            database.markTrusted(roomId, response)
-            database.setHeads(roomId, setOf(response))
+            database.addTrustedSummary(roomId, response, newParents.keys, toApply)
         }
         log.info { "Summary creation for new transaction $newTransactionId in room $roomId completed" }
     }

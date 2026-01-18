@@ -11,12 +11,46 @@ import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import dev.jfronny.zerointerest.service.SummaryTrustDatabase
 
-@Database(entities = [SummaryTrustEntity::class, SummaryHeadEntity::class], version = 2)
+@Database(entities = [SummaryTrustEntity::class, SummaryHeadEntity::class, SummaryEntity::class, SummaryTransactionEntity::class], version = 3)
 @TypeConverters(ZeroInterestTypeConverters::class)
 abstract class ZeroInterestRoomDatabase : RoomDatabase() {
     abstract fun summaryTrustDao(): SummaryTrustDao
     abstract fun summaryHeadDao(): SummaryHeadDao
+    abstract fun summaryDao(): SummaryDao
 }
+
+@Entity(primaryKeys = ["roomId", "summaryId", "parentId"])
+data class SummaryEntity(
+    val roomId: String,
+    val summaryId: String,
+    val parentId: String
+)
+
+@Entity(primaryKeys = ["roomId", "summaryId", "transactionId"])
+data class SummaryTransactionEntity(
+    val roomId: String,
+    val summaryId: String,
+    val transactionId: String
+)
+
+@Dao
+interface SummaryDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSummary(entities: List<SummaryEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTransactions(entities: List<SummaryTransactionEntity>)
+
+    @Query("SELECT parentId FROM SummaryEntity WHERE roomId = :roomId AND summaryId = :summaryId")
+    suspend fun getParents(roomId: String, summaryId: String): List<String>
+
+    @Query("SELECT transactionId FROM SummaryTransactionEntity WHERE roomId = :roomId AND summaryId IN (:summaryIds)")
+    suspend fun getTransactions(roomId: String, summaryIds: List<String>): List<String>
+
+    @Query("SELECT * FROM SummaryTransactionEntity WHERE roomId = :roomId AND transactionId IN (:transactionIds)")
+    suspend fun getSummariesForTransactions(roomId: String, transactionIds: List<String>): List<SummaryTransactionEntity>
+}
+
 
 @Entity(primaryKeys = ["roomId", "eventId"])
 data class SummaryTrustEntity(
