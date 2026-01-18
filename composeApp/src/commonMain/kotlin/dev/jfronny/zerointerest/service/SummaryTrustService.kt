@@ -129,15 +129,15 @@ class SummaryTrustService(
         }
 
         log.info { "4. Otherwise, if the sum of transactions from a parent does not result in the balances, the event is rejected." }
-        for ((summaryId, transactionIds) in content.parents) {
-            val balances = summaries[summaryId]?.value?.balances ?: continue
+        for ((parentId, transactionIds) in content.parents) {
+            val balances = summaries[parentId]?.value?.balances ?: continue
             val transactions = transactionIds.mapNotNull { transactions[it]?.value }
-            if (transactions.size < transactionIds.size) return reject(roomId, messageId, "not enough transactions after summary $summaryId")
-            val computedBalances = mutableMapOf<UserId, Long>()
+            if (transactions.size < transactionIds.size) return reject(roomId, messageId, "not enough transactions after summary $parentId")
+            val computedBalances = balances.toMutableMap()
             for (event in transactions) {
                 event.apply(computedBalances)
             }
-            if (computedBalances != balances) return reject(roomId, messageId, "balances do not match after summary $summaryId")
+            if (computedBalances != content.balances) return reject(roomId, messageId, "balances do not match after summary $parentId: ${computedBalances.toList()} != ${balances.toList()}")
         }
 
         log.info { "5. Otherwise, if a common ancestor exists between two parents, and the following transactions differ between them, the event is rejected." }
