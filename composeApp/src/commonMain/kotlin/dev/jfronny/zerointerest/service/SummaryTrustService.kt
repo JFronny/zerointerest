@@ -223,7 +223,7 @@ class SummaryTrustService(
                 balances = balances,
                 parents = emptyMap()
             ), ZeroInterestSummaryEvent.TYPE).getOrThrow()
-            database.addTrustedSummary(roomId, response, emptySet(), emptySet())
+            database.addTrustedSummary(roomId, response, emptySet(), emptySet(), root = true)
         } else {
             log.info { "Merging ${heads.size} heads for new transaction $newTransactionId in room $roomId" }
             // Merge heads

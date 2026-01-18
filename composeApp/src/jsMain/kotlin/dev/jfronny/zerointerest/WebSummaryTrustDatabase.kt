@@ -104,7 +104,13 @@ class WebSummaryTrustDatabase : SummaryTrustDatabase {
     ) {
         getDb().writeTransaction("summary_head", "summary_trust", "summary_link", "summary_transaction") {
             val headStore = objectStore("summary_head")
-            if (root) headStore.clear()
+            if (root) {
+                headStore.index("roomId")
+                    .openCursor(Key(room.full), autoContinue = true)
+                    .collect {
+                        it.delete()
+                    }
+            }
             headStore.put(jso<JsSummaryHead> {
                 this.roomId = room.full
                 this.eventId = summaryId.full
