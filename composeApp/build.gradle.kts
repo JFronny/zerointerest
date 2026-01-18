@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidApplication)
+    alias(libs.plugins.androidLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
@@ -12,34 +12,8 @@ plugins {
     alias(libs.plugins.androidx.room)
 }
 
-val versionMajor = 1
-val versionMinor = 0
-val versionPatch = 1
-val versionBuild = System.getenv("CI_PIPELINE_IID")?.toInt() ?: 0
-
-val computedVersionName = "$versionMajor.$versionMinor.$versionPatch+$versionBuild"
-
-// Version code: S VVVVV MMMMMMM PPPPP IIIIIIIIIIIIII (32-bit integer)
-// S (x1):  Sign bit. Must always be 0 for an android version code
-// V (x5):  Major version. Up to 32, which should be enough (especially since we are still on 0)
-//          This might not work for apps that follow proper semantic versioning, but who does that?
-// M (x7):  Minor version. Up to 128, which should be enough
-// P (x5):  Patch version. Up to 32, which should be enough for these
-// I (x14): Pipeline ID bits. Allows a total of 16384 pipeline runs.
-//          I'm simply guessing that that'll be enough
-//
-// This implementation assumes that these maximum numbers will never be reached.
-// If they are reached, the version codes "bleed over" into the next range,
-// so this should technically still produce valid, higher versions, but the format will be broken.
-
-val computedVersionCode by lazy {
-    var bits = 0
-    bits = (bits shl 5) or versionMajor
-    bits = (bits shl 7) or versionMinor
-    bits = (bits shl 5) or versionPatch
-    bits = (bits shl 14) or versionBuild
-    bits
-}
+val computedVersionName: String by rootProject.extra
+val computedVersionCode: Int by rootProject.extra
 
 group = "dev.jfronny.zerointerest"
 version = computedVersionName
@@ -55,7 +29,12 @@ repositories {
 }
 
 kotlin {
-    androidTarget {
+    androidLibrary {
+        namespace = "dev.jfronny.zerointerest.composeapp"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        androidResources.enable = true
+
         compilerOptions {
             jvmTarget = JvmTarget.JVM_11
         }
@@ -161,42 +140,6 @@ kotlin {
 
 dependencies {
     ksp(libs.androidx.room.compiler)
-}
-
-android {
-    namespace = "dev.jfronny.zerointerest"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-
-    defaultConfig {
-        applicationId = "dev.jfronny.zerointerest"
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = computedVersionCode
-        versionName = computedVersionName
-    }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
-    buildTypes {
-        getByName("release") {
-            isMinifyEnabled = false
-        }
-        getByName("debug") {
-            isMinifyEnabled = false
-            applicationIdSuffix = ".debug"
-            versionNameSuffix = "-debug"
-        }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-}
-
-dependencies {
-    debugImplementation(compose.uiTooling)
 }
 
 room {
