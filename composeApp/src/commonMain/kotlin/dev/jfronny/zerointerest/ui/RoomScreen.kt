@@ -78,6 +78,7 @@ import net.folivo.trixnity.core.model.RoomId
 import net.folivo.trixnity.core.model.UserId
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import kotlin.time.Duration.Companion.seconds
 
 private val log = KotlinLogging.logger {}
 
@@ -274,6 +275,8 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, navHelper: Nav
                 config = {
                     minSize = pageSize.toLong()
                     maxSize = pageSize.toLong()
+                    fetchTimeout = 12.seconds
+                    allowReplaceContent = false
                 }
             ).mapNotNull { timelineEventFlow ->
                 emittedCount++

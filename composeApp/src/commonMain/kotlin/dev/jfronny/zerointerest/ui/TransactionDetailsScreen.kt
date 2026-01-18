@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -33,7 +33,6 @@ import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.util.formatBalance
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import net.folivo.trixnity.client.MatrixClient
@@ -42,6 +41,7 @@ import net.folivo.trixnity.core.model.EventId
 import net.folivo.trixnity.core.model.RoomId
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,9 +52,10 @@ fun TransactionDetailsScreen(
     onBack: () -> Unit
 ) {
     val transactionFlow = remember(roomId, transactionId) {
-        client.room.getTimelineEvent(roomId, transactionId)
-            .filterNotNull()
-            .map { it.content?.getOrNull() as? ZeroInterestTransactionEvent }
+        client.room.getTimelineEvent(roomId, transactionId) {
+            fetchTimeout = 12.seconds
+            allowReplaceContent = false
+        }.map { it?.content?.getOrNull() as? ZeroInterestTransactionEvent }
     }
     val transaction by transactionFlow.collectAsState(null)
     val trust = koinInject<SummaryTrustService>()

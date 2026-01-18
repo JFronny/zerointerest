@@ -74,6 +74,7 @@ class SummaryTrustService(
         return withTimeoutOrNull(12.seconds) {
             client.room.getTimelineEvent(roomId, eventId) {
                 fetchTimeout = 10.seconds
+                allowReplaceContent = false
             }.filterNotNull().firstOrNull()
         }
     }
@@ -92,6 +93,7 @@ class SummaryTrustService(
             val hasPrevious = client.room.getTimelineEvents(roomId, messageId, direction = GetEvents.Direction.BACKWARDS) {
                 maxSize = 1024 // trixnity doesn't easily allow us to filter just for ZeroInterestSummaryEvents, and this should be fine
                 fetchTimeout = 12.seconds
+                allowReplaceContent = false
             }.any { timelineEventFlow ->
                 val event = timelineEventFlow.first()
                 event.eventId != messageId && event.content?.getOrNull() is ZeroInterestSummaryEvent
