@@ -52,5 +52,5 @@ dependencies {
     implementation(libs.koin.compose)
     implementation(libs.androidx.activity.compose)
 
-    debugImplementation(compose.uiTooling)
+    debugImplementation(libs.compose.uiTooling)
 }

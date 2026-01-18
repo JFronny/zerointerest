@@ -17,6 +17,8 @@ jfcommons = "1.8.0-SNAPSHOT"
 junit = "4.13.2"
 kotlin = "2.3.0"
 kotlinx-coroutines = "1.10.2"
+material3 = "1.9.0"
+materialIconsExtended = "1.7.3"
 slf4jAndroid = "1.7.36"
 trixnity = "4.22.7"
 koin = "4.1.1"
@@ -67,6 +69,17 @@ ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "kto
 
 slf4j-over-jpl = { module = "io.gitlab.jfronny:slf4j-over-jpl", version.ref = "jfcommons" }
 commons-logger = { module = "io.gitlab.jfronny:commons-logger", version.ref = "jfcommons" }
+
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
+compose-uiTooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "composeMultiplatform" }
+compose-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
+components-uiToolingPreview = { module = "org.jetbrains.compose.components:components-ui-tooling-preview", version.ref = "composeMultiplatform" }
+compose-materialIconsExtended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
+compose-material3AdaptiveNavigationSuite = { module = "org.jetbrains.compose.material3:material3-adaptive-navigation-suite", version.ref = "material3" }
+compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
