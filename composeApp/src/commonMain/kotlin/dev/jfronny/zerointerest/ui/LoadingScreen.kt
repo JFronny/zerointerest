@@ -22,9 +22,12 @@ import androidx.compose.ui.unit.dp
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+
+private val log = KotlinLogging.logger {}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,14 +44,19 @@ fun LoadingScreen(onSuccess: suspend () -> Unit, onError: suspend () -> Unit) = 
     LaunchedEffect(matrixClient) {
         val homeserver = settings.defaultHomeserver()
         try {
+            log.info { "Trying to restore session with homeserver $homeserver" }
             matrixClient.restore()
             if (matrixClient.loggedIn) {
                 settings.setDefaultHomeserver(homeserver)
+                log.info { "Successfully restored session with homeserver $homeserver" }
                 onSuccess()
             } else {
+                log.error { "Failed to restore session with homeserver $homeserver" }
                 onError()
             }
-        } catch (_: Throwable) {
+        } catch (e: Throwable) {
+            log.error(e) { "Failed to restore session with homeserver $homeserver" }
+            onError()
         }
     }
 

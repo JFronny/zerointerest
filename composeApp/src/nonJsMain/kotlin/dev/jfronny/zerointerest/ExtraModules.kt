@@ -10,6 +10,7 @@ fun createExtraModule() = module {
         get<AbstractPlatform>()
             .zerointerestDatabaseBuilder()
             .setDriver(BundledSQLiteDriver())
+            .addMigrations(Migration1_2, Migration2_3)
             .build()
     } bind ZeroInterestRoomDatabase::class
     single {

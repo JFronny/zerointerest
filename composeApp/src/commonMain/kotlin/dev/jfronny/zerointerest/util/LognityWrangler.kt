@@ -97,10 +97,6 @@ object LognityWrangler : Backend {
                   override var level: OLevel,
                   override var isEnabled: Boolean
     ) : LLogger {
-        init {
-            require(config.appenders.isEmpty())
-        }
-
         override fun log(level: OLevel, message: AnsiScope.() -> Any) = log(null, level, message)
         override fun log(
             marker: Marker?,
@@ -126,9 +122,7 @@ object LognityWrangler : Backend {
 
     object OAppender : Appender {
         override val name: String = "OAppender"
-        override val formatter: Formatter get() = { l, level, content, marker, s ->
-            content.toString()
-        }
+        override val formatter: Formatter get() = Formatter { logger, level, content, marker, timestamp, s -> content.toString() }
         override val pattern: String get() = "{{message}}"
 
         override fun append(
