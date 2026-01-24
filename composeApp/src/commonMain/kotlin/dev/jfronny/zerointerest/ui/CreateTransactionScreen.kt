@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -146,14 +147,18 @@ fun CreateTransactionScreen(
         },
 
         floatingActionButton = {
+            var launched by remember { mutableStateOf(false) }
             FloatingActionButton(onClick = {
+                if (launched) return@FloatingActionButton
                 val total = parseAmount(totalAmountStr) ?: 0L
                 val recipientAmounts = recipientAmountInputs.mapValues { parseAmount(it.value) ?: 0L }
                 val description = description.ifBlank { ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION }
                 if (recipientAmounts.isNotEmpty() && total > 0) {
+                    launched = true
                     scope.launch {
                         if (client.syncState.value != SyncState.RUNNING) {
                             error = getString(Res.string.device_offline)
+                            launched = false
                             return@launch
                         }
 
@@ -171,10 +176,12 @@ fun CreateTransactionScreen(
                             .firstOrNull()
                         if (outbox == null) {
                             error = getString(Res.string.failed_send_message)
+                            launched = false
                             return@launch
                         }
                         if (outbox.sendError != null) {
                             error = getString(Res.string.failed_send_message_with_error, outbox.sendError.toString())
+                            launched = false
                             return@launch
                         }
 
@@ -182,13 +189,15 @@ fun CreateTransactionScreen(
                             trustService.createSummary(roomId, outbox.eventId!!, content)
                         } catch (e: Exception) {
                             error = getString(Res.string.failed_create_trust_summary, e.message.toString())
+                            launched = false
                             return@launch
                         }
                         onDone()
                     }
                 }
             }) {
-                Icon(Icons.Default.Check, stringResource(Res.string.save))
+                if (launched) CircularProgressIndicator()
+                else Icon(Icons.Default.Check, stringResource(Res.string.save))
             }
         }
     ) { padding ->

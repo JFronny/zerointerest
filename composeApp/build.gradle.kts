@@ -106,6 +106,7 @@ kotlin {
             implementation(libs.androidx.datastore)
             implementation(libs.androidx.datastore.preferences)
             implementation(libs.kotlin.logging)
+            implementation(kotlin("reflect"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
