@@ -9,14 +9,39 @@ import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
-import dev.jfronny.zerointerest.service.SummaryTrustDatabase
+import de.connect2x.trixnity.core.model.UserId
+import dev.jfronny.zerointerest.service.ZeroInterestDatabase
+import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.json.Json
 
-@Database(entities = [SummaryTrustEntity::class, SummaryHeadEntity::class, SummaryEntity::class, SummaryTransactionEntity::class], version = 3)
+@Database(entities = [SummaryTrustEntity::class, SummaryHeadEntity::class, SummaryEntity::class, SummaryTransactionEntity::class, TransactionTemplateEntity::class], version = 4)
 @TypeConverters(ZeroInterestTypeConverters::class)
 abstract class ZeroInterestRoomDatabase : RoomDatabase() {
     abstract fun summaryTrustDao(): SummaryTrustDao
     abstract fun summaryHeadDao(): SummaryHeadDao
     abstract fun summaryDao(): SummaryDao
+    abstract fun transactionTemplateDao(): TransactionTemplateDao
+}
+
+@Entity(primaryKeys = ["roomId", "id"])
+data class TransactionTemplateEntity(
+    val roomId: String,
+    val id: String,
+    val description: String,
+    val sender: String,
+    val receivers: Map<UserId, Long>
+)
+
+@Dao
+interface TransactionTemplateDao {
+    @Query("SELECT * FROM TransactionTemplateEntity WHERE roomId = :roomId")
+    fun getTemplates(roomId: String): Flow<List<TransactionTemplateEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(entity: TransactionTemplateEntity)
+
+    @Query("DELETE FROM TransactionTemplateEntity WHERE roomId = :roomId AND id = :id")
+    suspend fun delete(roomId: String, id: String)
 }
 
 @Entity(primaryKeys = ["roomId", "summaryId", "parentId"])
@@ -56,7 +81,7 @@ interface SummaryDao {
 data class SummaryTrustEntity(
     val roomId: String,
     val eventId: String,
-    val state: SummaryTrustDatabase.TrustState
+    val state: ZeroInterestDatabase.TrustState
 )
 
 @Dao
@@ -65,15 +90,21 @@ interface SummaryTrustDao {
     suspend fun insert(entity: SummaryTrustEntity)
 
     @Query("SELECT state FROM SummaryTrustEntity WHERE roomId = :roomId AND eventId = :eventId")
-    suspend fun getTrustState(roomId: String, eventId: String): SummaryTrustDatabase.TrustState?
+    suspend fun getTrustState(roomId: String, eventId: String): ZeroInterestDatabase.TrustState?
 }
 
 class ZeroInterestTypeConverters {
     @TypeConverter
-    fun toTrustState(value: String) = enumValueOf<SummaryTrustDatabase.TrustState>(value)
+    fun toTrustState(value: String) = enumValueOf<ZeroInterestDatabase.TrustState>(value)
 
     @TypeConverter
-    fun fromTrustState(value: SummaryTrustDatabase.TrustState) = value.name
+    fun fromTrustState(value: ZeroInterestDatabase.TrustState) = value.name
+
+    @TypeConverter
+    fun toReceivers(value: String): Map<UserId, Long> = Json.decodeFromString(value)
+
+    @TypeConverter
+    fun fromReceivers(value: Map<UserId, Long>): String = Json.encodeToString(value)
 }
 
 @Entity(primaryKeys = ["roomId", "eventId"])

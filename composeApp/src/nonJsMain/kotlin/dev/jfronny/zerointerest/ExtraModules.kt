@@ -1,7 +1,7 @@
 package dev.jfronny.zerointerest
 
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import dev.jfronny.zerointerest.service.SummaryTrustDatabase
+import dev.jfronny.zerointerest.service.ZeroInterestDatabase
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
@@ -10,12 +10,12 @@ fun createExtraModule() = module {
         get<AbstractPlatform>()
             .zerointerestDatabaseBuilder()
             .setDriver(BundledSQLiteDriver())
-            .addMigrations(Migration1_2, Migration2_3)
+            .addMigrations(Migration1_2, Migration2_3, Migration3_4)
             .build()
     } bind ZeroInterestRoomDatabase::class
     single {
-        RoomSummaryTrustDatabase(get())
-    } bind SummaryTrustDatabase::class
+        RoomZeroInterestDatabase(get())
+    } bind ZeroInterestDatabase::class
     single {
         get<Platform>() as AbstractPlatform
     }

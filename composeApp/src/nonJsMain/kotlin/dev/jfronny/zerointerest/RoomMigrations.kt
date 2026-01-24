@@ -38,3 +38,18 @@ object Migration2_3 : Migration(2, 3) {
         """.trimIndent())
     }
 }
+
+object Migration3_4 : Migration(3, 4) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("""
+            CREATE TABLE IF NOT EXISTS `TransactionTemplateEntity` (
+                `roomId` TEXT NOT NULL,
+                `id` TEXT NOT NULL,
+                `description` TEXT NOT NULL,
+                `sender` TEXT NOT NULL,
+                `receivers` TEXT NOT NULL,
+                PRIMARY KEY(`roomId`, `id`)
+            )
+        """.trimIndent())
+    }
+}

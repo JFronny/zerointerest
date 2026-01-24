@@ -1,12 +1,16 @@
 package dev.jfronny.zerointerest
 
-import dev.jfronny.zerointerest.service.SummaryTrustDatabase
-import dev.jfronny.zerointerest.service.SummaryTrustDatabase.TrustState
-import dev.jfronny.zerointerest.service.SummaryTrustDatabase.TrustState.*
+import dev.jfronny.zerointerest.data.TransactionTemplate
+import dev.jfronny.zerointerest.service.ZeroInterestDatabase
+import dev.jfronny.zerointerest.service.ZeroInterestDatabase.TrustState
+import dev.jfronny.zerointerest.service.ZeroInterestDatabase.TrustState.*
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
+import de.connect2x.trixnity.core.model.UserId
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
-class RoomSummaryTrustDatabase(val db: ZeroInterestRoomDatabase) : SummaryTrustDatabase {
+class RoomZeroInterestDatabase(val db: ZeroInterestRoomDatabase) : ZeroInterestDatabase {
     override suspend fun markTrusted(room: RoomId, event: EventId) {
         db.summaryTrustDao().insert(SummaryTrustEntity(room.full, event.full, TRUSTED))
     }
@@ -54,5 +58,34 @@ class RoomSummaryTrustDatabase(val db: ZeroInterestRoomDatabase) : SummaryTrustD
             result.getOrPut(EventId(it.transactionId)) { mutableSetOf() }.add(EventId(it.summaryId))
         }
         return result
+    }
+
+    override fun getTransactionTemplates(room: RoomId): Flow<List<TransactionTemplate>> {
+        return db.transactionTemplateDao().getTemplates(room.full).map { list ->
+            list.map { entity ->
+                TransactionTemplate(
+                    id = entity.id,
+                    description = entity.description,
+                    sender = UserId(entity.sender),
+                    receivers = entity.receivers
+                )
+            }
+        }
+    }
+
+    override suspend fun addTransactionTemplate(room: RoomId, template: TransactionTemplate) {
+        db.transactionTemplateDao().insert(
+            TransactionTemplateEntity(
+                roomId = room.full,
+                id = template.id,
+                description = template.description,
+                sender = template.sender.full,
+                receivers = template.receivers
+            )
+        )
+    }
+
+    override suspend fun removeTransactionTemplate(room: RoomId, templateId: String) {
+        db.transactionTemplateDao().delete(room.full, templateId)
     }
 }

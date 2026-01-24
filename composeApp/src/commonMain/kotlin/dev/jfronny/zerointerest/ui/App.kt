@@ -1,17 +1,30 @@
 package dev.jfronny.zerointerest.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import dev.jfronny.zerointerest.Destination
+import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
+import dev.jfronny.zerointerest.service.ZeroInterestDatabase
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import dev.jfronny.zerointerest.util.EventIdNavType
 import dev.jfronny.zerointerest.util.RoomIdNavType
 import dev.jfronny.zerointerest.util.rememberNavigationHelper
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
@@ -25,6 +38,7 @@ fun App() = AppTheme {
     val navHelper = rememberNavigationHelper()
     val service = koinInject<MatrixClientService>()
     val settings = koinInject<Settings>()
+    val database = koinInject<ZeroInterestDatabase>()
 
     suspend fun onLoginSuccess() {
         val rememberedRoom = settings.rememberedRoom()
@@ -89,18 +103,35 @@ fun App() = AppTheme {
                         navHelper.popMainBackStack()
                     }
                 },
-                onAddTransaction = { navHelper.navigate(Destination.CreateTransaction(route.roomId)) },
+                onAddTransaction = { template ->
+                    navHelper.navigate(Destination.CreateTransaction(route.roomId, template?.id))
+                },
                 navHelper = navHelper
             )
         }
         composable<Destination.CreateTransaction>(typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)) {
             val route = it.toRoute<Destination.CreateTransaction>()
-            CreateTransactionScreen(
-                client = service.get(),
-                roomId = route.roomId,
-                onDone = { navHelper.popMainBackStack() },
-                onBack = { navHelper.popMainBackStack() }
-            )
+            val templateId = route.templateId
+            var initialTemplate by remember { mutableStateOf<TransactionTemplate?>(null) }
+            LaunchedEffect(templateId) {
+                if (templateId != null) {
+                    initialTemplate = database.getTransactionTemplates(route.roomId).first().find { it.id == templateId }
+                }
+            }
+
+            if (templateId != null && initialTemplate == null) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                CreateTransactionScreen(
+                    client = service.get(),
+                    roomId = route.roomId,
+                    initialTemplate = initialTemplate,
+                    onDone = { navHelper.popMainBackStack() },
+                    onBack = { navHelper.popMainBackStack() }
+                )
+            }
         }
         composable<Destination.TransactionDetails>(
             typeMap = mapOf(

@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -50,13 +52,23 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import de.connect2x.trixnity.client.MatrixClient
+import de.connect2x.trixnity.client.room
+import de.connect2x.trixnity.client.room.RoomService
+import de.connect2x.trixnity.client.store.eventId
+import de.connect2x.trixnity.clientserverapi.model.room.GetEvents
+import de.connect2x.trixnity.core.model.EventId
+import de.connect2x.trixnity.core.model.RoomId
+import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.Destination
 import dev.jfronny.zerointerest.SourceCodeUrl
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
+import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.SummaryTrustService
+import dev.jfronny.zerointerest.service.ZeroInterestDatabase
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import dev.jfronny.zerointerest.util.NavigationHelper
 import dev.jfronny.zerointerest.util.formatBalance
@@ -68,14 +80,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
-import de.connect2x.trixnity.client.MatrixClient
-import de.connect2x.trixnity.client.room
-import de.connect2x.trixnity.client.room.RoomService
-import de.connect2x.trixnity.client.store.eventId
-import de.connect2x.trixnity.clientserverapi.model.room.GetEvents
-import de.connect2x.trixnity.core.model.EventId
-import de.connect2x.trixnity.core.model.RoomId
-import de.connect2x.trixnity.core.model.UserId
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import kotlin.time.Duration.Companion.seconds
@@ -84,10 +88,11 @@ private val log = KotlinLogging.logger {}
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit, navHelper: NavigationHelper) {
+fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: (TransactionTemplate?) -> Unit, navHelper: NavigationHelper) {
     val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
     val client = rxclient ?: return
     val trust = koinInject<SummaryTrustService>()
+    val database = koinInject<ZeroInterestDatabase>()
     val roomNavHelper = navHelper.room()
     val roomIs = roomNavHelper.roomIs()
     val scope = rememberCoroutineScope()
@@ -129,8 +134,41 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: () -> Unit,
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(onClick = onAddTransaction) {
-                    Icon(Icons.Default.Add, stringResource(Res.string.add_transaction))
+                val templatesFlow = remember(roomId) { database.getTransactionTemplates(roomId) }
+                val templates by templatesFlow.collectAsState(emptyList())
+
+                if (templates.isEmpty()) {
+                    FloatingActionButton(onClick = { onAddTransaction(null) }) {
+                        Icon(Icons.Default.Add, stringResource(Res.string.add_transaction))
+                    }
+                } else {
+                    var expanded by remember { mutableStateOf(false) }
+                    Box {
+                        FloatingActionButton(onClick = { expanded = true }) {
+                            Icon(Icons.Default.Add, stringResource(Res.string.add_transaction))
+                        }
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                             DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.new_transaction)) },
+                                onClick = {
+                                    expanded = false
+                                    onAddTransaction(null)
+                                }
+                            )
+                            templates.forEach { template ->
+                                DropdownMenuItem(
+                                    text = { Text(template.description) },
+                                    onClick = {
+                                        expanded = false
+                                        onAddTransaction(template)
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         ) { padding ->

@@ -13,8 +13,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -29,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,45 +42,52 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import dev.jfronny.zerointerest.composeapp.generated.resources.*
-import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
-import dev.jfronny.zerointerest.service.SummaryTrustService
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import de.connect2x.trixnity.client.MatrixClient
 import de.connect2x.trixnity.client.room
 import de.connect2x.trixnity.client.user
 import de.connect2x.trixnity.clientserverapi.client.SyncState
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
+import dev.jfronny.zerointerest.composeapp.generated.resources.*
+import dev.jfronny.zerointerest.data.TransactionTemplate
+import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.service.SummaryTrustService
+import dev.jfronny.zerointerest.service.ZeroInterestDatabase
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import kotlin.math.roundToLong
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalUuidApi::class)
 @Composable
 fun CreateTransactionScreen(
     client: MatrixClient,
     roomId: RoomId,
+    initialTemplate: TransactionTemplate?,
     onDone: () -> Unit,
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val trustService = koinInject<SummaryTrustService>()
+    val database = koinInject<ZeroInterestDatabase>()
     val users by remember(client) { client.user.getAll(roomId) }.collectAsState(emptyMap())
     val userIds = remember(users) { users.keys.toList() }
 
-    var description by remember { mutableStateOf("") }
-    var sender by remember { mutableStateOf(client.userId) }
+    var description by remember { mutableStateOf(initialTemplate?.description ?: "") }
+    var sender by remember { mutableStateOf(initialTemplate?.sender ?: client.userId) }
     var totalAmountStr by remember { mutableStateOf("") }
-    var selectedRecipients by remember { mutableStateOf(setOf<UserId>()) }
+    var selectedRecipients by remember { mutableStateOf(initialTemplate?.receivers?.keys ?: setOf()) }
     var recipientAmountInputs by remember { mutableStateOf(mapOf<UserId, String>()) }
     var error by remember { mutableStateOf<String?>(null) }
+    var isTemplateModified by remember { mutableStateOf(false) }
 
     fun parseAmount(s: String): Long? {
         return s.toDoubleOrNull()?.let { (it * 100).roundToLong() }
@@ -86,6 +96,22 @@ fun CreateTransactionScreen(
     fun formatAmount(l: Long): String {
         val d = l / 100.0
         return d.toString()
+    }
+    // Initialize amounts if template provided
+    LaunchedEffect(initialTemplate) {
+        if (initialTemplate != null) {
+            val total = initialTemplate.receivers.values.sum()
+            totalAmountStr = formatAmount(total)
+            recipientAmountInputs = initialTemplate.receivers.mapValues { formatAmount(it.value) }
+        }
+    }
+
+    fun checkForModifications() {
+        if (initialTemplate == null) return
+        val currentRecipients = recipientAmountInputs.mapValues { parseAmount(it.value) ?: 0L }
+        isTemplateModified = description != initialTemplate.description ||
+                sender != initialTemplate.sender ||
+                currentRecipients != initialTemplate.receivers
     }
 
     fun distribute(total: Long, recipients: Set<UserId>) {
@@ -103,6 +129,7 @@ fun CreateTransactionScreen(
             newInputs[userId] = formatAmount(amount)
         }
         recipientAmountInputs = newInputs
+        checkForModifications()
     }
 
     fun onTotalChanged(newTotalStr: String) {
@@ -111,6 +138,7 @@ fun CreateTransactionScreen(
         if (total != null) {
             distribute(total, selectedRecipients)
         }
+        checkForModifications()
     }
 
     fun onRecipientsChanged(newRecipients: Set<UserId>) {
@@ -123,6 +151,7 @@ fun CreateTransactionScreen(
             val newInputs = newRecipients.associateWith { recipientAmountInputs[it] ?: "0.0" }
             recipientAmountInputs = newInputs
         }
+        checkForModifications()
     }
 
     fun onIndividualAmountChanged(userId: UserId, newAmountStr: String) {
@@ -132,6 +161,12 @@ fun CreateTransactionScreen(
 
         val total = newInputs.values.sumOf { parseAmount(it) ?: 0L }
         totalAmountStr = formatAmount(total)
+        checkForModifications()
+    }
+    
+    fun onDescriptionChanged(newDescription: String) {
+        description = newDescription
+        checkForModifications()
     }
 
     Scaffold(
@@ -141,6 +176,58 @@ fun CreateTransactionScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.back))
+                    }
+                },
+                actions = {
+                    var menuExpanded by remember { mutableStateOf(false) }
+                    
+                    if (initialTemplate != null && !isTemplateModified) {
+                         IconButton(onClick = { menuExpanded = true }) {
+                            Icon(Icons.Default.MoreVert, stringResource(Res.string.options))
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.delete_template)) },
+                                onClick = {
+                                    scope.launch {
+                                        database.removeTransactionTemplate(roomId, initialTemplate.id)
+                                        menuExpanded = false
+                                        onBack()
+                                    }
+                                }
+                            )
+                        }
+                    } else {
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(Icons.Default.MoreVert, stringResource(Res.string.options))
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.save_as_template)) },
+                                onClick = {
+                                    scope.launch {
+                                        val total = parseAmount(totalAmountStr) ?: 0L
+                                        val recipientAmounts = recipientAmountInputs.mapValues { parseAmount(it.value) ?: 0L }
+                                        if (recipientAmounts.isNotEmpty() && total > 0) {
+                                            val template = TransactionTemplate(
+                                                id = Uuid.random().toString(),
+                                                description = description,
+                                                sender = sender,
+                                                receivers = recipientAmounts
+                                            )
+                                            database.addTransactionTemplate(roomId, template)
+                                        }
+                                        menuExpanded = false
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             )
@@ -213,7 +300,7 @@ fun CreateTransactionScreen(
             item {
                 OutlinedTextField(
                     value = description,
-                    onValueChange = { description = it },
+                    onValueChange = { onDescriptionChanged(it) },
                     label = { Text(stringResource(Res.string.description)) },
                     placeholder = { Text(stringResource(Res.string.payment)) },
                     modifier = Modifier.fillMaxWidth()
@@ -251,6 +338,7 @@ fun CreateTransactionScreen(
                                 } },
                                 onClick = {
                                     sender = userId
+                                    checkForModifications()
                                     expanded = false
                                 },
                             )

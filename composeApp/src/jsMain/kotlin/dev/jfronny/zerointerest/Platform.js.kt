@@ -10,7 +10,7 @@ import de.connect2x.trixnity.client.MediaStoreModule
 import de.connect2x.trixnity.client.RepositoriesModule
 import de.connect2x.trixnity.client.media.indexeddb.indexedDB
 import de.connect2x.trixnity.client.store.repository.indexeddb.indexedDB
-import dev.jfronny.zerointerest.service.SummaryTrustDatabase
+import dev.jfronny.zerointerest.service.ZeroInterestDatabase
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.js.Js
 import org.koin.core.scope.Scope
@@ -35,6 +35,6 @@ actual fun Scope.getPlatform(): Platform = JsPlatform()
 
 actual fun createExtraModule() = module {
     single {
-        WebSummaryTrustDatabase()
-    } bind SummaryTrustDatabase::class
+        WebZeroInterestDatabase()
+    } bind ZeroInterestDatabase::class
 }

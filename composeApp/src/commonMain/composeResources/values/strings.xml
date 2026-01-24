@@ -71,4 +71,7 @@
     <string name="choose_sso_provider">Choose an identity provider</string>
     <string name="sso_cancelled">SSO login was cancelled</string>
     <string name="sso_success">SSO login successful</string>
+    <string name="options">Options</string>
+    <string name="save_as_template">Save as template</string>
+    <string name="delete_template">Delete template</string>
 </resources>
