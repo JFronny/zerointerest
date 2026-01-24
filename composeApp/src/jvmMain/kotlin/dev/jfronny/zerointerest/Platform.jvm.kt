@@ -6,7 +6,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import io.ktor.client.engine.java.Java
-import net.folivo.trixnity.client.store.repository.room.TrixnityRoomDatabase
+import de.connect2x.trixnity.client.store.repository.room.TrixnityRoomDatabase
 import okio.Path.Companion.toOkioPath
 import org.koin.core.scope.Scope
 import kotlin.io.path.absolutePathString
@@ -24,3 +24,4 @@ class JVMPlatform : AbstractPlatform(OS.stateDir.toOkioPath()) {
 actual fun Scope.getPlatform(): Platform = JVMPlatform()
 @Composable
 actual fun getPlatformTheme(darkTheme: Boolean): ColorScheme? = null
+actual fun addShutdownHook(block: () -> Unit) = Runtime.getRuntime().addShutdownHook(Thread(block))

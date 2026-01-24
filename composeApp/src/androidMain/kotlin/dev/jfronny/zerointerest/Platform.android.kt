@@ -11,7 +11,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import io.ktor.client.engine.android.Android
-import net.folivo.trixnity.client.store.repository.room.TrixnityRoomDatabase
+import de.connect2x.trixnity.client.store.repository.room.TrixnityRoomDatabase
 import okio.Path.Companion.toOkioPath
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.scope.Scope
@@ -33,3 +33,5 @@ actual fun getPlatformTheme(darkTheme: Boolean): ColorScheme? = if (Build.VERSIO
     val context = LocalContext.current
     if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
 } else null
+
+actual fun addShutdownHook(block: () -> Unit) = Runtime.getRuntime().addShutdownHook(Thread(block))

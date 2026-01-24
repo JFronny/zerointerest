@@ -47,7 +47,7 @@ import dev.jfronny.zerointerest.service.Settings
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.Url
 import kotlinx.coroutines.launch
-import net.folivo.trixnity.clientserverapi.model.authentication.LoginType
+import de.connect2x.trixnity.clientserverapi.model.authentication.LoginType
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource

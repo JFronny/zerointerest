@@ -13,8 +13,8 @@ import dev.jfronny.zerointerest.util.EventIdNavType
 import dev.jfronny.zerointerest.util.RoomIdNavType
 import dev.jfronny.zerointerest.util.rememberNavigationHelper
 import kotlinx.coroutines.launch
-import net.folivo.trixnity.core.model.EventId
-import net.folivo.trixnity.core.model.RoomId
+import de.connect2x.trixnity.core.model.EventId
+import de.connect2x.trixnity.core.model.RoomId
 import org.koin.compose.koinInject
 import kotlin.reflect.typeOf
 

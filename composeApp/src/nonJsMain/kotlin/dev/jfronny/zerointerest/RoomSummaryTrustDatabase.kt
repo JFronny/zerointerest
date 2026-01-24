@@ -3,8 +3,8 @@ package dev.jfronny.zerointerest
 import dev.jfronny.zerointerest.service.SummaryTrustDatabase
 import dev.jfronny.zerointerest.service.SummaryTrustDatabase.TrustState
 import dev.jfronny.zerointerest.service.SummaryTrustDatabase.TrustState.*
-import net.folivo.trixnity.core.model.EventId
-import net.folivo.trixnity.core.model.RoomId
+import de.connect2x.trixnity.core.model.EventId
+import de.connect2x.trixnity.core.model.RoomId
 
 class RoomSummaryTrustDatabase(val db: ZeroInterestRoomDatabase) : SummaryTrustDatabase {
     override suspend fun markTrusted(room: RoomId, event: EventId) {

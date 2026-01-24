@@ -1,5 +1,18 @@
 package dev.jfronny.zerointerest.service
 
+import de.connect2x.trixnity.client.CryptoDriverModule
+import de.connect2x.trixnity.client.MatrixClient
+import de.connect2x.trixnity.client.MatrixClientConfiguration
+import de.connect2x.trixnity.client.create
+import de.connect2x.trixnity.client.cryptodriver.vodozemac.vodozemac
+import de.connect2x.trixnity.clientserverapi.client.ClassicMatrixClientAuthProviderData
+import de.connect2x.trixnity.clientserverapi.client.MatrixClientAuthProviderData
+import de.connect2x.trixnity.clientserverapi.client.MatrixClientServerApiClientFactory
+import de.connect2x.trixnity.clientserverapi.client.classicLoginWith
+import de.connect2x.trixnity.clientserverapi.client.classicLoginWithPassword
+import de.connect2x.trixnity.clientserverapi.client.classicLoginWithToken
+import de.connect2x.trixnity.clientserverapi.model.authentication.IdentifierType
+import de.connect2x.trixnity.clientserverapi.model.authentication.LoginType
 import dev.jfronny.zerointerest.Platform
 import dev.jfronny.zerointerest.SuspendLazy
 import dev.jfronny.zerointerest.createAppMatrixModule
@@ -7,15 +20,6 @@ import dev.jfronny.zerointerest.ui.appName
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import net.folivo.trixnity.client.MatrixClient
-import net.folivo.trixnity.client.MatrixClientConfiguration
-import net.folivo.trixnity.client.fromStore
-import net.folivo.trixnity.client.loginWith
-import net.folivo.trixnity.client.loginWithPassword
-import net.folivo.trixnity.client.loginWithToken
-import net.folivo.trixnity.clientserverapi.client.MatrixClientServerApiClientFactory
-import net.folivo.trixnity.clientserverapi.model.authentication.IdentifierType
-import net.folivo.trixnity.clientserverapi.model.authentication.LoginType
 
 class MatrixClientService(
     private val platform: Platform,
@@ -46,25 +50,30 @@ class MatrixClientService(
 
     suspend fun restore() {
         if (flow.value != null) return
-        flow.value = MatrixClient.fromStore(
+        flow.value = MatrixClient.create(
             repositoriesModule = repositoriesModule.get(),
             mediaStoreModule = mediaStoreModule.get(),
+            cryptoDriverModule = CryptoDriverModule.vodozemac(),
             configuration = configuration,
-        ).getOrThrow()?.apply {
+        ).getOrThrow().apply {
             startSync()
         }
     }
 
     suspend fun loginWithPassword(homeserver: Url, username: String, password: String) {
         close()
-        flow.value = MatrixClient.loginWithPassword(
-            baseUrl = homeserver,
-            identifier = IdentifierType.User(username),
-            password = password,
+        flow.value = MatrixClient.create(
             repositoriesModule = repositoriesModule.get(),
             mediaStoreModule = mediaStoreModule.get(),
+            cryptoDriverModule = CryptoDriverModule.vodozemac(),
             configuration = configuration,
-            initialDeviceDisplayName = "ZeroInterest ${platform.name}",
+            authProviderData = MatrixClientAuthProviderData.classicLoginWithPassword(
+                baseUrl = homeserver,
+                httpClientEngine = platform.getHttpClientEngine(),
+                initialDeviceDisplayName = "ZeroInterest ${platform.name}",
+                identifier = IdentifierType.User(username),
+                password = password,
+            ).getOrThrow(),
         ).getOrThrow().apply {
             startSync()
         }
@@ -72,13 +81,17 @@ class MatrixClientService(
 
     suspend fun loginWithToken(homeserver: Url, token: String) {
         close()
-        flow.value = MatrixClient.loginWithToken(
-            baseUrl = homeserver,
-            token = token,
+        flow.value = MatrixClient.create(
             repositoriesModule = repositoriesModule.get(),
             mediaStoreModule = mediaStoreModule.get(),
+            cryptoDriverModule = CryptoDriverModule.vodozemac(),
             configuration = configuration,
-            initialDeviceDisplayName = "ZeroInterest ${platform.name}",
+            authProviderData = MatrixClientAuthProviderData.classicLoginWithToken(
+                baseUrl = homeserver,
+                httpClientEngine = platform.getHttpClientEngine(),
+                initialDeviceDisplayName = "ZeroInterest ${platform.name}",
+                token = token,
+            ).getOrThrow(),
         ).getOrThrow().apply {
             startSync()
         }
@@ -92,35 +105,38 @@ class MatrixClientService(
         close()
         
         // Use loginWith to handle the SSO flow
-        flow.value = MatrixClient.loginWith(
-            baseUrl = homeserver,
+        flow.value = MatrixClient.create(
             repositoriesModule = repositoriesModule.get(),
             mediaStoreModule = mediaStoreModule.get(),
+            cryptoDriverModule = CryptoDriverModule.vodozemac(),
             configuration = configuration,
-            getLoginInfo = { api ->
+            authProviderData = MatrixClientAuthProviderData.classicLoginWith(
+                baseUrl = homeserver,
+                httpClientEngine = platform.getHttpClientEngine(),
+            ) { api ->
                 // Get SSO URL with redirect
                 val ssoUrl = api.authentication.getSsoUrl(
                     redirectUrl = ssoLoginHandler.getCallbackUrl(),
                     idpId = idpId
                 )
-                
+
                 // Perform SSO login flow and get the login token
                 val callbackResult = ssoLoginHandler.performSsoLogin(ssoUrl)
-                
+
                 // Use the token to login
                 api.authentication.login(
                     token = callbackResult.loginToken,
                     type = LoginType.Token(),
                     initialDeviceDisplayName = "ZeroInterest ${platform.name}"
-                ).map { login ->
-                    MatrixClient.LoginInfo(
-                        userId = login.userId,
-                        deviceId = login.deviceId,
+                ).getOrThrow().let { login ->
+                    ClassicMatrixClientAuthProviderData(
+                        baseUrl = homeserver,
                         accessToken = login.accessToken,
-                        refreshToken = login.refreshToken
+                        accessTokenExpiresInMs = login.accessTokenExpiresInMs,
+                        refreshToken = login.refreshToken,
                     )
                 }
-            }
+            }.getOrThrow(),
         ).getOrThrow().apply {
             startSync()
         }

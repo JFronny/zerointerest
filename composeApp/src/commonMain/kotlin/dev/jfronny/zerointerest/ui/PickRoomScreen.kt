@@ -26,11 +26,11 @@ import androidx.compose.ui.text.style.TextAlign
 import dev.jfronny.zerointerest.SourceCodeUrl
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.service.MatrixClientService
-import net.folivo.trixnity.client.flattenValues
-import net.folivo.trixnity.client.room
-import net.folivo.trixnity.client.store.Room
-import net.folivo.trixnity.client.store.hasBeenReplaced
-import net.folivo.trixnity.core.model.RoomId
+import de.connect2x.trixnity.client.flattenValues
+import de.connect2x.trixnity.client.room
+import de.connect2x.trixnity.client.store.Room
+import de.connect2x.trixnity.client.store.hasBeenReplaced
+import de.connect2x.trixnity.core.model.RoomId
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 

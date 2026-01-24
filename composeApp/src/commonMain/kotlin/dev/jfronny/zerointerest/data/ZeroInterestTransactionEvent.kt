@@ -4,10 +4,10 @@ import io.ktor.http.URLBuilder
 import io.ktor.http.appendPathSegments
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import net.folivo.trixnity.core.model.UserId
-import net.folivo.trixnity.core.model.events.MessageEventContent
-import net.folivo.trixnity.core.model.events.m.Mentions
-import net.folivo.trixnity.core.model.events.m.RelatesTo
+import de.connect2x.trixnity.core.model.UserId
+import de.connect2x.trixnity.core.model.events.MessageEventContent
+import de.connect2x.trixnity.core.model.events.m.Mentions
+import de.connect2x.trixnity.core.model.events.m.RelatesTo
 
 @Serializable
 data class ZeroInterestTransactionEvent(

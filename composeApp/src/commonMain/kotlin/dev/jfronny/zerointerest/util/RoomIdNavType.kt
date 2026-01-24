@@ -2,7 +2,7 @@ package dev.jfronny.zerointerest.util
 
 import androidx.navigation.NavType
 import androidx.savedstate.SavedState
-import net.folivo.trixnity.core.model.RoomId
+import de.connect2x.trixnity.core.model.RoomId
 
 object RoomIdNavType : NavType<RoomId?>(isNullableAllowed = true) {
     override fun put(bundle: SavedState, key: String, value: RoomId?) = StringType.put(bundle, key, value?.full)

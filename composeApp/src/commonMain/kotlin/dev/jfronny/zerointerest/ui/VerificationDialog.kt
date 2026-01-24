@@ -14,13 +14,13 @@ import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.service.MatrixClientService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.launch
-import net.folivo.trixnity.client.MatrixClient
-import net.folivo.trixnity.client.verification
-import net.folivo.trixnity.client.verification.ActiveDeviceVerification
-import net.folivo.trixnity.client.verification.ActiveSasVerificationMethod
-import net.folivo.trixnity.client.verification.ActiveSasVerificationState
-import net.folivo.trixnity.client.verification.ActiveVerificationState
-import net.folivo.trixnity.core.model.events.m.key.verification.VerificationMethod
+import de.connect2x.trixnity.client.MatrixClient
+import de.connect2x.trixnity.client.verification
+import de.connect2x.trixnity.client.verification.ActiveDeviceVerification
+import de.connect2x.trixnity.client.verification.ActiveSasVerificationMethod
+import de.connect2x.trixnity.client.verification.ActiveSasVerificationState
+import de.connect2x.trixnity.client.verification.ActiveVerificationState
+import de.connect2x.trixnity.core.model.events.m.key.verification.VerificationMethod
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 

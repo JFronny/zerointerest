@@ -7,7 +7,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import io.ktor.client.engine.darwin.Darwin
 import kotlinx.cinterop.ExperimentalForeignApi
-import net.folivo.trixnity.client.store.repository.room.TrixnityRoomDatabase
+import de.connect2x.trixnity.client.store.repository.room.TrixnityRoomDatabase
+import kotlinx.cinterop.staticCFunction
 import okio.Path.Companion.toPath
 import org.koin.core.scope.Scope
 import platform.Foundation.NSDocumentDirectory
@@ -15,6 +16,7 @@ import platform.Foundation.NSFileManager
 import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
 import platform.UIKit.UIDevice
+import platform.posix.atexit
 
 class IOSPlatform : AbstractPlatform(documentDirectory().toPath()) {
     override val name: String = UIDevice.currentDevice.systemName()
@@ -50,3 +52,9 @@ actual fun Scope.getPlatform(): Platform = IOSPlatform()
 
 @Composable
 actual fun getPlatformTheme(darkTheme: Boolean): ColorScheme? = null
+@OptIn(ExperimentalForeignApi::class)
+actual fun addShutdownHook(block: () -> Unit) {
+    atexit(staticCFunction<Unit> {
+        block()
+    })
+}

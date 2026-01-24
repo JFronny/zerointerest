@@ -5,8 +5,8 @@ import com.juul.indexeddb.Key
 import com.juul.indexeddb.KeyPath
 import com.juul.indexeddb.openDatabase
 import dev.jfronny.zerointerest.service.SummaryTrustDatabase
-import net.folivo.trixnity.core.model.EventId
-import net.folivo.trixnity.core.model.RoomId
+import de.connect2x.trixnity.core.model.EventId
+import de.connect2x.trixnity.core.model.RoomId
 
 private inline fun <T : Any> jso(): T = js("({})")
 private inline fun <T : Any> jso(block: T.() -> Unit): T = jso<T>().apply(block)

@@ -51,6 +51,7 @@ dependencies {
     implementation(projects.composeApp)
     implementation(libs.koin.compose)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.trixnity.client)
 
     debugImplementation(libs.compose.uiTooling)
 }

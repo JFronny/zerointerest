@@ -5,7 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import net.folivo.trixnity.core.model.RoomId
+import de.connect2x.trixnity.core.model.RoomId
 
 class Settings(private val store: DataStore<Preferences>) {
     private val rememberedRoom = stringPreferencesKey("rememberedRoom")

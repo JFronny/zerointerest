@@ -1,5 +1,11 @@
+import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+import com.github.benmanes.gradle.versions.updates.resolutionstrategy.ComponentFilter
+import com.github.benmanes.gradle.versions.updates.resolutionstrategy.ComponentSelectionWithCurrent
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.InternalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmRun
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -10,6 +16,7 @@ plugins {
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
+    alias(libs.plugins.gradleVersions)
 }
 
 val computedVersionName: String by rootProject.extra
@@ -19,11 +26,6 @@ group = "dev.jfronny.zerointerest"
 version = computedVersionName
 
 repositories {
-    maven("https://maven.frohnmeyer-wds.de/artifacts") {
-        content {
-            includeGroup("io.gitlab.jfronny")
-        }
-    }
     mavenCentral()
     google()
 }
@@ -53,6 +55,13 @@ kotlin {
     jvm {
         compilerOptions {
             jvmTarget = JvmTarget.JVM_25
+        }
+        @OptIn(ExperimentalKotlinGradlePluginApi::class, InternalKotlinGradlePluginApi::class)
+        mainRun {
+            @Suppress("UNCHECKED_CAST") val provider = javaClass.getMethod("getTask")(this) as TaskProvider<KotlinJvmRun>
+            provider.configure {
+                jvmArgs("--enable-native-access=ALL-UNNAMED")
+            }
         }
     }
 
@@ -92,9 +101,11 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.trixnity.client)
+            implementation(libs.trixnity.client.cryptodriver.vodozemac)
             implementation(libs.ktor.client.core)
             implementation(libs.androidx.datastore)
             implementation(libs.androidx.datastore.preferences)
+            implementation(libs.kotlin.logging)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -155,4 +166,22 @@ compose.desktop {
             packageVersion = computedVersionName.substringBefore('+')
         }
     }
+}
+
+open class UpgradeToUnstableFilter : ComponentFilter {
+    override fun reject(candidate: ComponentSelectionWithCurrent) = reject(candidate.currentVersion, candidate.candidate.version)
+
+    open fun reject(old: String, new: String): Boolean {
+        return !isStable(new) && isStable(old) // no unstable proposals for stable dependencies
+    }
+
+    open fun isStable(version: String): Boolean {
+        val stableKeyword = setOf("RELEASE", "FINAL", "GA").any { version.uppercase().contains(it) }
+        val stablePattern = version.matches(Regex("""^[0-9,.v-]+(-r)?$"""))
+        return stableKeyword || stablePattern
+    }
+}
+
+tasks.withType<DependencyUpdatesTask> {
+    rejectVersionIf(UpgradeToUnstableFilter())
 }

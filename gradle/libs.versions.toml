@@ -13,20 +13,23 @@ androidx-testExt = "1.3.0"
 composeHotReload = "1.0.0"
 composeMultiplatform = "1.10.0"
 datastore = "1.3.0-alpha04"
-jfcommons = "1.8.0-SNAPSHOT"
+jfcommons = "2.0.0"
 junit = "4.13.2"
 kotlin = "2.3.0"
 kotlinx-coroutines = "1.10.2"
 material3 = "1.9.0"
 materialIconsExtended = "1.7.3"
 slf4jAndroid = "1.7.36"
-trixnity = "4.22.7"
+trixnity = "5.0.0"
+lognity = "1.2.1"
+kotlin-logging = "7.0.14"
 koin = "4.1.1"
 sqlite = "2.6.2"
-ktor = "3.3.3"
+ktor = "3.4.0"
 room = "2.8.4"
-ksp = "2.3.3"
+ksp = "2.3.4"
 copyWebpackPlugin = "12.0.2" # https://github.com/webpack-contrib/copy-webpack-plugin/releases
+gradle-versions = "0.53.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -49,11 +52,12 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 
 slf4j-android = { module = "org.slf4j:slf4j-android", version.ref = "slf4jAndroid" }
-trixnity-client = { module = "net.folivo:trixnity-client", version.ref = "trixnity" }
-trixnity-client-repository-room = { module = "net.folivo:trixnity-client-repository-room", version.ref = "trixnity" }
-trixnity-client-repository-indexeddb = { module = "net.folivo:trixnity-client-repository-indexeddb", version.ref = "trixnity" }
-trixnity-client-media-okio = { module = "net.folivo:trixnity-client-media-okio", version.ref = "trixnity" }
-trixnity-client-media-indexeddb = { module = "net.folivo:trixnity-client-media-indexeddb", version.ref = "trixnity" }
+trixnity-client = { module = "de.connect2x.trixnity:trixnity-client", version.ref = "trixnity" }
+trixnity-client-repository-room = { module = "de.connect2x.trixnity:trixnity-client-repository-room", version.ref = "trixnity" }
+trixnity-client-repository-indexeddb = { module = "de.connect2x.trixnity:trixnity-client-repository-indexeddb", version.ref = "trixnity" }
+trixnity-client-media-okio = { module = "de.connect2x.trixnity:trixnity-client-media-okio", version.ref = "trixnity" }
+trixnity-client-media-indexeddb = { module = "de.connect2x.trixnity:trixnity-client-media-indexeddb", version.ref = "trixnity" }
+trixnity-client-cryptodriver-vodozemac = { module = "de.connect2x.trixnity:trixnity-client-cryptodriver-vodozemac", version.ref = "trixnity" }
 
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
@@ -67,8 +71,9 @@ ktor-client-java = { module = "io.ktor:ktor-client-java", version.ref = "ktor" }
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 
-slf4j-over-jpl = { module = "io.gitlab.jfronny:slf4j-over-jpl", version.ref = "jfcommons" }
-commons-logger = { module = "io.gitlab.jfronny:commons-logger", version.ref = "jfcommons" }
+slf4j-over-jpl = { module = "dev.jfronny.commons:slf4j-over-jpl", version.ref = "jfcommons" }
+commons-logger = { module = "dev.jfronny.commons:commons-logger", version.ref = "jfcommons" }
+kotlin-logging = { module = "io.github.oshai:kotlin-logging", version.ref = "kotlin-logging" }
 
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
@@ -91,3 +96,4 @@ kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+gradleVersions = { id = "com.github.ben-manes.versions", version.ref = "gradle-versions" }

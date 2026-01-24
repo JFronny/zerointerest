@@ -1,5 +1,10 @@
 package dev.jfronny.zerointerest
 
+import de.connect2x.trixnity.core.serialization.events.EventContentSerializerMappings
+import de.connect2x.trixnity.core.serialization.events.default
+import de.connect2x.trixnity.core.serialization.events.invoke
+import de.connect2x.trixnity.core.serialization.events.messageOf
+import de.connect2x.trixnity.core.serialization.events.stateOf
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.service.MatrixClientService
@@ -7,11 +12,6 @@ import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.createSsoLoginHandler
 import kotlinx.coroutines.sync.Mutex
-import net.folivo.trixnity.core.serialization.events.DefaultEventContentSerializerMappings
-import net.folivo.trixnity.core.serialization.events.EventContentSerializerMappings
-import net.folivo.trixnity.core.serialization.events.createEventContentSerializerMappings
-import net.folivo.trixnity.core.serialization.events.messageOf
-import net.folivo.trixnity.core.serialization.events.stateOf
 import org.koin.dsl.module
 
 const val SourceCodeUrl = "https://git.jfronny.dev/Johannes/zerointerest"
@@ -26,10 +26,10 @@ fun createAppModule() = module {
 
 fun createAppMatrixModule() = module {
     single<EventContentSerializerMappings> {
-        DefaultEventContentSerializerMappings + createEventContentSerializerMappings {
+        EventContentSerializerMappings.default(EventContentSerializerMappings {
             stateOf<ZeroInterestSummaryEvent>(ZeroInterestSummaryEvent.TYPE)
             messageOf<ZeroInterestTransactionEvent>(ZeroInterestTransactionEvent.TYPE)
-        }
+        })
     }
 }
 

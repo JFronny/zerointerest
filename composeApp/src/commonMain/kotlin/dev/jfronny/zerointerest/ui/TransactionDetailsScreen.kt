@@ -35,10 +35,10 @@ import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.util.formatBalance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import net.folivo.trixnity.client.MatrixClient
-import net.folivo.trixnity.client.room
-import net.folivo.trixnity.core.model.EventId
-import net.folivo.trixnity.core.model.RoomId
+import de.connect2x.trixnity.client.MatrixClient
+import de.connect2x.trixnity.client.room
+import de.connect2x.trixnity.core.model.EventId
+import de.connect2x.trixnity.core.model.RoomId
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import kotlin.time.Duration.Companion.seconds
