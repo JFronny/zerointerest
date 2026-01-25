@@ -53,7 +53,7 @@ fun TransactionDetailsScreen(
 ) {
     val transactionFlow = remember(roomId, transactionId) {
         client.room.getTimelineEvent(roomId, transactionId) {
-            fetchTimeout = 12.seconds
+            fetchTimeout = 5.seconds
             allowReplaceContent = false
         }.map { it?.content?.getOrNull() as? ZeroInterestTransactionEvent }
     }

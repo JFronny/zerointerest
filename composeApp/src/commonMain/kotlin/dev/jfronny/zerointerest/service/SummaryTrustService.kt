@@ -1,18 +1,5 @@
 package dev.jfronny.zerointerest.service
 
-import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
-import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
-import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.any
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.mapLatest
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import de.connect2x.trixnity.client.room
 import de.connect2x.trixnity.client.room.getState
 import de.connect2x.trixnity.client.room.getTimelineEventReactionAggregation
@@ -26,7 +13,19 @@ import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import de.connect2x.trixnity.core.model.events.ClientEvent
-import kotlin.time.Duration.Companion.minutes
+import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
+import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.any
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.seconds
 
 private data class Timed<T>(val ts: Long, val value: T)
@@ -50,7 +49,7 @@ class SummaryTrustService(
                     return@mapLatest Summary.Empty
                 }
                 log.info { "Received summary event: $it" }
-                val trust = withTimeoutOrNull(2.minutes) {
+                val trust = withTimeoutOrNull(20.seconds) {
                     checkTrusted(roomId, it.id, it.originTimestamp, it.content)
                 }
                 log.info { "Checked trust: $trust" }
@@ -71,9 +70,9 @@ class SummaryTrustService(
     }
 
     private suspend fun getEventWithTimeout(roomId: RoomId, eventId: EventId): TimelineEvent? {
-        return withTimeoutOrNull(12.seconds) {
+        return withTimeoutOrNull(6.seconds) {
             client.room.getTimelineEvent(roomId, eventId) {
-                fetchTimeout = 10.seconds
+                fetchTimeout = 5.seconds
                 allowReplaceContent = false
             }.filterNotNull().firstOrNull()
         }
@@ -92,7 +91,7 @@ class SummaryTrustService(
             log.info { "Get events before $messageId" }
             val hasPrevious = client.room.getTimelineEvents(roomId, messageId, direction = GetEvents.Direction.BACKWARDS) {
                 maxSize = 1024 // trixnity doesn't easily allow us to filter just for ZeroInterestSummaryEvents, and this should be fine
-                fetchTimeout = 12.seconds
+                fetchTimeout = 5.seconds
                 allowReplaceContent = false
             }.any { timelineEventFlow ->
                 val event = timelineEventFlow.first()

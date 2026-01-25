@@ -313,7 +313,7 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, navHelper: Nav
                 config = {
                     minSize = pageSize.toLong()
                     maxSize = pageSize.toLong()
-                    fetchTimeout = 12.seconds
+                    fetchTimeout = 5.seconds
                     allowReplaceContent = false
                 }
             ).mapNotNull { timelineEventFlow ->
