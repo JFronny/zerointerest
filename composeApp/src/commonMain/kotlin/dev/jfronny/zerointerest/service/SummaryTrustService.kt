@@ -216,15 +216,20 @@ class SummaryTrustService(
         if (heads.isEmpty()) {
             log.info { "No heads found for room $roomId, creating initial summary" }
 
-            val balances = mutableMapOf<UserId, Long>()
-            content.apply(balances)
-
-            log.info { "Creating summary for first transaction $newTransactionId in room $roomId" }
-            val response = client.api.room.sendStateEvent(roomId, ZeroInterestSummaryEvent(
-                balances = balances,
+            val initialResponse = client.api.room.sendStateEvent(roomId, ZeroInterestSummaryEvent(
+                balances = emptyMap(),
                 parents = emptyMap()
             ), ZeroInterestSummaryEvent.TYPE).getOrThrow()
-            database.addTrustedSummary(roomId, response, emptySet(), emptySet(), root = true)
+            database.addTrustedSummary(roomId, initialResponse, emptySet(), emptySet(), root = true)
+
+            log.info { "Creating summary for first transaction $newTransactionId in room $roomId" }
+            val balances = mutableMapOf<UserId, Long>()
+            content.apply(balances)
+            val response = client.api.room.sendStateEvent(roomId, ZeroInterestSummaryEvent(
+                balances = balances,
+                parents = mapOf(initialResponse to setOf(newTransactionId))
+            ), ZeroInterestSummaryEvent.TYPE).getOrThrow()
+            database.addTrustedSummary(roomId, response, setOf(initialResponse), setOf(newTransactionId))
         } else {
             log.info { "Merging ${heads.size} heads for new transaction $newTransactionId in room $roomId" }
             // Merge heads
