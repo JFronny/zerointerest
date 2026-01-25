@@ -2900,7 +2900,6 @@ vary@^1, vary@~1.1.2:
 
 "vodozemac@https://gitlab.com/api/v4/projects/69401252/packages/generic/libvodozemac/v0.1.2/libvodozemac-web-npm.tar.gz#fad112ea8c19dfa8b35fd3fef924522454573b76":
   version "1.0.0"
-  uid fad112ea8c19dfa8b35fd3fef924522454573b76
   resolved "https://gitlab.com/api/v4/projects/69401252/packages/generic/libvodozemac/v0.1.2/libvodozemac-web-npm.tar.gz#fad112ea8c19dfa8b35fd3fef924522454573b76"
 
 void-elements@^2.0.0:
