@@ -68,6 +68,7 @@ kotlin {
     js {
         browser()
         binaries.executable()
+        useEsModules()
     }
 
 //    @OptIn(ExperimentalWasmDsl::class)

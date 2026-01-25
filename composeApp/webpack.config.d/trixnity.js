@@ -8,6 +8,13 @@ config.resolve.alias = {
     url: false,
 }
 
+config.module.rules =
+        [
+            ...(config.module?.rules || []),
+            {test: /\.wasm$/, type: "asset/resource"},
+        ]
+
+// Minification
 if (config.mode === "production") {
     const TerserPlugin = require("terser-webpack-plugin");
     config.optimization = {
@@ -32,11 +39,11 @@ if (config.mode === "production") {
     };
 }
 
-const CopyPlugin = require("copy-webpack-plugin");
-config.plugins.push(
-    new CopyPlugin({
-        patterns: [
-            {from: "../../node_modules/@matrix-org/olm/olm.wasm", to: "."},
-        ],
-    })
-)
+// Dev Server
+if (config.devServer) {
+    config.devServer.headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET",
+        "Access-Control-Allow-Headers": "content-type"
+    }
+}
