@@ -97,16 +97,16 @@ object LognityWrangler : Backend {
                   override var level: OLevel,
                   override var isEnabled: Boolean
     ) : LLogger {
-        override fun log(level: OLevel, message: AnsiScope.() -> Any) = log(null, level, message)
+        override fun log(level: OLevel, message: AnsiScope.() -> Any?) = log(null, level, message)
         override fun log(
             marker: Marker?,
             level: OLevel,
-            message: AnsiScope.() -> Any
+            message: AnsiScope.() -> Any?
         ) {
             if (level < this.level) return
             val actualMarker = marker ?: context[LLogger.DefaultMarker]?.marker
             if (actualMarker?.isEnabled == false) return
-            val messageContent = message(AnsiScope)
+            val messageContent = message(AnsiScope) ?: return
             val timestamp = Clock.System.now()
             for (appender in config.appenders) {
                 appender.append(
