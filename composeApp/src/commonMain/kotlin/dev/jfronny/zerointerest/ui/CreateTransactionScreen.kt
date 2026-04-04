@@ -254,6 +254,15 @@ fun CreateTransactionScreen(
                             sender = sender,
                             receivers = recipientAmounts
                         )
+
+                        val preparedSummary = try {
+                            trustService.prepareSummaryCreation(roomId, content)
+                        } catch (e: Exception) {
+                            error = getString(Res.string.failed_create_trust_summary, e.message.toString())
+                            launched = false
+                            return@launch
+                        }
+
                         val txId = client.room.sendMessage(roomId) {
                             content(content)
                         }
@@ -273,7 +282,7 @@ fun CreateTransactionScreen(
                         }
 
                         try {
-                            trustService.createSummary(roomId, outbox.eventId!!, content)
+                            trustService.createSummary(preparedSummary, outbox.eventId!!)
                         } catch (e: Exception) {
                             error = getString(Res.string.failed_create_trust_summary, e.message.toString())
                             launched = false

@@ -70,9 +70,9 @@ class SummaryTrustService(
     }
 
     private suspend fun getEventWithTimeout(roomId: RoomId, eventId: EventId): TimelineEvent? {
-        return withTimeoutOrNull(6.seconds) {
+        return withTimeoutOrNull(12.seconds) {
             client.room.getTimelineEvent(roomId, eventId) {
-                fetchTimeout = 5.seconds
+                fetchTimeout = 11.seconds
                 allowReplaceContent = false
             }.filterNotNull().firstOrNull()
         }
@@ -211,8 +211,36 @@ class SummaryTrustService(
     private fun <T> List<T>.combinations(): List<Pair<T, T>> =
         this.flatMapIndexed { index, a -> this.drop(index + 1).map { b -> a to b } }
 
-    suspend fun createSummary(roomId: RoomId, newTransactionId: EventId, content: ZeroInterestTransactionEvent) = withContext(NonCancellable) {
+    suspend fun prepareSummaryCreation(roomId: RoomId, content: ZeroInterestTransactionEvent): PreparedSummary = withContext(NonCancellable) {
+        log.info { "Fetching head events" }
         val heads = database.getHeads(roomId)
+        val headEvents = heads.associateWith {
+            val first = getEventWithTimeout(roomId, it)
+            log.info { "Fetched head $first" }
+            first?.content?.getOrNull() as? ZeroInterestSummaryEvent
+        }.filterValues { it != null }.mapValues { it.value!! }
+
+        if (headEvents.isEmpty() && !heads.isEmpty()) {
+            throw IllegalStateException("No heads found for room $roomId while head set is $heads")
+        }
+
+        PreparedSummary(
+            roomId = roomId,
+            content = content,
+            heads = headEvents,
+        )
+    }
+
+    data class PreparedSummary(
+        val roomId: RoomId,
+        val content: ZeroInterestTransactionEvent,
+        val heads: Map<EventId, ZeroInterestSummaryEvent>,
+    )
+
+    suspend fun createSummary(preparedSummary: PreparedSummary, newTransactionId: EventId) = withContext(NonCancellable) {
+        val roomId = preparedSummary.roomId
+        val content = preparedSummary.content
+        val heads = preparedSummary.heads
         if (heads.isEmpty()) {
             log.info { "No heads found for room $roomId, creating initial summary" }
 
@@ -233,22 +261,11 @@ class SummaryTrustService(
         } else {
             log.info { "Merging ${heads.size} heads for new transaction $newTransactionId in room $roomId" }
             // Merge heads
-            // 1. Fetch all heads
-            val headEvents = heads.associateWith {
-                val first = getEventWithTimeout(roomId, it)
-                log.info { "Fetched head $first" }
-                first?.content?.getOrNull() as? ZeroInterestSummaryEvent
-            }.filterValues { it != null }.mapValues { it.value!! }
-
-            if (headEvents.isEmpty()) {
-                log.warn { "Head set is empty!" }
-                return@withContext // Should not happen if heads is not empty
-            }
 
             // 2. Calculate the union of history for all heads
             val allVisitedSummaries = mutableSetOf<EventId>()
             val summaryQueue = ArrayDeque<EventId>()
-            summaryQueue.addAll(heads)
+            summaryQueue.addAll(heads.keys)
 
             val summaryGraph = mutableMapOf<EventId, ZeroInterestSummaryEvent>()
 
@@ -259,7 +276,7 @@ class SummaryTrustService(
                 if (currentId in allVisitedSummaries) continue
                 allVisitedSummaries.add(currentId)
 
-                val event = if (currentId in heads) headEvents[currentId]!! else {
+                val event = if (currentId in heads) heads[currentId]!! else {
                     getEventWithTimeout(roomId, currentId)?.content?.getOrNull() as? ZeroInterestSummaryEvent
                 } ?: continue
 
@@ -292,7 +309,7 @@ class SummaryTrustService(
 
             // Compute history for all heads
             val allTransactions = mutableSetOf<EventId>()
-            for (headId in heads) {
+            for (headId in heads.keys) {
                 val h = getHistory(headId)
                 headTransactions[headId] = h
                 allTransactions.addAll(h)
@@ -300,15 +317,15 @@ class SummaryTrustService(
 
             // Now compute the new parents map
             val newParents = mutableMapOf<EventId, Set<EventId>>()
-            for (headId in heads) {
+            for (headId in heads.keys) {
                 val missing = allTransactions - headTransactions[headId]!!
                 newParents[headId] = missing + newTransactionId
             }
 
             // Compute new balances
             // Take the first head, apply its missing transactions + new transaction
-            val baseHeadId = heads.first()
-            val baseHeadEvent = headEvents[baseHeadId]!!
+            val baseHeadId = heads.keys.first()
+            val baseHeadEvent = heads[baseHeadId]!!
             val baseBalances = baseHeadEvent.balances.toMutableMap()
 
             val toApply = newParents[baseHeadId]!!
