@@ -4,15 +4,14 @@ import de.connect2x.trixnity.client.room
 import de.connect2x.trixnity.client.room.getState
 import de.connect2x.trixnity.client.room.getTimelineEventReactionAggregation
 import de.connect2x.trixnity.client.room.message.react
-import de.connect2x.trixnity.client.store.TimelineEvent
 import de.connect2x.trixnity.client.store.eventId
-import de.connect2x.trixnity.client.store.originTimestamp
 import de.connect2x.trixnity.client.store.sender
 import de.connect2x.trixnity.clientserverapi.model.room.GetEvents
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
-import de.connect2x.trixnity.core.model.events.ClientEvent
+import de.connect2x.trixnity.core.model.events.ClientEvent.RoomEvent
+import de.connect2x.trixnity.core.model.events.ClientEvent.StateBaseEvent
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -44,7 +43,7 @@ class SummaryTrustService(
         return client.room
             .getState<ZeroInterestSummaryEvent>(roomId, ZeroInterestSummaryEvent.TYPE)
             .mapLatest {
-                if (it !is ClientEvent.RoomEvent.StateEvent) {
+                if (it !is RoomEvent.StateEvent) {
                     log.info { "No summary found for room $roomId" }
                     return@mapLatest Summary.Empty
                 }
@@ -69,12 +68,25 @@ class SummaryTrustService(
         data class Trusted(val event: ZeroInterestSummaryEvent) : Summary
     }
 
-    private suspend fun getEventWithTimeout(roomId: RoomId, eventId: EventId): TimelineEvent? {
-        return withTimeoutOrNull(12.seconds) {
-            client.room.getTimelineEvent(roomId, eventId) {
-                fetchTimeout = 11.seconds
+    private suspend fun getTransactionEventWithTimeout(roomId: RoomId, eventId: EventId): TransactionEventWrapper? {
+        return withTimeoutOrNull(6.seconds) {
+            val event = client.room.getTimelineEvent(roomId, eventId) {
+                fetchTimeout = 5.seconds
                 allowReplaceContent = false
-            }.filterNotNull().firstOrNull()
+            }.filterNotNull().firstOrNull() ?: return@withTimeoutOrNull null
+            TransactionEventWrapper(
+                event.event,
+                event.content?.map { it as ZeroInterestTransactionEvent }
+            )
+        }
+    }
+    private data class TransactionEventWrapper(val event: RoomEvent<*>, val content: Result<ZeroInterestTransactionEvent>?)
+
+    private suspend fun getSummaryEventWithTimeout(roomId: RoomId, eventId: EventId): StateBaseEvent<ZeroInterestSummaryEvent>? {
+        return withTimeoutOrNull(6.seconds) {
+            val event = client.api.room.getEvent(roomId, eventId)
+                .getOrThrow()
+            event as StateBaseEvent<ZeroInterestSummaryEvent>
         }
     }
 
@@ -104,15 +116,15 @@ class SummaryTrustService(
         log.info { "Prefetch events as the next steps need them" }
         val summaries = mutableMapOf<EventId, Timed<ZeroInterestSummaryEvent>>()
         for (eventId in content.parents.keys) {
-            val event = getEventWithTimeout(roomId, eventId)
-            val content = event?.content?.getOrNull() as? ZeroInterestSummaryEvent ?: continue
-            summaries[eventId] = Timed(event.originTimestamp, content)
+            val event = getSummaryEventWithTimeout(roomId, eventId)
+            val content = event?.content ?: continue
+            summaries[eventId] = Timed(event.originTimestamp!!, content)
         }
         val transactions = mutableMapOf<EventId, Timed<ZeroInterestTransactionEvent>>()
         for (eventId in content.parents.values.flatten()) {
-            val event = getEventWithTimeout(roomId, eventId)
-            val content = event?.content?.getOrNull() as? ZeroInterestTransactionEvent ?: continue
-            transactions[eventId] = Timed(event.originTimestamp, content)
+            val event = getTransactionEventWithTimeout(roomId, eventId)
+            val content = event?.content?.getOrNull() ?: continue
+            transactions[eventId] = Timed(event.event.originTimestamp, content)
         }
 
         log.info { "3. Otherwise, if the summary event has no trusted parents, it is rejected." }
@@ -215,9 +227,9 @@ class SummaryTrustService(
         log.info { "Fetching head events" }
         val heads = database.getHeads(roomId)
         val headEvents = heads.associateWith {
-            val first = getEventWithTimeout(roomId, it)
+            val first = getSummaryEventWithTimeout(roomId, it)
             log.info { "Fetched head $first" }
-            first?.content?.getOrNull() as? ZeroInterestSummaryEvent
+            first?.content
         }.filterValues { it != null }.mapValues { it.value!! }
 
         if (headEvents.isEmpty() && !heads.isEmpty()) {
@@ -277,7 +289,7 @@ class SummaryTrustService(
                 allVisitedSummaries.add(currentId)
 
                 val event = if (currentId in heads) heads[currentId]!! else {
-                    getEventWithTimeout(roomId, currentId)?.content?.getOrNull() as? ZeroInterestSummaryEvent
+                    getSummaryEventWithTimeout(roomId, currentId)?.content
                 } ?: continue
 
                 summaryGraph[currentId] = event
@@ -333,7 +345,7 @@ class SummaryTrustService(
             // We need to fetch the transaction contents to apply them
             log.info { "Applying ${toApply.size} transactions to compute new balances for room $roomId" }
             for (txId in toApply) {
-                val tx = getEventWithTimeout(roomId, txId)?.content?.getOrNull() as? ZeroInterestTransactionEvent
+                val tx = getTransactionEventWithTimeout(roomId, txId)?.content?.getOrNull()
                 tx?.apply(baseBalances)
             }
 

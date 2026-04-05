@@ -27,6 +27,7 @@
     <string name="failed_send_message">Nachricht konnte nicht gesendet werden</string>
     <string name="failed_send_message_with_error">Nachricht konnte nicht gesendet werden: %1$s</string>
     <string name="failed_create_trust_summary">Vertrauenszusammenfassung konnte nicht erstellt werden: %1$s</string>
+    <string name="failed_prepare_trust_summary">Vertrauenszusammenfassung konnte nicht vorbereitet werden: %1$s</string>
     <string name="description">Beschreibung</string>
     <string name="sender">Absender</string>
     <string name="total_amount">Gesamtbetrag</string>

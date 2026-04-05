@@ -53,6 +53,7 @@ import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.ZeroInterestDatabase
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
@@ -65,6 +66,8 @@ import org.koin.compose.koinInject
 import kotlin.math.roundToLong
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+
+private val log = KotlinLogging.logger {}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalUuidApi::class)
 @Composable
@@ -258,7 +261,8 @@ fun CreateTransactionScreen(
                         val preparedSummary = try {
                             trustService.prepareSummaryCreation(roomId, content)
                         } catch (e: Exception) {
-                            error = getString(Res.string.failed_create_trust_summary, e.message.toString())
+                            log.error(e) { "Could not prepare summary creation" }
+                            error = getString(Res.string.failed_prepare_trust_summary, e.message.toString())
                             launched = false
                             return@launch
                         }
@@ -284,6 +288,7 @@ fun CreateTransactionScreen(
                         try {
                             trustService.createSummary(preparedSummary, outbox.eventId!!)
                         } catch (e: Exception) {
+                            log.error(e) { "Could not submit summary" }
                             error = getString(Res.string.failed_create_trust_summary, e.message.toString())
                             launched = false
                             return@launch

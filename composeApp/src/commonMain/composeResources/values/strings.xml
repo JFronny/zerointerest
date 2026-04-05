@@ -27,6 +27,7 @@
     <string name="failed_send_message">Failed to send message</string>
     <string name="failed_send_message_with_error">Failed to send message: %1$s</string>
     <string name="failed_create_trust_summary">Failed to create trust summary: %1$s</string>
+    <string name="failed_prepare_trust_summary">Failed to prepare trust summary: %1$s</string>
     <string name="description">Description</string>
     <string name="sender">Sender</string>
     <string name="total_amount">Total Amount</string>
