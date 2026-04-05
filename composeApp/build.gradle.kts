@@ -130,6 +130,7 @@ kotlin {
         jsMain.dependencies {
             implementation(libs.trixnity.client.repository.indexeddb)
             implementation(libs.trixnity.client.media.indexeddb)
+            implementation(libs.indexeddb)
         }
         webMain.dependencies {
             implementation(npm("copy-webpack-plugin", libs.versions.copyWebpackPlugin.get()))

@@ -7,6 +7,7 @@ import dev.jfronny.zerointerest.service.ZeroInterestDatabase.TrustState.*
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
+import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -29,23 +30,24 @@ class RoomZeroInterestDatabase(val db: ZeroInterestRoomDatabase) : ZeroInterestD
 
     override suspend fun addTrustedSummary(
         room: RoomId,
-        summaryId: EventId,
-        parents: Set<EventId>,
-        transactions: Set<EventId>,
-        root: Boolean
+        eventId: EventId,
+        event: ZeroInterestSummaryEvent,
+        root: Boolean,
     ) {
         if (root) db.summaryHeadDao().clear(room.full)
-        db.summaryHeadDao().insert(SummaryHeadEntity(room.full, summaryId.full))
-        parents.forEach {
+        db.summaryHeadDao().insert(SummaryHeadEntity(room.full, eventId.full))
+        event.parents.keys.forEach {
             db.summaryHeadDao().removeHead(room.full, it.full)
         }
-        db.summaryTrustDao().insert(SummaryTrustEntity(room.full, summaryId.full, TRUSTED))
-        db.summaryDao().insertSummary(parents.map {
-            SummaryEntity(room.full, summaryId.full, it.full)
+        db.summaryTrustDao().insert(SummaryTrustEntity(room.full, eventId.full, TRUSTED))
+        db.summaryDao().insertSummary(event.parents.keys.map {
+            SummaryEntity(room.full, eventId.full, it.full)
         })
-        db.summaryDao().insertTransactions(transactions.map {
-            SummaryTransactionEntity(room.full, summaryId.full, it.full)
-        })
+        event.parents.values.firstOrNull()?.let { transactions ->
+            db.summaryDao().insertTransactions(transactions.map {
+                SummaryTransactionEntity(room.full, eventId.full, it.full)
+            })
+        }
     }
 
     override suspend fun getSummaryParents(room: RoomId, summary: EventId): Set<EventId> {

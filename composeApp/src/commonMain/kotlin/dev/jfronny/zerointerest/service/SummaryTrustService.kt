@@ -199,8 +199,7 @@ class SummaryTrustService(
         database.addTrustedSummary(
             roomId,
             messageId,
-            content.parents.keys,
-            content.parents.values.flatten().toSet()
+            content
         )
         if (retroactive) {
             val reactions = client.room.getTimelineEventReactionAggregation(roomId, messageId).first().reactions[rejectionKey]
@@ -258,20 +257,22 @@ class SummaryTrustService(
         if (heads.isEmpty()) {
             log.info { "No heads found for room $roomId, creating initial summary" }
 
-            val initialResponse = client.api.room.sendStateEvent(roomId, ZeroInterestSummaryEvent(
+            val initialEvent = ZeroInterestSummaryEvent(
                 balances = emptyMap(),
                 parents = emptyMap()
-            ), ZeroInterestSummaryEvent.TYPE).getOrThrow()
-            database.addTrustedSummary(roomId, initialResponse, emptySet(), emptySet(), root = true)
+            )
+            val initialResponse = client.api.room.sendStateEvent(roomId, initialEvent, ZeroInterestSummaryEvent.TYPE).getOrThrow()
+            database.addTrustedSummary(roomId, initialResponse, initialEvent, root = true)
 
             log.info { "Creating summary for first transaction $newTransactionId in room $roomId" }
             val balances = mutableMapOf<UserId, Long>()
             content.apply(balances)
-            val response = client.api.room.sendStateEvent(roomId, ZeroInterestSummaryEvent(
+            val event = ZeroInterestSummaryEvent(
                 balances = balances,
                 parents = mapOf(initialResponse to setOf(newTransactionId))
-            ), ZeroInterestSummaryEvent.TYPE).getOrThrow()
-            database.addTrustedSummary(roomId, response, setOf(initialResponse), setOf(newTransactionId))
+            )
+            val response = client.api.room.sendStateEvent(roomId, event, ZeroInterestSummaryEvent.TYPE).getOrThrow()
+            database.addTrustedSummary(roomId, response, event)
         } else {
             log.info { "Merging ${heads.size} heads for new transaction $newTransactionId in room $roomId" }
             // Merge heads
@@ -354,11 +355,12 @@ class SummaryTrustService(
             }
 
             log.info { "Creating merged summary for new transaction $newTransactionId in room $roomId" }
-            val response = client.api.room.sendStateEvent(roomId, ZeroInterestSummaryEvent(
+            val event = ZeroInterestSummaryEvent(
                 balances = baseBalances,
                 parents = newParents
-            ), ZeroInterestSummaryEvent.TYPE).getOrThrow()
-            database.addTrustedSummary(roomId, response, newParents.keys, toApply)
+            )
+            val response = client.api.room.sendStateEvent(roomId, event, ZeroInterestSummaryEvent.TYPE).getOrThrow()
+            database.addTrustedSummary(roomId, response, event)
         }
         log.info { "Summary creation for new transaction $newTransactionId in room $roomId completed" }
     }

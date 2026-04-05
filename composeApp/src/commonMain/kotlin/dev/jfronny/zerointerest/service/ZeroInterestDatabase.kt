@@ -3,6 +3,7 @@ package dev.jfronny.zerointerest.service
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import dev.jfronny.zerointerest.data.TransactionTemplate
+import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import kotlinx.coroutines.flow.Flow
 
 interface ZeroInterestDatabase {
@@ -12,9 +13,8 @@ interface ZeroInterestDatabase {
     suspend fun getHeads(room: RoomId): Set<EventId>
     suspend fun addTrustedSummary(
         room: RoomId,
-        summaryId: EventId,
-        parents: Set<EventId>,
-        transactions: Set<EventId>,
+        eventId: EventId,
+        event: ZeroInterestSummaryEvent,
         root: Boolean = false
     )
     suspend fun getSummaryParents(room: RoomId, summary: EventId): Set<EventId>

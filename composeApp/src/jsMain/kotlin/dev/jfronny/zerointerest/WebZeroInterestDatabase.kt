@@ -8,6 +8,7 @@ import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.data.TransactionTemplate
+import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.service.ZeroInterestDatabase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -99,7 +100,7 @@ class WebZeroInterestDatabase : ZeroInterestDatabase {
         event: EventId
     ): ZeroInterestDatabase.TrustState {
         val result = getDb().transaction("summary_trust") {
-            objectStore("summary_trust").get(Key(room.full, event.full)) as? JsSummaryTrust
+            objectStore("summary_trust").get(Key(room.full, event.full))?.asDynamic() as? JsSummaryTrust
         }
         return result?.state?.let { enumValueOf<ZeroInterestDatabase.TrustState>(it) }
             ?: ZeroInterestDatabase.TrustState.UNTRUSTED
@@ -108,17 +109,18 @@ class WebZeroInterestDatabase : ZeroInterestDatabase {
     override suspend fun getHeads(room: RoomId): Set<EventId> {
         return getDb().transaction("summary_head") {
             val index = objectStore("summary_head").index("roomId")
-            index.getAll(Key(room.full)).map { (it as JsSummaryHead).eventId }.map { EventId(it) }.toSet()
+            index.getAll(Key(room.full)).map { (it.asDynamic() as JsSummaryHead).eventId }.map { EventId(it) }.toSet()
         }
     }
 
     override suspend fun addTrustedSummary(
         room: RoomId,
-        summaryId: EventId,
-        parents: Set<EventId>,
-        transactions: Set<EventId>,
+        eventId: EventId,
+        event: ZeroInterestSummaryEvent,
         root: Boolean
     ) {
+        val parents = event.parents.keys
+        val transactions = event.parents.values.firstOrNull() ?: emptySet()
         getDb().writeTransaction("summary_head", "summary_trust", "summary_link", "summary_transaction") {
             val headStore = objectStore("summary_head")
             if (root) {
@@ -130,7 +132,7 @@ class WebZeroInterestDatabase : ZeroInterestDatabase {
             }
             headStore.put(jso<JsSummaryHead> {
                 this.roomId = room.full
-                this.eventId = summaryId.full
+                this.eventId = eventId.full
             })
             for (head in parents) {
                 headStore.delete(Key(room.full, head.full))
@@ -138,7 +140,7 @@ class WebZeroInterestDatabase : ZeroInterestDatabase {
 
             objectStore("summary_trust").put(jso<JsSummaryTrust> {
                 this.roomId = room.full
-                this.eventId = summaryId.full
+                this.eventId = eventId.full
                 this.state = ZeroInterestDatabase.TrustState.TRUSTED.name
             })
 
@@ -146,7 +148,7 @@ class WebZeroInterestDatabase : ZeroInterestDatabase {
             for (parent in parents) {
                 linkStore.put(jso<JsSummaryLink> {
                     this.roomId = room.full
-                    this.summaryId = summaryId.full
+                    this.summaryId = eventId.full
                     this.otherId = parent.full
                 })
             }
@@ -154,7 +156,7 @@ class WebZeroInterestDatabase : ZeroInterestDatabase {
             for (transaction in transactions) {
                 transactionStore.put(jso<JsSummaryLink> {
                     this.roomId = room.full
-                    this.summaryId = summaryId.full
+                    this.summaryId = eventId.full
                     this.otherId = transaction.full
                 })
             }
@@ -164,7 +166,7 @@ class WebZeroInterestDatabase : ZeroInterestDatabase {
     override suspend fun getSummaryParents(room: RoomId, summary: EventId): Set<EventId> {
         return getDb().transaction("summary_link") {
             val index = objectStore("summary_link").index("parent")
-            index.getAll(Key(room.full, summary.full)).map { (it as JsSummaryLink).otherId }.map { EventId(it) }.toSet()
+            index.getAll(Key(room.full, summary.full)).map { (it.asDynamic() as JsSummaryLink).otherId }.map { EventId(it) }.toSet()
         }
     }
 
@@ -174,7 +176,7 @@ class WebZeroInterestDatabase : ZeroInterestDatabase {
             val result = mutableMapOf<EventId, MutableSet<EventId>>()
             transactions.forEach { transactionId ->
                 index.getAll(Key(room.full, transactionId.full)).forEach {
-                    val link = it as JsSummaryLink
+                    val link = it.asDynamic() as JsSummaryLink
                     result.getOrPut(EventId(link.otherId)) { mutableSetOf() }.add(EventId(link.summaryId))
                 }
             }
@@ -190,7 +192,7 @@ class WebZeroInterestDatabase : ZeroInterestDatabase {
             val list = getDb().transaction("transaction_template") {
                 val index = objectStore("transaction_template").index("roomId")
                 index.getAll(Key(room.full)).map { js ->
-                    val entity = js as JsTransactionTemplate
+                    val entity = js.asDynamic() as JsTransactionTemplate
                     TransactionTemplate(
                         id = entity.id,
                         description = entity.description,
