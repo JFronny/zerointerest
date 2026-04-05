@@ -16,6 +16,7 @@ import de.connect2x.trixnity.core.model.events.ClientEvent.StateBaseEvent
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.util.collections.ConcurrentMap
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
@@ -38,6 +39,9 @@ class SummaryTrustService(
     private val database: ZeroInterestDatabase
 ) {
     private val client get() = clientService.get()
+    // this may break summary resolution after long time frames
+    // but that probably won't happen in practice, right?
+    private val summaryEventCache: MutableMap<Pair<RoomId, EventId>, Timed<ZeroInterestSummaryEvent>> = ConcurrentMap()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getSummary(roomId: RoomId): Flow<Summary> {
@@ -48,6 +52,7 @@ class SummaryTrustService(
                     log.info { "No summary found for room $roomId" }
                     return@mapLatest Summary.Empty
                 }
+                summaryEventCache[roomId to it.id] = Timed(it.originTimestamp, it.content)
                 log.info { "Received summary event: $it" }
                 val trust = withTimeoutOrNull(20.seconds) {
                     checkTrusted(roomId, it.id, it.originTimestamp, it.content)
@@ -83,6 +88,7 @@ class SummaryTrustService(
     }
 
     private suspend fun getSummaryEventWithTimeout(roomId: RoomId, eventId: EventId): Result<Timed<ZeroInterestSummaryEvent>>? {
+        summaryEventCache[roomId to eventId]?.let { return Result.success(it) }
         return withTimeoutOrNull(6.seconds) {
             val event = try {
                 client.api.room.getEvent(roomId, eventId)
@@ -90,7 +96,9 @@ class SummaryTrustService(
             } catch (e: Exception) {
                 return@withTimeoutOrNull Result.failure(e)
             }
-            Result.success(Timed(event.originTimestamp!!, event.content))
+            val timed = Timed(event.originTimestamp!!, event.content)
+            summaryEventCache[roomId to eventId] = timed
+            Result.success(timed)
         }
     }
 
