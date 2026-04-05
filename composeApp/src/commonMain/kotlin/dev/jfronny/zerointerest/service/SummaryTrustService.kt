@@ -5,6 +5,7 @@ import de.connect2x.trixnity.client.room.getState
 import de.connect2x.trixnity.client.room.getTimelineEventReactionAggregation
 import de.connect2x.trixnity.client.room.message.react
 import de.connect2x.trixnity.client.store.eventId
+import de.connect2x.trixnity.client.store.originTimestamp
 import de.connect2x.trixnity.client.store.sender
 import de.connect2x.trixnity.clientserverapi.model.room.GetEvents
 import de.connect2x.trixnity.core.model.EventId
@@ -68,25 +69,28 @@ class SummaryTrustService(
         data class Trusted(val event: ZeroInterestSummaryEvent) : Summary
     }
 
-    private suspend fun getTransactionEventWithTimeout(roomId: RoomId, eventId: EventId): TransactionEventWrapper? {
+    private suspend fun getTransactionEventWithTimeout(roomId: RoomId, eventId: EventId): Result<Timed<ZeroInterestTransactionEvent>>? {
         return withTimeoutOrNull(6.seconds) {
             val event = client.room.getTimelineEvent(roomId, eventId) {
                 fetchTimeout = 5.seconds
                 allowReplaceContent = false
             }.filterNotNull().firstOrNull() ?: return@withTimeoutOrNull null
-            TransactionEventWrapper(
-                event.event,
-                event.content?.map { it as ZeroInterestTransactionEvent }
-            )
+            val content = event.content ?: return@withTimeoutOrNull null
+            content.map { content ->
+                Timed(event.originTimestamp, content as ZeroInterestTransactionEvent)
+            }
         }
     }
-    private data class TransactionEventWrapper(val event: RoomEvent<*>, val content: Result<ZeroInterestTransactionEvent>?)
 
-    private suspend fun getSummaryEventWithTimeout(roomId: RoomId, eventId: EventId): StateBaseEvent<ZeroInterestSummaryEvent>? {
+    private suspend fun getSummaryEventWithTimeout(roomId: RoomId, eventId: EventId): Result<Timed<ZeroInterestSummaryEvent>>? {
         return withTimeoutOrNull(6.seconds) {
-            val event = client.api.room.getEvent(roomId, eventId)
-                .getOrThrow()
-            event as StateBaseEvent<ZeroInterestSummaryEvent>
+            val event = try {
+                client.api.room.getEvent(roomId, eventId)
+                    .getOrThrow() as StateBaseEvent<ZeroInterestSummaryEvent>
+            } catch (e: Exception) {
+                return@withTimeoutOrNull Result.failure(e)
+            }
+            Result.success(Timed(event.originTimestamp!!, event.content))
         }
     }
 
@@ -116,15 +120,13 @@ class SummaryTrustService(
         log.info { "Prefetch events as the next steps need them" }
         val summaries = mutableMapOf<EventId, Timed<ZeroInterestSummaryEvent>>()
         for (eventId in content.parents.keys) {
-            val event = getSummaryEventWithTimeout(roomId, eventId)
-            val content = event?.content ?: continue
-            summaries[eventId] = Timed(event.originTimestamp!!, content)
+            val event = getSummaryEventWithTimeout(roomId, eventId)?.getOrNull() ?: continue
+            summaries[eventId] = Timed(event.ts, content)
         }
         val transactions = mutableMapOf<EventId, Timed<ZeroInterestTransactionEvent>>()
         for (eventId in content.parents.values.flatten()) {
-            val event = getTransactionEventWithTimeout(roomId, eventId)
-            val content = event?.content?.getOrNull() ?: continue
-            transactions[eventId] = Timed(event.event.originTimestamp, content)
+            val event = getTransactionEventWithTimeout(roomId, eventId)?.getOrNull() ?: continue
+            transactions[eventId] = event
         }
 
         log.info { "3. Otherwise, if the summary event has no trusted parents, it is rejected." }
@@ -229,7 +231,7 @@ class SummaryTrustService(
         val headEvents = heads.associateWith {
             val first = getSummaryEventWithTimeout(roomId, it)
             log.info { "Fetched head $first" }
-            first?.content
+            first?.getOrNull()?.value
         }.filterValues { it != null }.mapValues { it.value!! }
 
         if (headEvents.isEmpty() && !heads.isEmpty()) {
@@ -289,7 +291,7 @@ class SummaryTrustService(
                 allVisitedSummaries.add(currentId)
 
                 val event = if (currentId in heads) heads[currentId]!! else {
-                    getSummaryEventWithTimeout(roomId, currentId)?.content
+                    getSummaryEventWithTimeout(roomId, currentId)?.getOrNull()?.value
                 } ?: continue
 
                 summaryGraph[currentId] = event
@@ -345,8 +347,10 @@ class SummaryTrustService(
             // We need to fetch the transaction contents to apply them
             log.info { "Applying ${toApply.size} transactions to compute new balances for room $roomId" }
             for (txId in toApply) {
-                val tx = getTransactionEventWithTimeout(roomId, txId)?.content?.getOrNull()
-                tx?.apply(baseBalances)
+                getTransactionEventWithTimeout(roomId, txId)
+                    ?.getOrNull()
+                    ?.value
+                    ?.apply(baseBalances)
             }
 
             log.info { "Creating merged summary for new transaction $newTransactionId in room $roomId" }
