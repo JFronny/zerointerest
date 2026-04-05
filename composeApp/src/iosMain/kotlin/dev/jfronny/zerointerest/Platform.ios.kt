@@ -5,9 +5,11 @@ import androidx.compose.runtime.Composable
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
+import androidx.room3.Room as Room3
 import io.ktor.client.engine.darwin.Darwin
 import kotlinx.cinterop.ExperimentalForeignApi
 import de.connect2x.trixnity.client.store.repository.room.TrixnityRoomDatabase
+import dev.jfronny.zerointerest.service.db.ZeroInterestRoomDatabase
 import kotlinx.cinterop.staticCFunction
 import okio.Path.Companion.toPath
 import org.koin.core.scope.Scope
@@ -21,7 +23,7 @@ import platform.posix.atexit
 class IOSPlatform : AbstractPlatform(documentDirectory().toPath()) {
     override val name: String = UIDevice.currentDevice.systemName()
     override fun trixnityDatabaseBuilder() = Room.databaseBuilder<TrixnityRoomDatabase>("${documentDirectory()}/$TRIXNITY_NAME")
-    override fun zerointerestDatabaseBuilder() = Room.databaseBuilder<ZeroInterestRoomDatabase>("${documentDirectory()}/$ZEROINTEREST_NAME")
+    override fun zerointerestDatabaseBuilder() = Room3.databaseBuilder<ZeroInterestRoomDatabase>("${documentDirectory()}/$ZEROINTEREST_NAME")
     @OptIn(ExperimentalForeignApi::class)
     override fun createDataStore(): DataStore<Preferences> = createDataStore {
         val documentDirectory: NSURL? = NSFileManager.defaultManager.URLForDirectory(

@@ -1,5 +1,6 @@
 package dev.jfronny.zerointerest
 
+import androidx.sqlite.SQLiteDriver
 import de.connect2x.trixnity.core.serialization.events.EventContentSerializerMappings
 import de.connect2x.trixnity.core.serialization.events.default
 import de.connect2x.trixnity.core.serialization.events.invoke
@@ -10,8 +11,14 @@ import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
+import dev.jfronny.zerointerest.service.ZeroInterestDatabase
 import dev.jfronny.zerointerest.service.createSsoLoginHandler
+import dev.jfronny.zerointerest.service.db.Migration1_2
+import dev.jfronny.zerointerest.service.db.Migration2_3
+import dev.jfronny.zerointerest.service.db.Migration3_4
+import dev.jfronny.zerointerest.service.db.RoomZeroInterestDatabase
 import kotlinx.coroutines.sync.Mutex
+import org.koin.dsl.bind
 import org.koin.dsl.module
 
 const val SourceCodeUrl = "https://git.jfronny.dev/Johannes/zerointerest"
@@ -22,6 +29,17 @@ fun createAppModule() = module {
     single { MatrixClientService(get(), get()) }
     single { SummaryTrustService(get(), get()) }
     single { Settings(get<Platform>().createDataStore()) }
+    single {
+        get<Platform>()
+            .zerointerestDatabaseBuilder()
+            .setDriver(get<SQLiteDriver>())
+            .addMigrations(Migration1_2, Migration2_3, Migration3_4)
+            .build()
+    }
+    single {
+        RoomZeroInterestDatabase(get())
+            .apply { get<Platform>().handleZerointerestDatabase(this@apply) }
+    } bind ZeroInterestDatabase::class
 }
 
 fun createAppMatrixModule() = module {

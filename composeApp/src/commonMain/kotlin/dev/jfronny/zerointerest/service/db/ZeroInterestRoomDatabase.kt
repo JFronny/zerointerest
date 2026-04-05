@@ -1,26 +1,39 @@
-package dev.jfronny.zerointerest
+package dev.jfronny.zerointerest.service.db
 
-import androidx.room.Dao
-import androidx.room.Database
-import androidx.room.Entity
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
-import androidx.room.RoomDatabase
-import androidx.room.TypeConverter
-import androidx.room.TypeConverters
+import androidx.room3.ConstructedBy
+import androidx.room3.Dao
+import androidx.room3.Database
+import androidx.room3.Entity
+import androidx.room3.Insert
+import androidx.room3.OnConflictStrategy
+import androidx.room3.Query
+import androidx.room3.RoomDatabase
+import androidx.room3.RoomDatabaseConstructor
+import androidx.room3.TypeConverter
+import androidx.room3.TypeConverters
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.service.ZeroInterestDatabase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
 
-@Database(entities = [SummaryTrustEntity::class, SummaryHeadEntity::class, SummaryEntity::class, SummaryTransactionEntity::class, TransactionTemplateEntity::class], version = 4)
+@Database(entities = [
+    SummaryTrustEntity::class,
+    SummaryHeadEntity::class,
+    SummaryEntity::class,
+    SummaryTransactionEntity::class,
+    TransactionTemplateEntity::class,
+], version = 4)
+@ConstructedBy(ZeroInterestRoomDatabaseConstructor::class)
 @TypeConverters(ZeroInterestTypeConverters::class)
 abstract class ZeroInterestRoomDatabase : RoomDatabase() {
     abstract fun summaryTrustDao(): SummaryTrustDao
     abstract fun summaryHeadDao(): SummaryHeadDao
     abstract fun summaryDao(): SummaryDao
     abstract fun transactionTemplateDao(): TransactionTemplateDao
+}
+
+expect object ZeroInterestRoomDatabaseConstructor : RoomDatabaseConstructor<ZeroInterestRoomDatabase> {
+    override fun initialize(): ZeroInterestRoomDatabase
 }
 
 @Entity(primaryKeys = ["roomId", "id"])

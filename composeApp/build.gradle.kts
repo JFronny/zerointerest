@@ -108,6 +108,7 @@ kotlin {
             implementation(libs.androidx.datastore.preferences)
             implementation(libs.kotlin.logging)
             implementation(kotlin("reflect"))
+            implementation(libs.androidx.room.runtime)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -134,6 +135,8 @@ kotlin {
         }
         webMain.dependencies {
             implementation(npm("copy-webpack-plugin", libs.versions.copyWebpackPlugin.get()))
+            implementation(libs.androidx.sqlite.web)
+            implementation(npm("sqlite-wasm-worker", layout.projectDirectory.dir("worker").asFile))
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -155,7 +158,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 }
 
-room {
+room3 {
     schemaDirectory(layout.projectDirectory.dir("schemas"))
 }
 

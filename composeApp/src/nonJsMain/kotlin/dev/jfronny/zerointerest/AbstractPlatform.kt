@@ -13,16 +13,18 @@ import de.connect2x.trixnity.client.store.repository.room.room
 import okio.Path
 
 abstract class AbstractPlatform(val stateDir: Path) : Platform {
-    protected val TRIXNITY_NAME = "trixnity.db"
-    protected val ZEROINTEREST_NAME = "zerointerest.db"
-    protected val DATASTORE_NAME = "zerointerest.preferences_pb"
 
     final override suspend fun getRepositoriesModule(): RepositoriesModule = RepositoriesModule.room(trixnityDatabaseBuilder().setDriver(BundledSQLiteDriver()))
     final override suspend fun getMediaStoreModule(): MediaStoreModule = MediaStoreModule.okio(stateDir.resolve("media"))
 
     abstract fun trixnityDatabaseBuilder(): RoomDatabase.Builder<TrixnityRoomDatabase>
-    abstract fun zerointerestDatabaseBuilder(): RoomDatabase.Builder<ZeroInterestRoomDatabase>
 
     protected fun createDataStore(producePath: () -> Path): DataStore<Preferences> =
         PreferenceDataStoreFactory.createWithPath(produceFile = { producePath() })
+
+    companion object {
+        const val TRIXNITY_NAME = "trixnity.db"
+        const val ZEROINTEREST_NAME = "zerointerest.db"
+        const val DATASTORE_NAME = "zerointerest.preferences_pb"
+    }
 }
