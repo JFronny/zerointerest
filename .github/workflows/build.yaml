@@ -31,6 +31,7 @@ jobs:
           build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
           build-scan-terms-of-use-agree: "yes"
           validate-wrappers: true
+      - uses: valeriangalliat/action-sshd-cloudflared@f231ff81b1a41b9dc7c3aab65e4a1b08d952f068
       - name: Build and test with Gradle
         env:
           KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
