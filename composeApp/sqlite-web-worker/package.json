@@ -1,5 +1,5 @@
 {
-  "name": "sqlite-wasm-worker",
+  "name": "sqlite-web-worker",
   "version": "0.0.0",
   "license": "APACHE-2.0",
   "dependencies": {

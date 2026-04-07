@@ -136,7 +136,7 @@ kotlin {
         webMain.dependencies {
             implementation(npm("copy-webpack-plugin", libs.versions.copyWebpackPlugin.get()))
             implementation(libs.androidx.sqlite.web)
-            implementation(npm("sqlite-wasm-worker", layout.projectDirectory.dir("worker").asFile))
+            implementation(npm("sqlite-web-worker", layout.projectDirectory.dir("sqlite-web-worker").asFile))
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
