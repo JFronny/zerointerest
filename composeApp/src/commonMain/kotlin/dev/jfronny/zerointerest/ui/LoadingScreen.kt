@@ -23,20 +23,57 @@ import androidx.compose.ui.tooling.preview.AndroidUiModes
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
+import dev.jfronny.zerointerest.koinInjectOrNull
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.http.Url
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 private val log = KotlinLogging.logger {}
 
+data class LoadingScreenExtras(
+    val homeserver: String?,
+    val idpId: String?,
+    val loginToken: String?,
+)
+
 @Composable
 fun LoadingScreen(onSuccess: suspend () -> Unit, onError: suspend () -> Unit) {
     val settings = koinInject<Settings>()
     val matrixClient = koinInject<MatrixClientService>()
+
+    val extras = koinInjectOrNull<LoadingScreenExtras>()
+
+    // hack for kotlin/js
+    // this allows us to just use the redirect for login
+    // without having to pass back data from a parent window, which did not work consistently across browsers and platforms
+    suspend fun onErrorWithExtras() {
+        if (extras != null && extras.homeserver != null && extras.loginToken != null) {
+            log.info { "Trying login from query" }
+            try {
+                matrixClient.loginWithSso(
+                    homeserver = Url(extras.homeserver),
+                    idpId = extras.idpId,
+                    loginToken = extras.loginToken
+                )
+                if (matrixClient.loggedIn) {
+                    settings.setDefaultHomeserver(extras.homeserver)
+                    log.info { "Successfully logged in from query with homeserver ${extras.homeserver}" }
+                    onSuccess()
+                    return
+                } else {
+                    log.error { "Failed to log in from query with homeserver ${extras.homeserver}" }
+                }
+            } catch (e: Throwable) {
+                log.error(e) { "Failed to log in from query with homeserver ${extras.homeserver}" }
+            }
+        }
+        onError()
+    }
 
     LaunchedEffect(matrixClient) {
         val homeserver = settings.defaultHomeserver()
@@ -49,11 +86,11 @@ fun LoadingScreen(onSuccess: suspend () -> Unit, onError: suspend () -> Unit) {
                 onSuccess()
             } else {
                 log.error { "Failed to restore session with homeserver $homeserver" }
-                onError()
+                onErrorWithExtras()
             }
         } catch (e: Throwable) {
             log.error(e) { "Failed to restore session with homeserver $homeserver" }
-            onError()
+            onErrorWithExtras()
         }
     }
 

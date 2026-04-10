@@ -1,5 +1,6 @@
 package dev.jfronny.zerointerest.service
 
+import io.ktor.http.Url
 import org.koin.core.scope.Scope
 
 /**
@@ -22,7 +23,7 @@ interface SsoLoginHandler {
      * - Web: The current page URL with a callback path
      * - Mobile: A custom scheme URL or local server
      */
-    fun getCallbackUrl(): String
+    fun getCallbackUrl(homeserver: Url, idpId: String?): String
     
     /**
      * Perform SSO login flow.
@@ -32,7 +33,7 @@ interface SsoLoginHandler {
      * @return The login token received from the SSO callback
      * @throws Exception if the SSO flow fails or is cancelled
      */
-    suspend fun performSsoLogin(ssoUrl: String): SsoCallbackResult
+    suspend fun performSsoLogin(homeserver: Url, idpId: String?, ssoUrl: String): SsoCallbackResult
 }
 
 /**

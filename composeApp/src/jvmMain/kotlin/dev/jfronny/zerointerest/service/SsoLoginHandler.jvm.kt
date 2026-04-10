@@ -2,6 +2,7 @@ package dev.jfronny.zerointerest.service
 
 import com.sun.net.httpserver.HttpServer
 import dev.jfronnz.zerointerest.InternalHelper
+import io.ktor.http.Url
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.koin.core.scope.Scope
 import java.net.InetSocketAddress
@@ -22,11 +23,11 @@ class JvmSsoLoginHandler : SsoLoginHandler {
     
     private var currentPort: Int = PORT_START
     
-    override fun getCallbackUrl(): String {
+    override fun getCallbackUrl(homeserver: Url, idpId: String?): String {
         return "http://localhost:$currentPort$CALLBACK_PATH"
     }
     
-    override suspend fun performSsoLogin(ssoUrl: String): SsoCallbackResult {
+    override suspend fun performSsoLogin(homeserver: Url, idpId: String?, ssoUrl: String): SsoCallbackResult {
         return suspendCancellableCoroutine { continuation ->
             // Find an available port
             val server = findAvailableServer()
@@ -90,7 +91,7 @@ class JvmSsoLoginHandler : SsoLoginHandler {
             // Update the SSO URL with the correct redirect URL
             val actualSsoUrl = ssoUrl.replace(
                 Regex("redirectUrl=[^&]+"),
-                "redirectUrl=${java.net.URLEncoder.encode(getCallbackUrl(), "UTF-8")}"
+                "redirectUrl=${java.net.URLEncoder.encode(getCallbackUrl(homeserver, idpId), "UTF-8")}"
             )
 
             uriHandler.openUri(actualSsoUrl)

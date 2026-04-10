@@ -101,7 +101,7 @@ class MatrixClientService(
      * Perform SSO login flow.
      * Opens a browser/webview for the user to authenticate, then completes login with the token.
      */
-    suspend fun loginWithSso(homeserver: Url, idpId: String? = null) {
+    suspend fun loginWithSso(homeserver: Url, idpId: String? = null, loginToken: String? = null) {
         close()
         
         // Use loginWith to handle the SSO flow
@@ -114,18 +114,22 @@ class MatrixClientService(
                 baseUrl = homeserver,
                 httpClientEngine = platform.getHttpClientEngine(),
             ) { api ->
-                // Get SSO URL with redirect
-                val ssoUrl = api.authentication.getSsoUrl(
-                    redirectUrl = ssoLoginHandler.getCallbackUrl(),
-                    idpId = idpId
-                )
+                val loginToken = loginToken ?: run {
+                    // Get SSO URL with redirect
+                    val ssoUrl = api.authentication.getSsoUrl(
+                        redirectUrl = ssoLoginHandler.getCallbackUrl(homeserver, idpId),
+                        idpId = idpId
+                    )
 
-                // Perform SSO login flow and get the login token
-                val callbackResult = ssoLoginHandler.performSsoLogin(ssoUrl)
+                    // Perform SSO login flow and get the login token
+                    val callbackResult = ssoLoginHandler.performSsoLogin(homeserver, idpId, ssoUrl)
+
+                    callbackResult.loginToken
+                }
 
                 // Use the token to login
                 api.authentication.login(
-                    token = callbackResult.loginToken,
+                    token = loginToken,
                     type = LoginType.Token(),
                     initialDeviceDisplayName = "ZeroInterest ${platform.name}"
                 ).getOrThrow().let { login ->

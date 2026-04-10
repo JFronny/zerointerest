@@ -1,130 +1,41 @@
 package dev.jfronny.zerointerest.service
 
-import js.string.JsStrings.toKotlinString
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.http.URLBuilder
+import io.ktor.http.Url
 import kotlinx.browser.window
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.koin.core.scope.Scope
-import org.w3c.dom.MessageEvent
-import org.w3c.dom.events.Event
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlin.js.ExperimentalWasmJsInterop
-import kotlin.js.JsString
+
+private val log = KotlinLogging.logger {}
 
 /**
  * JS/Web SSO login handler using popup window and postMessage for callback.
  * According to the Matrix spec, the SSO flow will call `window.opener.postMessage("authDone", "*")`
  * when authentication is complete, with the loginToken in the URL.
  */
-class JsSsoLoginHandler : SsoLoginHandler {
-    
-    override fun getCallbackUrl(): String {
+class JsSsoLoginHandler(private val settings: Settings) : SsoLoginHandler {
+    override fun getCallbackUrl(homeserver: Url, idpId: String?): String {
         // For web, we use the current origin with a callback path
-        return window.location.origin
+        return URLBuilder(window.location.origin).apply {
+            parameters.apply {
+                append("homeserver", homeserver.toString())
+                if (idpId != null) append("idpId", idpId)
+            }
+        }.buildString()
     }
     
     @OptIn(ExperimentalWasmJsInterop::class, ExperimentalWasmJsInterop::class)
-    override suspend fun performSsoLogin(ssoUrl: String): SsoCallbackResult {
+    override suspend fun performSsoLogin(homeserver: Url, idpId: String?, ssoUrl: String): SsoCallbackResult {
         return suspendCancellableCoroutine { continuation ->
             // Open SSO URL in a popup window
-            val popup = window.open(ssoUrl, "sso_popup", "width=600,height=700")
-            
-            if (popup == null) {
-                continuation.resumeWithException(
-                    IllegalStateException("Could not open SSO popup window. Please allow popups for this site.")
-                )
-                return@suspendCancellableCoroutine
-            }
-            
-            var messageHandler: ((Event) -> Unit)? = null
-            var pollInterval: Int? = null
-            var completed = false
-            
-            fun cleanup() {
-                messageHandler?.let { window.removeEventListener("message", it) }
-                pollInterval?.let { window.clearInterval(it) }
-            }
-            
-            fun complete(result: Result<SsoCallbackResult>) {
-                if (completed) return
-                completed = true
-                cleanup()
-                popup.close()
-                result.fold(
-                    onSuccess = { continuation.resume(it) },
-                    onFailure = { continuation.resumeWithException(it) }
-                )
-            }
-            
-            // Listen for postMessage from the popup
-            messageHandler = messageHandler@{ event: Event ->
-                val messageEvent = event as? MessageEvent ?: return@messageHandler
-
-                // Check if this is the auth done message
-                val data = (messageEvent.data as? JsString)?.toKotlinString()
-                println("Received data: $data")
-                val prefix = "authDone?loginToken="
-                if (data != null) {
-                    if (data.startsWith(prefix)) {
-                        complete(Result.success(SsoCallbackResult(data.substring(prefix.length))))
-                    } else if (data == "authDone" || data.contains("loginToken")) {
-                        // Try to extract loginToken from the popup URL
-                        try {
-                            val popupUrl = popup.location.href
-                            val loginToken = extractLoginToken(popupUrl)
-
-                            if (loginToken != null) {
-                                complete(Result.success(SsoCallbackResult(loginToken)))
-                            }
-                        } catch (e: Exception) {
-                            // Cross-origin access might fail, try alternative methods
-                        }
-                    }
-                }
-            }
-            
-            window.addEventListener("message", messageHandler)
-            
-            // Also poll the popup URL for loginToken (fallback)
-            pollInterval = window.setInterval({
-                try {
-                    if (popup.closed) {
-                        complete(Result.failure(IllegalStateException("SSO popup was closed without completing login")))
-                        return@setInterval null
-                    }
-
-                    // Try to read the popup URL (will fail if cross-origin)
-                    val popupUrl = popup.location.href
-                    val loginToken = extractLoginToken(popupUrl)
-                    
-                    if (loginToken != null) {
-                        complete(Result.success(SsoCallbackResult(loginToken)))
-                    }
-                } catch (e: Exception) {
-                    // Cross-origin access - ignore and wait for postMessage
-                }
-                null
-            }, 1000)  // Poll every 1 second to reduce CPU overhead
-            
-            continuation.invokeOnCancellation {
-                cleanup()
-                popup.close()
-            }
-        }
-    }
-    
-    private fun extractLoginToken(url: String): String? {
-        if (!url.contains("loginToken")) return null
-        
-        val queryStart = url.indexOf('?')
-        if (queryStart < 0) return null
-        
-        val query = url.substring(queryStart + 1)
-        return query.split('&').firstNotNullOfOrNull { param ->
-            val parts = param.split('=', limit = 2)
-            if (parts.size == 2 && parts[0] == "loginToken") parts[1] else null
+            window.open(ssoUrl, "_self", "width=600,height=700")
+            // do not continue if popup failed to open
+            // this is obviously a hack, but it should work in practice
+            log.error { "Failed to open SSO popup window" }
         }
     }
 }
 
-actual fun Scope.createSsoLoginHandler(): SsoLoginHandler = JsSsoLoginHandler()
+actual fun Scope.createSsoLoginHandler(): SsoLoginHandler = JsSsoLoginHandler(get())

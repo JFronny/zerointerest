@@ -1,5 +1,6 @@
 package dev.jfronny.zerointerest.service
 
+import io.ktor.http.Url
 import io.ktor.utils.io.InternalAPI
 import io.ktor.utils.io.locks.reentrantLock
 import io.ktor.utils.io.locks.synchronized
@@ -72,11 +73,11 @@ class IosSsoLoginHandler : SsoLoginHandler {
         }
     }
     
-    override fun getCallbackUrl(): String {
+    override fun getCallbackUrl(homeserver: Url, idpId: String?): String {
         return "$CALLBACK_SCHEME://sso-callback"
     }
     
-    override suspend fun performSsoLogin(ssoUrl: String): SsoCallbackResult {
+    override suspend fun performSsoLogin(homeserver: Url, idpId: String?, ssoUrl: String): SsoCallbackResult {
         return suspendCancellableCoroutine { cont ->
             synchronized(lock) {
                 continuation = cont

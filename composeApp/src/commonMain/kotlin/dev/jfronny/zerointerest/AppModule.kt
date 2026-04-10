@@ -1,5 +1,7 @@
 package dev.jfronny.zerointerest
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.sqlite.SQLiteDriver
 import de.connect2x.trixnity.core.serialization.events.EventContentSerializerMappings
 import de.connect2x.trixnity.core.serialization.events.default
@@ -19,6 +21,9 @@ import dev.jfronny.zerointerest.service.db.Migration3_4
 import dev.jfronny.zerointerest.service.db.RoomZeroInterestDatabase
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.sync.Mutex
+import org.koin.compose.currentKoinScope
+import org.koin.core.qualifier.Qualifier
+import org.koin.core.scope.Scope
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
@@ -70,4 +75,12 @@ class SuspendLazy<T>(private val block: suspend () -> T) {
             mutex.unlock()
         }
     }
+}
+
+@Composable
+inline fun <reified T> koinInjectOrNull(
+    qualifier: Qualifier? = null,
+    scope: Scope = currentKoinScope()
+): T? = remember(qualifier, scope) {
+    scope.getOrNull(qualifier)
 }
