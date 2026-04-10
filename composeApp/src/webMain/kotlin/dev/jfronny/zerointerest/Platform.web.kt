@@ -26,7 +26,6 @@ import io.ktor.client.engine.js.Js
 import org.koin.core.scope.Scope
 import org.koin.dsl.bind
 import org.koin.dsl.module
-import org.w3c.dom.Worker
 import web.events.EventHandler
 import web.window.window
 import kotlin.coroutines.Continuation
@@ -61,12 +60,10 @@ class WebPlatform : Platform {
 actual fun Scope.getPlatform(): Platform = WebPlatform()
 
 fun createExtraModule() = module {
-    single { WebWorkerSQLiteDriver(jsWorker()) } bind SQLiteDriver::class
+    single { createSqlJsWorker() } bind SQLiteDriver::class
 }
 
-@OptIn(ExperimentalWasmJsInterop::class)
-private fun jsWorker(): Worker =
-    js("""new Worker(new URL("sqlite-web-worker/worker.js", import.meta.url))""")
+expect fun createSqlJsWorker(): WebWorkerSQLiteDriver
 
 @Composable
 actual fun getPlatformTheme(darkTheme: Boolean): ColorScheme? = null

@@ -1,5 +1,11 @@
 package dev.jfronny.zerointerest
 
+import kotlin.js.ExperimentalWasmJsInterop
+import kotlin.js.JsAny
+import kotlin.js.JsArray
+import kotlin.js.get
+import kotlin.js.length
+
 @Suppress("UNCHECKED_CAST")
 @OptIn(ExperimentalWasmJsInterop::class)
 inline fun <T : JsAny?> JsArray<T>.forEach(action: (T) -> Unit) {

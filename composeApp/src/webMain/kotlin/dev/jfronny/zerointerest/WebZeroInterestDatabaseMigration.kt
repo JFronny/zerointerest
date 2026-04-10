@@ -14,6 +14,9 @@ import dev.jfronny.zerointerest.service.db.SummaryEntity
 import dev.jfronny.zerointerest.service.db.SummaryHeadEntity
 import dev.jfronny.zerointerest.service.db.SummaryTransactionEntity
 import kotlinx.serialization.json.Json
+import kotlin.js.ExperimentalWasmJsInterop
+import kotlin.js.JsAny
+import kotlin.js.toJsString
 
 @OptIn(ExperimentalWasmJsInterop::class)
 private external interface JsSummaryTrust : JsAny {
