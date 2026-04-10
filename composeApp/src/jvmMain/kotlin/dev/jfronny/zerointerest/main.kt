@@ -7,20 +7,21 @@ import dev.jfronny.zerointerest.ui.App
 import dev.jfronny.zerointerest.util.KoinLogWrangler
 import dev.jfronny.zerointerest.util.LognityWrangler
 import org.koin.compose.KoinApplication
+import org.koin.dsl.koinConfiguration
 
 fun main() {
     Backend.set(LognityWrangler)
     application {
-        KoinApplication(application = {
+        KoinApplication(configuration = koinConfiguration(declaration = {
             logger(KoinLogWrangler)
             modules(listOf(createAppModule(), createExtraModule()))
-        }) {
+        }), content = {
             Window(
                 onCloseRequest = ::exitApplication,
                 title = "zerointerest",
             ) {
                 App()
             }
-        }
+        })
     }
 }

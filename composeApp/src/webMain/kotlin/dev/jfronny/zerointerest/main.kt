@@ -7,19 +7,17 @@ import dev.jfronny.zerointerest.ui.App
 import dev.jfronny.zerointerest.util.KoinLogWrangler
 import dev.jfronny.zerointerest.util.LognityWrangler
 import org.koin.compose.KoinApplication
-import org.koin.core.module.Module
+import org.koin.dsl.koinConfiguration
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     Backend.set(LognityWrangler)
     ComposeViewport {
-        KoinApplication(application = {
+        KoinApplication(configuration = koinConfiguration(declaration = {
             logger(KoinLogWrangler)
             modules(listOf(createAppModule(), createExtraModule()))
-        }) {
+        }), content = {
             App()
-        }
+        })
     }
 }
-
-expect fun createExtraModule(): Module

@@ -15,27 +15,28 @@ import dev.jfronny.zerointerest.service.db.SummaryHeadEntity
 import dev.jfronny.zerointerest.service.db.SummaryTransactionEntity
 import kotlinx.serialization.json.Json
 
-private inline fun <T : Any> jso(): T = js("({})")
-private inline fun <T : Any> jso(block: T.() -> Unit): T = jso<T>().apply(block)
-
-private external interface JsSummaryTrust {
+@OptIn(ExperimentalWasmJsInterop::class)
+private external interface JsSummaryTrust : JsAny {
     var roomId: String
     var eventId: String
     var state: String
 }
 
-private external interface JsSummaryHead {
+@OptIn(ExperimentalWasmJsInterop::class)
+private external interface JsSummaryHead : JsAny {
     var roomId: String
     var eventId: String
 }
 
-private external interface JsSummaryLink {
+@OptIn(ExperimentalWasmJsInterop::class)
+private external interface JsSummaryLink : JsAny {
     var roomId: String
     var summaryId: String
     var otherId: String
 }
 
-private external interface JsTransactionTemplate {
+@OptIn(ExperimentalWasmJsInterop::class)
+private external interface JsTransactionTemplate : JsAny {
     var roomId: String
     var id: String
     var description: String
@@ -75,41 +76,41 @@ class WebZeroInterestDatabaseMigration {
         getDb().writeTransaction("transaction_template") {
             val os = objectStore("transaction_template")
             os.getAll().forEach { js ->
-                val entity = js.asDynamic() as JsTransactionTemplate
+                val entity = js as JsTransactionTemplate
                 db.addTransactionTemplate(RoomId(entity.roomId), TransactionTemplate(
                     id = entity.id,
                     description = entity.description,
                     sender = UserId(entity.sender),
                     receivers = Json.decodeFromString(entity.receivers)
                 ))
-                os.delete(Key(entity.roomId, entity.id))
+                os.delete(Key(entity.roomId.toJsString(), entity.id.toJsString()))
             }
         }
         getDb().writeTransaction("summary_trust") {
             val os = objectStore("summary_trust")
             os.getAll().forEach { js ->
-                val entity = js.asDynamic() as JsSummaryTrust
+                val entity = js as JsSummaryTrust
                 when (enumValueOf<ZeroInterestDatabase.TrustState>(entity.state)) {
                     ZeroInterestDatabase.TrustState.UNTRUSTED -> {}
                     ZeroInterestDatabase.TrustState.TRUSTED -> db.markTrusted(RoomId(entity.roomId), EventId(entity.eventId))
                     ZeroInterestDatabase.TrustState.REJECTED -> db.markRejected(RoomId(entity.roomId), EventId(entity.eventId))
                 }
-                os.delete(Key(entity.roomId, entity.eventId))
+                os.delete(Key(entity.roomId.toJsString(), entity.eventId.toJsString()))
             }
         }
         getDb().writeTransaction("summary_head") {
             val os = objectStore("summary_head")
             os.getAll().forEach { js ->
-                val entity = js.asDynamic() as JsSummaryHead
+                val entity = js as JsSummaryHead
                 db.db.summaryHeadDao().insert(SummaryHeadEntity(entity.roomId, entity.eventId))
-                os.delete(Key(entity.roomId, entity.eventId))
+                os.delete(Key(entity.roomId.toJsString(), entity.eventId.toJsString()))
             }
         }
         getDb().writeTransaction("summary_link") {
             val os = objectStore("summary_link")
             db.db.summaryDao().insertSummary(os.getAll().map { js ->
-                val entity = js.asDynamic() as JsSummaryLink
-                os.delete(Key(entity.summaryId, entity.otherId))
+                val entity = js as JsSummaryLink
+                os.delete(Key(entity.summaryId.toJsString(), entity.otherId.toJsString()))
                 SummaryEntity(
                     roomId = entity.roomId,
                     summaryId = entity.summaryId,
@@ -120,8 +121,8 @@ class WebZeroInterestDatabaseMigration {
         getDb().writeTransaction("summary_transaction") {
             val os = objectStore("summary_transaction")
             db.db.summaryDao().insertTransactions(os.getAll().map { js ->
-                val entity = js.asDynamic() as JsSummaryLink
-                os.delete(Key(entity.roomId, entity.summaryId, entity.otherId))
+                val entity = js as JsSummaryLink
+                os.delete(Key(entity.roomId.toJsString(), entity.summaryId.toJsString(), entity.otherId.toJsString()))
                 SummaryTransactionEntity(
                     roomId = entity.roomId,
                     summaryId = entity.summaryId,

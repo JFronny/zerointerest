@@ -2,9 +2,31 @@ package dev.jfronny.zerointerest
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
+import androidx.datastore.core.DataStore
+import androidx.datastore.core.okio.WebStorage
+import androidx.datastore.core.okio.WebStorageType
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.PreferencesSerializer
+import androidx.room3.Room
+import androidx.room3.RoomDatabase
 import androidx.sqlite.SQLiteConnection
+import androidx.sqlite.SQLiteDriver
+import androidx.sqlite.driver.web.WebWorkerSQLiteDriver
 import androidx.sqlite.execSQL
+import de.connect2x.trixnity.client.MediaStoreModule
+import de.connect2x.trixnity.client.RepositoriesModule
+import de.connect2x.trixnity.client.media.indexeddb.indexedDB
+import de.connect2x.trixnity.client.store.repository.indexeddb.indexedDB
+import dev.jfronny.zerointerest.service.db.RoomZeroInterestDatabase
+import dev.jfronny.zerointerest.service.db.ZeroInterestRoomDatabase
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.js.Js
+import org.koin.core.scope.Scope
+import org.koin.dsl.bind
+import org.koin.dsl.module
+import org.w3c.dom.Worker
 import web.events.EventHandler
 import web.window.window
 import kotlin.coroutines.Continuation
@@ -13,6 +35,38 @@ import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
 
 private val log = KotlinLogging.logger {}
+
+class WebPlatform : Platform {
+    override val name: String = "Web"
+    override suspend fun getRepositoriesModule(): RepositoriesModule = RepositoriesModule.indexedDB()
+    override suspend fun getMediaStoreModule(): MediaStoreModule = MediaStoreModule.indexedDB()
+    override fun getHttpClientEngine(): HttpClientEngine = Js.create {}
+    override fun createDataStore(): DataStore<Preferences> {
+        return PreferenceDataStoreFactory.create(WebStorage(
+            name = "zerointerest",
+            serializer = PreferencesSerializer,
+            storageType = WebStorageType.SESSION //TODO: use non-session storage once available
+        ))
+    }
+
+    override fun zerointerestDatabaseBuilder(): RoomDatabase.Builder<ZeroInterestRoomDatabase> =
+        Room.databaseBuilder<ZeroInterestRoomDatabase>("zerointerest")
+
+    override fun handleZerointerestDatabase(db: RoomZeroInterestDatabase) {
+        super.handleZerointerestDatabase(db)
+        launch { WebZeroInterestDatabaseMigration().migrateTo(db) }
+    }
+}
+
+actual fun Scope.getPlatform(): Platform = WebPlatform()
+
+fun createExtraModule() = module {
+    single { WebWorkerSQLiteDriver(jsWorker()) } bind SQLiteDriver::class
+}
+
+@OptIn(ExperimentalWasmJsInterop::class)
+private fun jsWorker(): Worker =
+    js("""new Worker(new URL("sqlite-web-worker/worker.js", import.meta.url))""")
 
 @Composable
 actual fun getPlatformTheme(darkTheme: Boolean): ColorScheme? = null

@@ -3,6 +3,7 @@ import com.github.benmanes.gradle.versions.updates.resolutionstrategy.ComponentF
 import com.github.benmanes.gradle.versions.updates.resolutionstrategy.ComponentSelectionWithCurrent
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.InternalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmRun
@@ -66,17 +67,18 @@ kotlin {
         }
     }
 
-    js {
+//    js {
+//        browser()
+//        binaries.executable()
+//        useEsModules()
+//    }
+
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
         browser()
         binaries.executable()
         useEsModules()
     }
-
-//    @OptIn(ExperimentalWasmDsl::class)
-//    wasmJs {
-//        browser()
-//        binaries.executable()
-//    }
     
     applyDefaultHierarchyTemplate()
 
@@ -130,15 +132,13 @@ kotlin {
             implementation(libs.ktor.client.android)
             implementation(libs.slf4j.android)
         }
-        jsMain.dependencies {
-            implementation(libs.trixnity.client.repository.indexeddb)
-            implementation(libs.trixnity.client.media.indexeddb)
-            implementation(libs.indexeddb)
-        }
         webMain.dependencies {
             implementation(npm("copy-webpack-plugin", libs.versions.copyWebpackPlugin.get()))
             implementation(libs.androidx.sqlite.web)
             implementation(npm("sqlite-web-worker", layout.projectDirectory.dir("sqlite-web-worker").asFile))
+            implementation(libs.trixnity.client.repository.indexeddb)
+            implementation(libs.trixnity.client.media.indexeddb)
+            implementation(libs.indexeddb)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
