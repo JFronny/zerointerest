@@ -113,6 +113,9 @@ kotlin {
             implementation(kotlin("reflect"))
             implementation(libs.androidx.room.runtime)
             implementation(libs.compose.emojikt)
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor3)
+            implementation(libs.coil.svg)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

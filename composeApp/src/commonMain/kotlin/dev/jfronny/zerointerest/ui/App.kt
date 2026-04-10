@@ -5,39 +5,46 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import coil3.ImageLoader
+import coil3.compose.setSingletonImageLoaderFactory
+import coil3.network.ktor3.KtorNetworkFetcherFactory
+import coil3.svg.SvgDecoder
+import de.connect2x.trixnity.core.model.EventId
+import de.connect2x.trixnity.core.model.RoomId
 import dev.jfronny.zerointerest.Destination
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.ZeroInterestDatabase
 import dev.jfronny.zerointerest.ui.theme.AppTheme
+import dev.jfronny.zerointerest.util.CoilMxcFetcher
 import dev.jfronny.zerointerest.util.EventIdNavType
+import dev.jfronny.zerointerest.util.NavigationHelper
 import dev.jfronny.zerointerest.util.RoomIdNavType
+import dev.jfronny.zerointerest.util.nihEmojiDownloader
 import dev.jfronny.zerointerest.util.rememberNavigationHelper
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import de.connect2x.trixnity.core.model.EventId
-import de.connect2x.trixnity.core.model.RoomId
-import dev.jfronny.zerointerest.util.NavigationHelper
 import org.kodein.emoji.compose.EmojiService
-import org.kodein.emoji.compose.EmojiUrl
 import org.kodein.emoji.compose.ProvideEmojiDownloader
 import org.koin.compose.koinInject
 import kotlin.reflect.typeOf
 
 const val appName = "zerointerest"
 
+@OptIn(coil3.annotation.ExperimentalCoilApi::class)
 @Composable
 fun App() {
     remember { EmojiService.initialize() }
@@ -45,6 +52,17 @@ fun App() {
     val service = koinInject<MatrixClientService>()
     val settings = koinInject<Settings>()
     val database = koinInject<ZeroInterestDatabase>()
+    val httpClient = koinInject<HttpClient>()
+
+    setSingletonImageLoaderFactory { context ->
+        ImageLoader.Builder(context)
+            .components {
+                add(KtorNetworkFetcherFactory(httpClient))
+                add(CoilMxcFetcher.Factory(service))
+                add(SvgDecoder.Factory(renderToBitmap = false))
+            }
+            .build()
+    }
 
     suspend fun onLoginSuccess() {
         val rememberedRoom = settings.rememberedRoom()
@@ -54,12 +72,7 @@ fun App() {
     }
 
     AppTheme {
-        ProvideEmojiDownloader(download = {
-            when (it.type) {
-                EmojiUrl.Type.SVG -> TODO()
-                EmojiUrl.Type.Lottie -> TODO()
-            }
-        }) {
+        ProvideEmojiDownloader(download = nihEmojiDownloader(httpClient)) {
             AppNavigation(navHelper, service, settings, database, ::onLoginSuccess)
 
             VerificationDialog()

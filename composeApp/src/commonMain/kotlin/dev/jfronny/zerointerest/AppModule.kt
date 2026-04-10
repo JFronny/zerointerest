@@ -17,6 +17,7 @@ import dev.jfronny.zerointerest.service.db.Migration1_2
 import dev.jfronny.zerointerest.service.db.Migration2_3
 import dev.jfronny.zerointerest.service.db.Migration3_4
 import dev.jfronny.zerointerest.service.db.RoomZeroInterestDatabase
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.sync.Mutex
 import org.koin.dsl.bind
 import org.koin.dsl.module
@@ -25,6 +26,7 @@ const val SourceCodeUrl = "https://git.jfronny.dev/Johannes/zerointerest"
 
 fun createAppModule() = module {
     single { getPlatform() }
+    single { HttpClient(get<Platform>().getHttpClientEngine()) }
     single { createSsoLoginHandler() }
     single { MatrixClientService(get(), get()) }
     single { SummaryTrustService(get(), get()) }

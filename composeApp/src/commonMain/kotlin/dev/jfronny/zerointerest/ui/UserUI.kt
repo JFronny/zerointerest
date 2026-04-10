@@ -1,6 +1,5 @@
 package dev.jfronny.zerointerest.ui
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,25 +15,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.decodeToImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.jfronny.zerointerest.composeapp.generated.resources.Res
-import dev.jfronny.zerointerest.composeapp.generated.resources.avatar
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.mapLatest
+import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
 import de.connect2x.trixnity.client.MatrixClient
-import de.connect2x.trixnity.client.media
 import de.connect2x.trixnity.client.store.RoomUser
 import de.connect2x.trixnity.client.store.avatarUrl
 import de.connect2x.trixnity.client.user
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
+import dev.jfronny.zerointerest.composeapp.generated.resources.Res
+import dev.jfronny.zerointerest.composeapp.generated.resources.avatar
+import kotlinx.coroutines.flow.Flow
 import org.jetbrains.compose.resources.stringResource
 
 interface UserUI {
@@ -88,21 +84,12 @@ class UserUIImpl(
     private val client: MatrixClient,
     private val users: Map<UserId, Flow<RoomUser?>>,
 ) : UserUI {
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val bitmaps: Map<UserId, Flow<ImageBitmap?>> = users.mapValues { (k, v) ->
-        v.mapLatest {
-            it?.avatarUrl?.let {
-                client.media.getMedia(it).getOrNull()?.toByteArray()?.decodeToImageBitmap()
-            }
-        }
-    }
 
     @Composable
     override fun component(userId: UserId): UserUI.Component {
         val user = remember(userId, users) { users[userId] } ?: return PreviewUserUI.component(userId)
         val state by user.collectAsState(null)
         val name = remember(state) { state?.name ?: userId.full }
-        val bitmap by remember(userId, users) { bitmaps[userId] ?: flowOf(null) }.collectAsState(null)
         return object : UserUI.Component {
             @Composable
             override fun Icon() {
@@ -111,11 +98,14 @@ class UserUIImpl(
                     FallbackIcon(name)
                     return
                 }
-                bitmap?.let {
-                    IconWrapper {
-                        Image(it, stringResource(Res.string.avatar))
-                    }
-                } ?: FallbackIcon(name)
+                IconWrapper {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalPlatformContext.current)
+                            .data(state.avatarUrl)
+                            .build(),
+                        contentDescription = stringResource(Res.string.avatar)
+                    )
+                }
             }
 
             override val name: String get() = name
