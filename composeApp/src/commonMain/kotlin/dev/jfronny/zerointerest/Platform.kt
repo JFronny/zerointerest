@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room3.RoomDatabase
+import androidx.sqlite.SQLiteConnection
 import de.connect2x.trixnity.client.MediaStoreModule
 import de.connect2x.trixnity.client.RepositoriesModule
 import dev.jfronny.zerointerest.service.db.RoomZeroInterestDatabase
@@ -28,3 +29,5 @@ expect fun Scope.getPlatform(): Platform
 @Composable
 expect fun getPlatformTheme(darkTheme: Boolean): ColorScheme?
 expect fun addShutdownHook(block: () -> Unit)
+
+expect suspend fun SQLiteConnection.execSQL(sql: String)

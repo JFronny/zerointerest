@@ -18,6 +18,7 @@ kotlin {
 android {
     namespace = "dev.jfronny.zerointerest"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
+    buildToolsVersion = libs.versions.android.buildTools.get()
 
     defaultConfig {
         applicationId = "dev.jfronny.zerointerest"

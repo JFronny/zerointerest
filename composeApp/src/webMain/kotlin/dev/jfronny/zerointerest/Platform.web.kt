@@ -2,6 +2,8 @@ package dev.jfronny.zerointerest
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
+import androidx.sqlite.SQLiteConnection
+import androidx.sqlite.execSQL
 import io.github.oshai.kotlinlogging.KotlinLogging
 import web.events.EventHandler
 import web.window.window
@@ -29,3 +31,5 @@ fun launch(block: suspend () -> Unit) {
         }
     })
 }
+
+actual suspend fun SQLiteConnection.execSQL(sql: String) = execSQL(sql)

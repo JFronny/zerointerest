@@ -14,8 +14,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,7 +44,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import kotlin.time.Duration.Companion.seconds
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TransactionDetailsScreen(
     client: MatrixClient,
@@ -82,7 +83,7 @@ fun TransactionDetailsScreen(
         val tx = transaction
         if (tx == null) {
             Box(Modifier.fillMaxSize().padding(padding)) {
-                CircularProgressIndicator(Modifier.align(Alignment.Center))
+                LoadingIndicator(Modifier.align(Alignment.Center))
             }
         } else {
             LazyColumn(

@@ -15,10 +15,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -69,7 +70,9 @@ import kotlin.uuid.Uuid
 
 private val log = KotlinLogging.logger {}
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalUuidApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalUuidApi::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun CreateTransactionScreen(
     client: MatrixClient,
@@ -297,7 +300,7 @@ fun CreateTransactionScreen(
                     }
                 }
             }) {
-                if (launched) CircularProgressIndicator()
+                if (launched) LoadingIndicator()
                 else Icon(Icons.Default.Check, stringResource(Res.string.save))
             }
         }

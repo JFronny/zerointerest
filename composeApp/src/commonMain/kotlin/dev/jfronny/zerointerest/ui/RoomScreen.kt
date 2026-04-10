@@ -21,10 +21,11 @@ import androidx.compose.material.icons.filled.ForkRight
 import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -86,7 +87,9 @@ import kotlin.time.Duration.Companion.seconds
 
 private val log = KotlinLogging.logger {}
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: (TransactionTemplate?) -> Unit, navHelper: NavigationHelper) {
     val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
@@ -195,7 +198,7 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: (Transactio
                         )
                     } ?: run {
                         Box(Modifier.fillMaxSize()) {
-                            CircularProgressIndicator(Modifier.align(Alignment.TopCenter))
+                            LoadingIndicator(Modifier.align(Alignment.TopCenter))
                         }
                     }
                 }
@@ -267,7 +270,7 @@ private fun BalancesTab(
     }
 }
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TransactionsTab(client: MatrixClient, roomId: RoomId, navHelper: NavigationHelper) {
     val roomService: RoomService = client.room
@@ -399,7 +402,7 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, navHelper: Nav
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (isLoading && transactionEvents.isEmpty()) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            LoadingIndicator(modifier = Modifier.align(Alignment.Center))
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
@@ -426,7 +429,7 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, navHelper: Nav
                                 .padding(16.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator()
+                            LoadingIndicator()
                         }
                     }
                 }

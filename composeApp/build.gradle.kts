@@ -35,6 +35,7 @@ kotlin {
         namespace = "dev.jfronny.zerointerest.composeapp"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
+        buildToolsVersion = libs.versions.android.buildTools.get()
         androidResources.enable = true
 
         compilerOptions {
@@ -121,6 +122,7 @@ kotlin {
             implementation(libs.commons.logger)
         }
         androidMain.dependencies {
+            implementation(libs.compose.uiTooling)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.browser)
             implementation(libs.koin.android)

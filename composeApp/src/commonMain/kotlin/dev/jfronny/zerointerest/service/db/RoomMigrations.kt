@@ -2,11 +2,11 @@ package dev.jfronny.zerointerest.service.db
 
 import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection
-import androidx.sqlite.executeSQL
+import dev.jfronny.zerointerest.execSQL
 
 object Migration1_2 : Migration(1, 2) {
     override suspend fun migrate(connection: SQLiteConnection) {
-        connection.executeSQL(
+        connection.execSQL(
             """
             CREATE TABLE IF NOT EXISTS `SummaryHeadEntity` (
                 `roomId` TEXT NOT NULL,
@@ -20,7 +20,7 @@ object Migration1_2 : Migration(1, 2) {
 
 object Migration2_3 : Migration(2, 3) {
     override suspend fun migrate(connection: SQLiteConnection) {
-        connection.executeSQL("""
+        connection.execSQL("""
             CREATE TABLE IF NOT EXISTS `SummaryEntity` (
                 `roomId` TEXT NOT NULL,
                 `summaryId` TEXT NOT NULL,
@@ -28,7 +28,7 @@ object Migration2_3 : Migration(2, 3) {
                 PRIMARY KEY(`roomId`, `summaryId`, `parentId`)
             )
         """.trimIndent())
-        connection.executeSQL("""
+        connection.execSQL("""
             CREATE TABLE IF NOT EXISTS `SummaryTransactionEntity` (
                 `roomId` TEXT NOT NULL,
                 `summaryId` TEXT NOT NULL,
@@ -41,7 +41,7 @@ object Migration2_3 : Migration(2, 3) {
 
 object Migration3_4 : Migration(3, 4) {
     override suspend fun migrate(connection: SQLiteConnection) {
-        connection.executeSQL("""
+        connection.execSQL("""
             CREATE TABLE IF NOT EXISTS `TransactionTemplateEntity` (
                 `roomId` TEXT NOT NULL,
                 `id` TEXT NOT NULL,
