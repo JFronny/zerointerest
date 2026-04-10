@@ -15,6 +15,7 @@ composeHotReload = "1.0.0"
 composeMultiplatform = "1.11.0-beta02"
 copyWebpackPlugin = "14.0.0" # https://github.com/webpack-contrib/copy-webpack-plugin/releases
 datastore = "1.3.0-alpha07"
+emojikt = "2.3.0"
 gradle-versions = "0.53.0"
 indexeddb = "0.12.0"
 jfcommons = "2.0.0"
@@ -88,6 +89,7 @@ compose-materialIconsExtended = { module = "org.jetbrains.compose.material:mater
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
 compose-material3AdaptiveNavigationSuite = { module = "org.jetbrains.compose.material3:material3-adaptive-navigation-suite", version.ref = "material3" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
+compose-emojikt = { module = "org.kodein.emoji:emoji-compose-m3", version.ref = "emojikt" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

@@ -29,14 +29,18 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
+import dev.jfronny.zerointerest.util.NavigationHelper
+import org.kodein.emoji.compose.EmojiService
+import org.kodein.emoji.compose.EmojiUrl
+import org.kodein.emoji.compose.ProvideEmojiDownloader
 import org.koin.compose.koinInject
 import kotlin.reflect.typeOf
 
 const val appName = "zerointerest"
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun App() = AppTheme {
+fun App() {
+    remember { EmojiService.initialize() }
     val navHelper = rememberNavigationHelper()
     val service = koinInject<MatrixClientService>()
     val settings = koinInject<Settings>()
@@ -49,107 +53,126 @@ fun App() = AppTheme {
         navHelper.navigate(Destination.Room(rememberedRoom))
     }
 
-    NavHost(
-        navController = navHelper.main,
-        startDestination = Destination.LoadingScreen,
-        typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)
-    ) {
-        composable<Destination.LoadingScreen> {
-            LoadingScreen(
-                onSuccess = ::onLoginSuccess,
-                onError = {
+    AppTheme {
+        ProvideEmojiDownloader(download = {
+            when (it.type) {
+                EmojiUrl.Type.SVG -> TODO()
+                EmojiUrl.Type.Lottie -> TODO()
+            }
+        }) {
+            AppNavigation(navHelper, service, settings, database, ::onLoginSuccess)
+
+            VerificationDialog()
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun AppNavigation(
+    navHelper: NavigationHelper,
+    service: MatrixClientService,
+    settings: Settings,
+    database: ZeroInterestDatabase,
+    onLoginSuccess: suspend () -> Unit,
+) = NavHost(
+    navController = navHelper.main,
+    startDestination = Destination.LoadingScreen,
+    typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)
+) {
+    composable<Destination.LoadingScreen> {
+        LoadingScreen(
+            onSuccess =  { onLoginSuccess() },
+            onError = {
+                navHelper.navigate(Destination.SelectHomeserver)
+            }
+        )
+    }
+    composable<Destination.SelectHomeserver> {
+        HomeserverScreen(
+            onContinue = { homeserver ->
+                navHelper.navigate(Destination.SelectLoginMethod(homeserver))
+            }
+        )
+    }
+    composable<Destination.SelectLoginMethod> {
+        val route = it.toRoute<Destination.SelectLoginMethod>()
+        LoginMethodScreen(
+            homeserver = route.homeserver,
+            onBack = { navHelper.popMainBackStack() },
+            onSuccess = { onLoginSuccess() }
+        )
+    }
+    composable<Destination.PickRoom> {
+        val scope = rememberCoroutineScope()
+        PickRoomScreen(
+            onPick = {
+                scope.launch {
+                    settings.rememberRoom(it)
+                    navHelper.navigate(Destination.Room(it))
+                }
+            },
+            logout = {
+                scope.launch {
+                    service.logout()
                     navHelper.navigate(Destination.SelectHomeserver)
                 }
-            )
-        }
-        composable<Destination.SelectHomeserver> {
-            HomeserverScreen(
-                onContinue = { homeserver ->
-                    navHelper.navigate(Destination.SelectLoginMethod(homeserver))
-                }
-            )
-        }
-        composable<Destination.SelectLoginMethod> {
-            val route = it.toRoute<Destination.SelectLoginMethod>()
-            LoginMethodScreen(
-                homeserver = route.homeserver,
-                onBack = { navHelper.popMainBackStack() },
-                onSuccess = ::onLoginSuccess
-            )
-        }
-        composable<Destination.PickRoom> {
-            val scope = rememberCoroutineScope()
-            PickRoomScreen(
-                onPick = {
-                    scope.launch {
-                        settings.rememberRoom(it)
-                        navHelper.navigate(Destination.Room(it))
-                    }
-                },
-                logout = {
-                    scope.launch {
-                        service.logout()
-                        navHelper.navigate(Destination.SelectHomeserver)
-                    }
-                }
-            )
-        }
-        composable<Destination.Room>(typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)) {
-            val route = it.toRoute<Destination.Room>()
-            val scope = rememberCoroutineScope()
-            RoomScreen(
-                roomId = route.roomId,
-                onBack = {
-                    scope.launch {
-                        settings.clearRememberedRoom()
-                        navHelper.popMainBackStack()
-                    }
-                },
-                onAddTransaction = { template ->
-                    navHelper.navigate(Destination.CreateTransaction(route.roomId, template?.id))
-                },
-                navHelper = navHelper
-            )
-        }
-        composable<Destination.CreateTransaction>(typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)) {
-            val route = it.toRoute<Destination.CreateTransaction>()
-            val templateId = route.templateId
-            var initialTemplate by remember { mutableStateOf<TransactionTemplate?>(null) }
-            LaunchedEffect(templateId) {
-                if (templateId != null) {
-                    initialTemplate = database.getTransactionTemplates(route.roomId).first().find { it.id == templateId }
-                }
             }
+        )
+    }
+    composable<Destination.Room>(typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)) {
+        val route = it.toRoute<Destination.Room>()
+        val scope = rememberCoroutineScope()
+        RoomScreen(
+            roomId = route.roomId,
+            onBack = {
+                scope.launch {
+                    settings.clearRememberedRoom()
+                    navHelper.popMainBackStack()
+                }
+            },
+            onAddTransaction = { template ->
+                navHelper.navigate(Destination.CreateTransaction(route.roomId, template?.id))
+            },
+            navHelper = navHelper
+        )
+    }
+    composable<Destination.CreateTransaction>(typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)) {
+        val route = it.toRoute<Destination.CreateTransaction>()
+        val templateId = route.templateId
+        var initialTemplate by remember { mutableStateOf<TransactionTemplate?>(null) }
+        LaunchedEffect(templateId) {
+            if (templateId != null) {
+                initialTemplate = database.getTransactionTemplates(route.roomId).first().find { it.id == templateId }
+            }
+        }
 
-            if (templateId != null && initialTemplate == null) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    LoadingIndicator()
-                }
-            } else {
-                CreateTransactionScreen(
-                    client = service.get(),
-                    roomId = route.roomId,
-                    initialTemplate = initialTemplate,
-                    onDone = { navHelper.popMainBackStack() },
-                    onBack = { navHelper.popMainBackStack() }
-                )
+        if (templateId != null && initialTemplate == null) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                LoadingIndicator()
             }
-        }
-        composable<Destination.TransactionDetails>(
-            typeMap = mapOf(
-                typeOf<RoomId>() to RoomIdNavType,
-                typeOf<EventId>() to EventIdNavType
-            )
-        ) {
-            val route = it.toRoute<Destination.TransactionDetails>()
-            TransactionDetailsScreen(
+        } else {
+            CreateTransactionScreen(
                 client = service.get(),
                 roomId = route.roomId,
-                transactionId = route.transactionId,
+                initialTemplate = initialTemplate,
+                onDone = { navHelper.popMainBackStack() },
                 onBack = { navHelper.popMainBackStack() }
             )
         }
     }
-
-    VerificationDialog()
+    composable<Destination.TransactionDetails>(
+        typeMap = mapOf(
+            typeOf<RoomId>() to RoomIdNavType,
+            typeOf<EventId>() to EventIdNavType
+        )
+    ) {
+        val route = it.toRoute<Destination.TransactionDetails>()
+        TransactionDetailsScreen(
+            client = service.get(),
+            roomId = route.roomId,
+            transactionId = route.transactionId,
+            onBack = { navHelper.popMainBackStack() }
+        )
+    }
 }

@@ -112,6 +112,7 @@ kotlin {
             implementation(libs.kotlin.logging)
             implementation(kotlin("reflect"))
             implementation(libs.androidx.room.runtime)
+            implementation(libs.compose.emojikt)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

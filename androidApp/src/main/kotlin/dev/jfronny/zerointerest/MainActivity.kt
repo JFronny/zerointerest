@@ -11,6 +11,7 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.compose.KoinApplication
 import org.koin.core.logger.Level
+import org.koin.dsl.koinConfiguration
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,13 +21,13 @@ class MainActivity : ComponentActivity() {
 
         Backend.set(LognityWrangler)
         setContent {
-            KoinApplication(application = {
+            KoinApplication(configuration = koinConfiguration(declaration = {
                 androidLogger(Level.ERROR)
                 androidContext(this@MainActivity)
                 modules(listOf(createAppModule(), createExtraModule()))
-            }) {
+            }), content = {
                 App()
-            }
+            })
         }
     }
 }

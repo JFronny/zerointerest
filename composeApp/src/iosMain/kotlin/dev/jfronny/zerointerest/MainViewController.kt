@@ -7,16 +7,17 @@ import dev.jfronny.zerointerest.util.KoinLogWrangler
 import dev.jfronny.zerointerest.util.LognityWrangler
 import org.koin.compose.KoinApplication
 import org.koin.core.context.loadKoinModules
+import org.koin.dsl.koinConfiguration
 import platform.UIKit.UIViewController
 
 fun MainViewController(): UIViewController {
     Backend.set(LognityWrangler)
     return ComposeUIViewController {
-        KoinApplication(application = {
+        KoinApplication(configuration = koinConfiguration(declaration = {
             logger(KoinLogWrangler)
             loadKoinModules(listOf(createAppModule(), createExtraModule()))
-        }) {
+        }), content = {
             App()
-        }
+        })
     }
 }

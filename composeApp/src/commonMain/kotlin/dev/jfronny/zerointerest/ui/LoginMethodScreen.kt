@@ -391,3 +391,57 @@ private fun SsoLoginForm(
         }
     }
 }
+
+@androidx.compose.ui.tooling.preview.Preview
+@Composable
+private fun PasswordLoginFormPreview() = dev.jfronny.zerointerest.ui.theme.AppTheme {
+    PasswordLoginForm(
+        username = "user",
+        onUsernameChange = {},
+        password = "password",
+        onPasswordChange = {},
+        useToken = false,
+        onUseTokenChange = {},
+        token = "",
+        onTokenChange = {},
+        enabled = true,
+        onLogin = {}
+    )
+}
+
+@androidx.compose.ui.tooling.preview.Preview(uiMode = androidx.compose.ui.tooling.preview.AndroidUiModes.UI_MODE_NIGHT_YES)
+@Composable
+private fun PasswordLoginFormPreviewDark() = dev.jfronny.zerointerest.ui.theme.AppTheme {
+    PasswordLoginForm(
+        username = "user",
+        onUsernameChange = {},
+        password = "password",
+        onPasswordChange = {},
+        useToken = false,
+        onUseTokenChange = {},
+        token = "",
+        onTokenChange = {},
+        enabled = true,
+        onLogin = {}
+    )
+}
+
+@androidx.compose.ui.tooling.preview.Preview
+@Composable
+private fun SsoLoginFormPreview() = dev.jfronny.zerointerest.ui.theme.AppTheme {
+    SsoLoginForm(
+        ssoProviders = emptyList(),
+        enabled = true,
+        onSsoLogin = {}
+    )
+}
+
+@androidx.compose.ui.tooling.preview.Preview(uiMode = androidx.compose.ui.tooling.preview.AndroidUiModes.UI_MODE_NIGHT_YES)
+@Composable
+private fun SsoLoginFormPreviewDark() = dev.jfronny.zerointerest.ui.theme.AppTheme {
+    SsoLoginForm(
+        ssoProviders = emptyList(),
+        enabled = true,
+        onSsoLogin = {}
+    )
+}

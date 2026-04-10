@@ -53,21 +53,40 @@ val suggestedHomeservers = listOf(
     "https://matrix.frohnmeyer-wds.de",
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeserverScreen(onContinue: (homeserver: String) -> Unit) = Scaffold(
-    topBar = {
-        TopAppBar(
-            title = { Text(stringResource(Res.string.app_name)) }
-        )
-    }
-) { paddingValues ->
+fun HomeserverScreen(onContinue: (homeserver: String) -> Unit) {
     val settings = koinInject<Settings>()
     var homeserver by remember { mutableStateOf(Settings.FALLBACK_HOMESERVER) }
 
     LaunchedEffect(settings) {
         homeserver = settings.defaultHomeserver()
     }
+
+    HomeserverScreenUi(
+        homeserver = homeserver,
+        onHomeserverChange = { homeserver = it },
+        onContinue = { onContinue(homeserver) },
+        onSuggestedClick = {
+            homeserver = it
+            onContinue(it)
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeserverScreenUi(
+    homeserver: String,
+    onHomeserverChange: (String) -> Unit,
+    onContinue: () -> Unit,
+    onSuggestedClick: (String) -> Unit
+) = Scaffold(
+    topBar = {
+        TopAppBar(
+            title = { Text(stringResource(Res.string.app_name)) }
+        )
+    }
+) { paddingValues ->
 
     Column(
         modifier = Modifier
@@ -94,7 +113,7 @@ fun HomeserverScreen(onContinue: (homeserver: String) -> Unit) = Scaffold(
 
         OutlinedTextField(
             value = homeserver,
-            onValueChange = { homeserver = it },
+            onValueChange = onHomeserverChange,
             label = { Text(stringResource(Res.string.homeserver_url)) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
@@ -103,7 +122,7 @@ fun HomeserverScreen(onContinue: (homeserver: String) -> Unit) = Scaffold(
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = { onContinue(homeserver) },
+            onClick = onContinue,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(stringResource(Res.string.continue_button))
@@ -125,10 +144,7 @@ fun HomeserverScreen(onContinue: (homeserver: String) -> Unit) = Scaffold(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { 
-                                homeserver = server
-                                onContinue(server) 
-                            }
+                            .clickable { onSuggestedClick(server) }
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -159,4 +175,26 @@ fun HomeserverScreen(onContinue: (homeserver: String) -> Unit) = Scaffold(
             Text(stringResource(Res.string.source_code))
         }
     }
+}
+
+@androidx.compose.ui.tooling.preview.Preview
+@Composable
+private fun HomeserverScreenPreview() = dev.jfronny.zerointerest.ui.theme.AppTheme {
+    HomeserverScreenUi(
+        homeserver = "https://matrix.org",
+        onHomeserverChange = {},
+        onContinue = {},
+        onSuggestedClick = {}
+    )
+}
+
+@androidx.compose.ui.tooling.preview.Preview(uiMode = androidx.compose.ui.tooling.preview.AndroidUiModes.UI_MODE_NIGHT_YES)
+@Composable
+private fun HomeserverScreenPreviewDark() = dev.jfronny.zerointerest.ui.theme.AppTheme {
+    HomeserverScreenUi(
+        homeserver = "https://matrix.org",
+        onHomeserverChange = {},
+        onContinue = {},
+        onSuggestedClick = {}
+    )
 }
