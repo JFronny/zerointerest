@@ -67,18 +67,18 @@ kotlin {
         }
     }
 
-//    js {
-//        browser()
-//        binaries.executable()
-//        useEsModules()
-//    }
-
-    @OptIn(ExperimentalWasmDsl::class)
-    wasmJs {
+    js {
         browser()
         binaries.executable()
         useEsModules()
     }
+
+//    @OptIn(ExperimentalWasmDsl::class)
+//    wasmJs {
+//        browser()
+//        binaries.executable()
+//        useEsModules()
+//    }
     
     applyDefaultHierarchyTemplate()
 

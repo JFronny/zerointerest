@@ -27,18 +27,17 @@ import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.ZeroInterestDatabase
+import dev.jfronny.zerointerest.ui.component.EmojiService
+import dev.jfronny.zerointerest.ui.component.VerificationDialog
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import dev.jfronny.zerointerest.util.CoilMxcFetcher
 import dev.jfronny.zerointerest.util.EventIdNavType
 import dev.jfronny.zerointerest.util.NavigationHelper
 import dev.jfronny.zerointerest.util.RoomIdNavType
-import dev.jfronny.zerointerest.util.nihEmojiDownloader
 import dev.jfronny.zerointerest.util.rememberNavigationHelper
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.kodein.emoji.compose.EmojiService
-import org.kodein.emoji.compose.ProvideEmojiDownloader
 import org.koin.compose.koinInject
 import kotlin.reflect.typeOf
 
@@ -72,11 +71,8 @@ fun App() {
     }
 
     AppTheme {
-        ProvideEmojiDownloader(download = nihEmojiDownloader(httpClient)) {
-            AppNavigation(navHelper, service, settings, database, ::onLoginSuccess)
-
-            VerificationDialog()
-        }
+        AppNavigation(navHelper, service, settings, database, ::onLoginSuccess)
+        VerificationDialog()
     }
 }
 

@@ -70,6 +70,8 @@ import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.ZeroInterestDatabase
+import dev.jfronny.zerointerest.ui.component.PreviewUserUI
+import dev.jfronny.zerointerest.ui.component.UserUI
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import dev.jfronny.zerointerest.util.NavigationHelper
 import dev.jfronny.zerointerest.util.formatBalance

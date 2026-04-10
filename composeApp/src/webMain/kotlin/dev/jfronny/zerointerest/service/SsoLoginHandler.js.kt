@@ -20,6 +20,7 @@ class JsSsoLoginHandler : SsoLoginHandler {
         return "${window.location.origin}/sso-callback"
     }
     
+    @OptIn(ExperimentalWasmJsInterop::class)
     override suspend fun performSsoLogin(ssoUrl: String): SsoCallbackResult {
         return suspendCancellableCoroutine { continuation ->
             // Open SSO URL in a popup window
@@ -57,8 +58,8 @@ class JsSsoLoginHandler : SsoLoginHandler {
                 val messageEvent = event as? MessageEvent ?: return@messageHandler
 
                 // Check if this is the auth done message
-                val data = messageEvent.data
-                if (data == "authDone" || (data is String && data.contains("loginToken"))) {
+                val data = (messageEvent.data as? JsString)?.toString()
+                if (data == "authDone" || data?.contains("loginToken") == true) {
                     // Try to extract loginToken from the popup URL
                     try {
                         val popupUrl = popup.location.href
@@ -80,7 +81,7 @@ class JsSsoLoginHandler : SsoLoginHandler {
                 try {
                     if (popup.closed) {
                         complete(Result.failure(IllegalStateException("SSO popup was closed without completing login")))
-                        return@setInterval
+                        return@setInterval null
                     }
                     
                     // Try to read the popup URL (will fail if cross-origin)
@@ -93,6 +94,7 @@ class JsSsoLoginHandler : SsoLoginHandler {
                 } catch (e: Exception) {
                     // Cross-origin access - ignore and wait for postMessage
                 }
+                null
             }, 1000)  // Poll every 1 second to reduce CPU overhead
             
             continuation.invokeOnCancellation {

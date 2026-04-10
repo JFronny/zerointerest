@@ -1,4 +1,4 @@
-package dev.jfronny.zerointerest.ui
+package dev.jfronny.zerointerest.ui.component
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -19,9 +19,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
-import coil3.compose.LocalPlatformContext
-import coil3.request.ImageRequest
 import de.connect2x.trixnity.client.MatrixClient
 import de.connect2x.trixnity.client.store.RoomUser
 import de.connect2x.trixnity.client.store.avatarUrl
@@ -99,12 +96,7 @@ class UserUIImpl(
                     return
                 }
                 IconWrapper {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalPlatformContext.current)
-                            .data(state.avatarUrl)
-                            .build(),
-                        contentDescription = stringResource(Res.string.avatar)
-                    )
+                    WebImage(state.avatarUrl, stringResource(Res.string.avatar))
                 }
             }
 

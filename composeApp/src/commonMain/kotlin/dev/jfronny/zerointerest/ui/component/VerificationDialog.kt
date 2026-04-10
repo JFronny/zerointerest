@@ -1,4 +1,4 @@
-package dev.jfronny.zerointerest.ui
+package dev.jfronny.zerointerest.ui.component
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.AlertDialog
@@ -22,7 +22,6 @@ import de.connect2x.trixnity.client.verification.ActiveSasVerificationState
 import de.connect2x.trixnity.client.verification.ActiveVerificationState
 import de.connect2x.trixnity.core.model.events.m.key.verification.VerificationMethod
 import org.jetbrains.compose.resources.stringResource
-import org.kodein.emoji.compose.WithPlatformEmoji
 import org.koin.compose.koinInject
 
 private val log = KotlinLogging.logger {}
@@ -119,14 +118,12 @@ fun VerificationDialog(
                             onDismissRequest = { coroutineScope.launch { verification.cancel() } },
                             title = { Text(stringResource(Res.string.compare)) },
                             text = {
-                                WithPlatformEmoji(
+                                TextWithEmoji(
                                     stringResource(
                                         Res.string.compare_emoji_sequence,
                                         activeSasState.emojis.joinToString(" ") { it.second }
                                     )
-                                ) { text, inlineContent ->
-                                    Text(text = text, inlineContent = inlineContent)
-                                }
+                                )
                             },
                             confirmButton = {
                                 Button(onClick = { coroutineScope.launch { activeSasState.match() } }) {
