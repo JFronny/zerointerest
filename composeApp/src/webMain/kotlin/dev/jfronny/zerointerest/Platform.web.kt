@@ -47,7 +47,7 @@ class WebPlatform : Platform {
         return PreferenceDataStoreFactory.create(WebStorage(
             name = "zerointerest",
             serializer = PreferencesSerializer,
-            storageType = WebStorageType.SESSION //TODO: use non-session storage once available
+            storageType = WebStorageType.LOCAL,
         ))
     }
 
