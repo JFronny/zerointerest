@@ -18,7 +18,6 @@ import de.connect2x.trixnity.client.MediaStoreModule
 import de.connect2x.trixnity.client.RepositoriesModule
 import de.connect2x.trixnity.client.media.indexeddb.indexedDB
 import de.connect2x.trixnity.client.store.repository.indexeddb.indexedDB
-import dev.jfronny.zerointerest.service.db.RoomZeroInterestDatabase
 import dev.jfronny.zerointerest.service.db.ZeroInterestRoomDatabase
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.engine.HttpClientEngine
@@ -26,12 +25,16 @@ import io.ktor.client.engine.js.Js
 import org.koin.core.scope.Scope
 import org.koin.dsl.bind
 import org.koin.dsl.module
+import org.w3c.dom.Worker
+import web.console.console
 import web.events.EventHandler
 import web.window.window
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
+import kotlin.js.ExperimentalWasmJsInterop
+import kotlin.js.toJsString
 
 private val log = KotlinLogging.logger {}
 
@@ -50,20 +53,22 @@ class WebPlatform : Platform {
 
     override fun zerointerestDatabaseBuilder(): RoomDatabase.Builder<ZeroInterestRoomDatabase> =
         Room.databaseBuilder<ZeroInterestRoomDatabase>("zerointerest")
-
-    override fun handleZerointerestDatabase(db: RoomZeroInterestDatabase) {
-        super.handleZerointerestDatabase(db)
-        launch { WebZeroInterestDatabaseMigration().migrateTo(db) }
-    }
 }
 
 actual fun Scope.getPlatform(): Platform = WebPlatform()
 
+@OptIn(ExperimentalWasmJsInterop::class)
 fun createExtraModule() = module {
-    single { createSqlJsWorker() } bind SQLiteDriver::class
+    single { WebWorkerSQLiteDriver(createSQLiteWorker().apply {
+        onerror = { e -> console.error("Error in SQL.js worker".toJsString(), e) }
+    }) } bind SQLiteDriver::class
 }
 
-expect fun createSqlJsWorker(): WebWorkerSQLiteDriver
+expect fun WebWorkerSQLiteDriver(worker: Worker): WebWorkerSQLiteDriver
+
+@OptIn(ExperimentalWasmJsInterop::class)
+@JsFun("() => new Worker(new URL('sqlite-web-worker/worker.js', import.meta.url), { type: 'module' })")
+private external fun createSQLiteWorker(): Worker
 
 @Composable
 actual fun getPlatformTheme(darkTheme: Boolean): ColorScheme? = null

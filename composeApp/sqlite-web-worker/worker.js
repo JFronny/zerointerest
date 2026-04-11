@@ -1,6 +1,7 @@
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 
 let sqlite3 = null;
+let poolUtil = null;
 
 // Maps to track of active database connections and prepared statements by their unique IDs.
 const databases = new Map(); // stores databaseId -> SQLiteDbObject
@@ -10,18 +11,27 @@ const statements = new Map(); // stores statementId -> SQLiteStatementObject
 let nextDatabaseId = 0;
 let nextStatementId = 0;
 
-function openRequest(id, requestData) {
+const workerId = self.crypto.randomUUID();
+const channel = new BroadcastChannel('sqlite-channel');
+let isLeader = false;
+let leaderReady = false;
+const pendingFollowerMessages = [];
+const messageQueue = [];
+
+function openRequest(id, requestData, sendResponse) {
     try {
         const newDatabaseId = nextDatabaseId++;
-        const newDatabase = new sqlite3.oo1.OpfsDb(requestData.fileName);
+        let fileName = requestData.fileName;
+        if (!fileName.startsWith('/')) fileName = '/' + fileName;
+        const newDatabase = new poolUtil.OpfsSAHPoolDb(fileName);
         databases.set(newDatabaseId, newDatabase);
-        postMessage({'id': id, data: {'databaseId': newDatabaseId}});
+        sendResponse({'id': id, data: {'databaseId': newDatabaseId}});
     } catch (error) {
-        postMessage({'id': id, error: error.message});
+        sendResponse({'id': id, error: error.message});
     }
 }
 
-function prepareRequest(id, requestData) {
+function prepareRequest(id, requestData, sendResponse) {
     try {
         const newStatementId = nextStatementId++;
         const resultData = {
@@ -31,7 +41,7 @@ function prepareRequest(id, requestData) {
         };
         const database = databases.get(requestData.databaseId);
         if (!database) {
-            postMessage({'id': id, error: "Invalid database ID: " + requestData.databaseId});
+            sendResponse({'id': id, error: "Invalid database ID: " + requestData.databaseId});
             return;
         }
         const statement = database.prepare(requestData.sql);
@@ -40,16 +50,16 @@ function prepareRequest(id, requestData) {
         for (let i = 0; i < statement.columnCount; i++) {
             resultData.columnNames.push(sqlite3.capi.sqlite3_column_name(statement, i));
         }
-        postMessage({'id': id, data: resultData});
+        sendResponse({'id': id, data: resultData});
     } catch (error) {
-        postMessage({'id': id, error: error.message});
+        sendResponse({'id': id, error: error.message});
     }
 }
 
-function stepRequest(id, requestData) {
+function stepRequest(id, requestData, sendResponse) {
     const statement = statements.get(requestData.statementId);
     if (!statement) {
-        postMessage({'id': id, error: "Invalid statement ID: " + requestData.statementId});
+        sendResponse({'id': id, error: "Invalid statement ID: " + requestData.statementId});
         return;
     }
     try {
@@ -70,38 +80,38 @@ function stepRequest(id, requestData) {
             }
             resultData.rows.push(statement.get([]));
         }
-        postMessage({'id': id, data: resultData});
+        sendResponse({'id': id, data: resultData});
     } catch (error) {
-        postMessage({'id': id, error: error.message});
+        sendResponse({'id': id, error: error.message});
     }
 }
 
-function closeRequest(id, requestData) {
+function closeRequest(id, requestData, sendResponse) {
     if (requestData.statementId) {
         const statement = statements.get(requestData.statementId);
         if (!statement) {
-            postMessage({'id': id, error: "Invalid statement ID: " + requestData.statementId});
+            sendResponse({'id': id, error: "Invalid statement ID: " + requestData.statementId});
             return;
         }
         try {
             statement.finalize();
             statements.delete(requestData.statementId);
         } catch (error) {
-            postMessage({'id': id, error: error.message});
+            sendResponse({'id': id, error: error.message});
         }
     }
 
     if (requestData.databaseId) {
         const database = databases.get(requestData.databaseId);
         if (!database) {
-            postMessage({'id': id, error: "Invalid database ID: " + requestData.databaseId});
+            sendResponse({'id': id, error: "Invalid database ID: " + requestData.databaseId});
             return;
         }
         try {
             database.close();
             databases.delete(requestData.databaseId);
         } catch (error) {
-            postMessage({'id': id, error: error.message});
+            sendResponse({'id': id, error: error.message});
         }
     }
 }
@@ -114,33 +124,63 @@ const commandMap = {
     'close': closeRequest,
 };
 
-function handleMessage(e) {
-    const requestMsg = e.data;
-    console.log("handleMessage: " + JSON.stringify(requestMsg));
+function handleMessageCore(requestMsg, sendResponse) {
     if (!Object.hasOwn(requestMsg, 'data') && requestMsg.data == null) {
-        postMessage(
-            {'id': requestMsg.id, 'error': "Invalid request, missing 'data'."}
-        );
+        sendResponse({'id': requestMsg.id, 'error': "Invalid request, missing 'data'."});
         return;
     }
     if (!Object.hasOwn(requestMsg.data, 'cmd') && requestMsg.data.cmd == null) {
-        postMessage(
-            {'id': requestMsg.id, 'error': "Invalid request, missing 'cmd'."}
-        );
+        sendResponse({'id': requestMsg.id, 'error': "Invalid request, missing 'cmd'."});
         return;
     }
     const command = requestMsg.data.cmd;
     const requestHandler = commandMap[command];
     if (requestHandler) {
-        requestHandler(requestMsg.id, requestMsg.data);
+        requestHandler(requestMsg.id, requestMsg.data, sendResponse);
     } else {
-        postMessage(
-            {'id': requestMsg.id, 'error': "Invalid request, unknown command: '" + command + "'."}
-        );
+        sendResponse({'id': requestMsg.id, 'error': "Invalid request, unknown command: '" + command + "'."});
     }
 }
 
-const messageQueue = [];
+channel.onmessage = async (e) => {
+    const msg = e.data;
+    if (msg.type === 'leader-ready') {
+        leaderReady = true;
+        while (pendingFollowerMessages.length > 0) {
+            const req = pendingFollowerMessages.shift();
+            channel.postMessage({ type: 'request', workerId, msg: req });
+        }
+    } else if (msg.type === 'ping' && isLeader && leaderReady) {
+        channel.postMessage({ type: 'leader-ready' });
+    } else if (msg.type === 'request' && isLeader && leaderReady) {
+        handleMessageCore(msg.msg, (resp) => {
+            channel.postMessage({ type: 'response', workerId: msg.workerId, msg: resp });
+        });
+    } else if (msg.type === 'response' && !isLeader && msg.workerId === workerId) {
+        postMessage(msg.msg);
+    }
+};
+
+function handleMessage(e) {
+    const requestMsg = e.data;
+    console.log("handleMessage: " + JSON.stringify(requestMsg));
+
+    if (isLeader) {
+        if (leaderReady) {
+            handleMessageCore(requestMsg, (resp) => postMessage(resp));
+        } else {
+            pendingFollowerMessages.push(requestMsg);
+        }
+    } else {
+        if (leaderReady) {
+            channel.postMessage({ type: 'request', workerId, msg: requestMsg });
+        } else {
+            pendingFollowerMessages.push(requestMsg);
+            channel.postMessage({ type: 'ping' });
+        }
+    }
+}
+
 onmessage = (e) => {
     if (!sqlite3) {
         messageQueue.push(e);
@@ -149,8 +189,42 @@ onmessage = (e) => {
     }
 };
 
+async function acquireLock() {
+    console.log("aquireLock: Attempting to acquire lock...");
+    await navigator.locks.request('sqlite-active', {mode: 'exclusive'}, async (lock) => {
+        console.log("aquireLock: Lock acquired, this worker is the leader.");
+        isLeader = true;
+        leaderReady = false;
+
+        try {
+            console.log("aquireLock: Initializing SQLite and OPFS SAH Pool VFS...");
+            poolUtil = await sqlite3.installOpfsSAHPoolVfs({ name: 'opfs-sahpool' });
+            leaderReady = true;
+            console.log("aquireLock: Leader is ready, notifying followers...");
+            channel.postMessage({ type: 'leader-ready' });
+
+            while (pendingFollowerMessages.length > 0) {
+                const req = pendingFollowerMessages.shift();
+                handleMessageCore(req, (resp) => postMessage(resp));
+            }
+            console.log("aquireLock: Finished processing pending follower messages.");
+        } catch (err) {
+            console.error(err);
+        }
+
+        return new Promise(() => {
+            console.log("aquireLock: Holding lock indefinitely until this worker is terminated or crashes.");
+        }); // Hold lock
+    });
+
+    isLeader = false;
+    leaderReady = false;
+    setTimeout(acquireLock, 100);
+}
+
 sqlite3InitModule().then(instance => {
     sqlite3 = instance;
+    acquireLock();
     while (messageQueue.length > 0) {
         handleMessage(messageQueue.shift());
     }

@@ -53,3 +53,13 @@ tasks {
         duplicatesStrategy = DuplicatesStrategy.WARN
     }
 }
+
+//val nmdir = layout.buildDirectory.dir("js/node_modules/sqlite-web-worker").get().asFile
+//val srdir = project(":composeApp").projectDir.resolve("sqlite-web-worker")
+//fun deferFurther(action: () -> Unit) = afterEvaluate { project(":composeApp").afterEvaluate { action() } }
+//deferFurther {
+//    tasks.named("kotlinRestoreYarnLock") {
+//        doFirst { nmdir.deleteRecursively() }
+//        inputs.dir(srdir)
+//    }
+//}
