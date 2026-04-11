@@ -1,5 +1,13 @@
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 
+const isDebug = false; // Set to true to enable debug logging, false to disable.
+
+if (isDebug) {
+    console.debug = console.log;
+} else {
+    console.debug = () => {};
+}
+
 let sqlite3 = null;
 let poolUtil = null;
 
@@ -163,7 +171,7 @@ channel.onmessage = async (e) => {
 
 function handleMessage(e) {
     const requestMsg = e.data;
-    console.log("handleMessage: " + JSON.stringify(requestMsg));
+    console.debug("handleMessage: " + JSON.stringify(requestMsg));
 
     if (isLeader) {
         if (leaderReady) {
@@ -190,30 +198,30 @@ onmessage = (e) => {
 };
 
 async function acquireLock() {
-    console.log("aquireLock: Attempting to acquire lock...");
+    console.debug("aquireLock: Attempting to acquire lock...");
     await navigator.locks.request('sqlite-active', {mode: 'exclusive'}, async (lock) => {
-        console.log("aquireLock: Lock acquired, this worker is the leader.");
+        console.debug("aquireLock: Lock acquired, this worker is the leader.");
         isLeader = true;
         leaderReady = false;
 
         try {
-            console.log("aquireLock: Initializing SQLite and OPFS SAH Pool VFS...");
+            console.debug("aquireLock: Initializing SQLite and OPFS SAH Pool VFS...");
             poolUtil = await sqlite3.installOpfsSAHPoolVfs({ name: 'opfs-sahpool' });
             leaderReady = true;
-            console.log("aquireLock: Leader is ready, notifying followers...");
+            console.debug("aquireLock: Leader is ready, notifying followers...");
             channel.postMessage({ type: 'leader-ready' });
 
             while (pendingFollowerMessages.length > 0) {
                 const req = pendingFollowerMessages.shift();
                 handleMessageCore(req, (resp) => postMessage(resp));
             }
-            console.log("aquireLock: Finished processing pending follower messages.");
+            console.debug("aquireLock: Finished processing pending follower messages.");
         } catch (err) {
             console.error(err);
         }
 
         return new Promise(() => {
-            console.log("aquireLock: Holding lock indefinitely until this worker is terminated or crashes.");
+            console.debug("aquireLock: Holding lock indefinitely until this worker is terminated or crashes.");
         }); // Hold lock
     });
 
