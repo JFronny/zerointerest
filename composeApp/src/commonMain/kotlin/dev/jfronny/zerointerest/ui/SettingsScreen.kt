@@ -4,12 +4,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ForkRight
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -22,14 +20,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.jfronny.zerointerest.SourceCodeUrl
-import dev.jfronny.zerointerest.composeapp.generated.resources.Res
-import dev.jfronny.zerointerest.composeapp.generated.resources.back
-import dev.jfronny.zerointerest.composeapp.generated.resources.flip_balances
-import dev.jfronny.zerointerest.composeapp.generated.resources.flip_balances_description
-import dev.jfronny.zerointerest.composeapp.generated.resources.logout
-import dev.jfronny.zerointerest.composeapp.generated.resources.settings
-import dev.jfronny.zerointerest.composeapp.generated.resources.source_code
+import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.service.Settings
+import dev.jfronny.zerointerest.ui.component.BackButton
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -46,9 +39,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit) {
             TopAppBar(
                 title = { Text(stringResource(Res.string.settings)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.back))
-                    }
+                    BackButton(onBack = onBack)
                 }
             )
         }

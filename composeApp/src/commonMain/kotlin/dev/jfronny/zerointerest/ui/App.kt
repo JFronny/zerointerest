@@ -121,9 +121,7 @@ private fun AppNavigation(
                     navHelper.navigate(Destination.Room(it))
                 }
             },
-            openSettings = {
-                navHelper.navigate(Destination.SettingsScreen)
-            }
+            openSettings = { navHelper.navigate(Destination.SettingsScreen) }
         )
     }
     composable<Destination.Room>(typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)) {
@@ -140,7 +138,8 @@ private fun AppNavigation(
             onAddTransaction = { template ->
                 navHelper.navigate(Destination.CreateTransaction(route.roomId, template?.id))
             },
-            navHelper = navHelper
+            openSettings = { navHelper.navigate(Destination.SettingsScreen) },
+            navHelper = navHelper,
         )
     }
     composable<Destination.CreateTransaction>(typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)) {
@@ -163,7 +162,8 @@ private fun AppNavigation(
                 roomId = route.roomId,
                 initialTemplate = initialTemplate,
                 onDone = { navHelper.popMainBackStack() },
-                onBack = { navHelper.popMainBackStack() }
+                onBack = { navHelper.popMainBackStack() },
+                openSettings = { navHelper.navigate(Destination.SettingsScreen) }
             )
         }
     }

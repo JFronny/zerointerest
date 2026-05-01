@@ -14,10 +14,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -27,7 +25,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -69,6 +66,8 @@ import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.ZeroInterestDatabase
+import dev.jfronny.zerointerest.ui.component.BackButton
+import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.component.PreviewUserUI
 import dev.jfronny.zerointerest.ui.component.UserUI
 import dev.jfronny.zerointerest.ui.theme.AppTheme
@@ -92,7 +91,13 @@ private val log = KotlinLogging.logger {}
     ExperimentalMaterial3ExpressiveApi::class
 )
 @Composable
-fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: (TransactionTemplate?) -> Unit, navHelper: NavigationHelper) {
+fun RoomScreen(
+    roomId: RoomId,
+    onBack: () -> Unit,
+    onAddTransaction: (TransactionTemplate?) -> Unit,
+    openSettings: () -> Unit,
+    navHelper: NavigationHelper
+) {
     val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
     val client = rxclient ?: return
     val trust = koinInject<SummaryTrustService>()
@@ -123,29 +128,10 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: (Transactio
                         Text(room?.name?.explicitName ?: stringResource(Res.string.room))
                     },
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.back))
-                        }
+                        BackButton(onBack = onBack)
                     },
                     actions = {
-                        var expanded by remember { mutableStateOf(false) }
-                        Box {
-                            IconButton(onClick = { expanded = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "More options")
-                            }
-                            DropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(Res.string.settings)) },
-                                    onClick = {
-                                        expanded = false
-                                        navHelper.navigate(Destination.SettingsScreen)
-                                    }
-                                )
-                            }
-                        }
+                        MoreOptionsButton(openSettings = openSettings)
                     }
                 )
             },

@@ -11,12 +11,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -25,7 +21,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -54,6 +50,8 @@ import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.ZeroInterestDatabase
+import dev.jfronny.zerointerest.ui.component.BackButton
+import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
@@ -79,7 +77,8 @@ fun CreateTransactionScreen(
     roomId: RoomId,
     initialTemplate: TransactionTemplate?,
     onDone: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    openSettings: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val trustService = koinInject<SummaryTrustService>()
@@ -180,40 +179,22 @@ fun CreateTransactionScreen(
             TopAppBar(
                 title = { Text(stringResource(Res.string.new_transaction)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.back))
-                    }
+                    BackButton(onBack = onBack)
                 },
                 actions = {
-                    var menuExpanded by remember { mutableStateOf(false) }
-                    
-                    if (initialTemplate != null && !isTemplateModified) {
-                         IconButton(onClick = { menuExpanded = true }) {
-                            Icon(Icons.Default.MoreVert, stringResource(Res.string.options))
-                        }
-                        DropdownMenu(
-                            expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false }
-                        ) {
+                    MoreOptionsButton(openSettings = openSettings) { close ->
+                        if (initialTemplate != null && !isTemplateModified) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.delete_template)) },
                                 onClick = {
                                     scope.launch {
                                         database.removeTransactionTemplate(roomId, initialTemplate.id)
-                                        menuExpanded = false
+                                        close()
                                         onBack()
                                     }
                                 }
                             )
-                        }
-                    } else {
-                        IconButton(onClick = { menuExpanded = true }) {
-                            Icon(Icons.Default.MoreVert, stringResource(Res.string.options))
-                        }
-                        DropdownMenu(
-                            expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false }
-                        ) {
+                        } else {
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.save_as_template)) },
                                 onClick = {
@@ -228,8 +209,11 @@ fun CreateTransactionScreen(
                                                 receivers = recipientAmounts
                                             )
                                             database.addTransactionTemplate(roomId, template)
+                                            close()
+                                            onBack()
+                                        } else {
+                                            close()
                                         }
-                                        menuExpanded = false
                                     }
                                 }
                             )
