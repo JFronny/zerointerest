@@ -3,6 +3,7 @@ package dev.jfronny.zerointerest.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -82,7 +83,7 @@ fun PickRoomScreen(
             }
         )
     }
-) {
+) { paddingValues ->
     val sorted = remember(rooms) {
         rooms.asSequence()
             .filterNot { it.hasBeenReplaced }
@@ -90,7 +91,7 @@ fun PickRoomScreen(
             .toList()
     }
     if (sorted.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             Text(
                 text = stringResource(Res.string.no_rooms_available),
                 textAlign = TextAlign.Center,
@@ -99,7 +100,9 @@ fun PickRoomScreen(
         }
         return@Scaffold
     }
-    LazyColumn {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(paddingValues)
+    ) {
         items(sorted) {
             RoomListItem(
                 room = it,

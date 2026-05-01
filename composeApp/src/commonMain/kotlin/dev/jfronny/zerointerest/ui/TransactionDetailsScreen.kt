@@ -83,8 +83,11 @@ fun TransactionDetailsScreen(
     ) { padding ->
         val tx = transaction
         if (tx == null) {
-            Box(Modifier.fillMaxSize().padding(padding)) {
-                LoadingIndicator(Modifier.align(Alignment.Center))
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                LoadingIndicator(Modifier.size(128.dp))
             }
         } else {
             LazyColumn(

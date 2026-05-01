@@ -213,8 +213,11 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: (Transactio
                             }
                         )
                     } ?: run {
-                        Box(Modifier.fillMaxSize()) {
-                            LoadingIndicator(Modifier.align(Alignment.TopCenter))
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            LoadingIndicator(Modifier.size(128.dp))
                         }
                     }
                 }
