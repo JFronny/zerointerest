@@ -1,10 +1,12 @@
 package dev.jfronny.zerointerest
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import de.connect2x.lognity.api.backend.Backend
+import dev.jfronny.zerointerest.service.AndroidSsoLoginHandler
 import dev.jfronny.zerointerest.ui.App
 import dev.jfronny.zerointerest.util.LognityWrangler
 import org.koin.android.ext.koin.androidContext
@@ -28,6 +30,20 @@ class MainActivity : ComponentActivity() {
             }), content = {
                 App()
             })
+        }
+        
+        handleIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent) {
+        val data = intent.data
+        if (data != null && data.scheme == "zerointerest" && data.host == "sso") {
+            AndroidSsoLoginHandler.handleCallbackUrl(data.toString())
         }
     }
 }
