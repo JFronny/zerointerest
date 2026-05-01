@@ -3,8 +3,7 @@ package dev.jfronny.zerointerest
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.datastore.core.DataStore
-import androidx.datastore.core.okio.WebStorage
-import androidx.datastore.core.okio.WebStorageType
+import androidx.datastore.core.okio.WebLocalStorage
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.PreferencesSerializer
@@ -44,10 +43,9 @@ class WebPlatform : Platform {
     override suspend fun getMediaStoreModule(): MediaStoreModule = MediaStoreModule.indexedDB()
     override fun getHttpClientEngine(): HttpClientEngine = Js.create {}
     override fun createDataStore(): DataStore<Preferences> {
-        return PreferenceDataStoreFactory.create(WebStorage(
+        return PreferenceDataStoreFactory.create(WebLocalStorage(
             name = "zerointerest",
             serializer = PreferencesSerializer,
-            storageType = WebStorageType.LOCAL,
         ))
     }
 
