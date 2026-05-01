@@ -17,11 +17,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ForkRight
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +28,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -48,7 +48,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
@@ -62,12 +61,12 @@ import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.Destination
-import dev.jfronny.zerointerest.SourceCodeUrl
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.service.MatrixClientService
+import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.ZeroInterestDatabase
 import dev.jfronny.zerointerest.ui.component.PreviewUserUI
@@ -129,11 +128,23 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: (Transactio
                         }
                     },
                     actions = {
-                        val uriHandler = LocalUriHandler.current
-                        IconButton(onClick = {
-                            uriHandler.openUri(SourceCodeUrl)
-                        }) {
-                            Icon(Icons.Default.ForkRight, stringResource(Res.string.source_code))
+                        var expanded by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { expanded = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                            }
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.settings)) },
+                                    onClick = {
+                                        expanded = false
+                                        navHelper.navigate(Destination.SettingsScreen)
+                                    }
+                                )
+                            }
                         }
                     }
                 )
@@ -187,10 +198,13 @@ fun RoomScreen(roomId: RoomId, onBack: () -> Unit, onAddTransaction: (Transactio
                     var forceReload by remember { mutableIntStateOf(0) }
                     val flow = remember(roomId, forceReload) { trust.getSummary(roomId) }
                     val event by flow.collectAsState(null)
+                    val settings = koinInject<Settings>()
+                    val flipBalances by settings.flipBalances.collectAsState(initial = true)
                     event?.let {
                         BalancesTab(
                             summary = it,
                             userUI = UserUI(client, roomId),
+                            flipBalances = flipBalances,
                             forceTrust = {
                                 scope.launch {
                                     trust.forceAccept(it)
@@ -225,6 +239,7 @@ private fun BalancesTabPreview() = AppTheme {
             parents = emptyMap()
         )),
         userUI = PreviewUserUI,
+        flipBalances = true,
         forceTrust = {},
     )
 }
@@ -233,6 +248,7 @@ private fun BalancesTabPreview() = AppTheme {
 private fun BalancesTab(
     summary: SummaryTrustService.Summary,
     userUI: UserUI,
+    flipBalances: Boolean,
     forceTrust: (SummaryTrustService.Summary.Untrusted) -> Unit
 ) {
     when (summary) {
@@ -256,6 +272,10 @@ private fun BalancesTab(
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
                 items(balances.entries.toList()) { entry ->
                     val balance = entry.value
+                    val color = when {
+                        balance > 0 -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.primary
+                    }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -264,7 +284,10 @@ private fun BalancesTab(
                     ) {
                         userUI(entry.key)
                         Spacer(modifier = Modifier.weight(1f))
-                        Text(text = formatBalance(-balance))
+                        Text(
+                            text = formatBalance(if (flipBalances) -balance else balance),
+                            color = color
+                        )
                     }
                 }
             }

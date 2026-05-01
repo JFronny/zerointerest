@@ -10,10 +10,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import dev.jfronny.zerointerest.composeapp.generated.resources.*
-import dev.jfronny.zerointerest.service.MatrixClientService
-import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.launch
 import de.connect2x.trixnity.client.MatrixClient
 import de.connect2x.trixnity.client.verification
 import de.connect2x.trixnity.client.verification.ActiveDeviceVerification
@@ -21,6 +17,10 @@ import de.connect2x.trixnity.client.verification.ActiveSasVerificationMethod
 import de.connect2x.trixnity.client.verification.ActiveSasVerificationState
 import de.connect2x.trixnity.client.verification.ActiveVerificationState
 import de.connect2x.trixnity.core.model.events.m.key.verification.VerificationMethod
+import dev.jfronny.zerointerest.composeapp.generated.resources.*
+import dev.jfronny.zerointerest.service.MatrixClientService
+import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 

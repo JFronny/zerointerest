@@ -72,4 +72,7 @@
     <string name="choose_sso_provider">Identitätsanbieter auswählen</string>
     <string name="sso_cancelled">SSO-Anmeldung wurde abgebrochen</string>
     <string name="sso_success">SSO-Anmeldung erfolgreich</string>
+    <string name="settings">Einstellungen</string>
+    <string name="flip_balances">Kontostände umdrehen</string>
+    <string name="flip_balances_description">Positive und negative Beträge tauschen</string>
 </resources>

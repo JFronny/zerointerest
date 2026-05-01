@@ -6,8 +6,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.ForkRight
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -19,30 +20,33 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
-import dev.jfronny.zerointerest.SourceCodeUrl
-import dev.jfronny.zerointerest.composeapp.generated.resources.*
-import dev.jfronny.zerointerest.service.MatrixClientService
 import de.connect2x.trixnity.client.flattenValues
 import de.connect2x.trixnity.client.room
 import de.connect2x.trixnity.client.store.Room
 import de.connect2x.trixnity.client.store.hasBeenReplaced
 import de.connect2x.trixnity.core.model.RoomId
+import dev.jfronny.zerointerest.composeapp.generated.resources.Res
+import dev.jfronny.zerointerest.composeapp.generated.resources.no_rooms_available
+import dev.jfronny.zerointerest.composeapp.generated.resources.pick_a_room
+import dev.jfronny.zerointerest.composeapp.generated.resources.settings
+import dev.jfronny.zerointerest.service.MatrixClientService
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 @Composable
-fun PickRoomScreen(onPick: (RoomId) -> Unit, logout: () -> Unit) {
+fun PickRoomScreen(onPick: (RoomId) -> Unit, openSettings: () -> Unit) {
     val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
     val client = rxclient ?: return
     val rooms by remember(client) { client.room.getAll().flattenValues() }.collectAsState(initial = setOf())
     PickRoomScreen(
         rooms = rooms,
         onPick = onPick,
-        logout = logout,
+        openSettings = openSettings,
     )
 }
 
@@ -51,20 +55,29 @@ fun PickRoomScreen(onPick: (RoomId) -> Unit, logout: () -> Unit) {
 fun PickRoomScreen(
     rooms: Set<Room>,
     onPick: (RoomId) -> Unit,
-    logout: () -> Unit,
+    openSettings: () -> Unit,
 ) = Scaffold(
     topBar = {
         TopAppBar(
             title = { Text(stringResource(Res.string.pick_a_room)) },
             actions = {
-                IconButton(onClick = logout) {
-                    Icon(Icons.AutoMirrored.Filled.Logout, stringResource(Res.string.logout))
-                }
-                val uriHandler = LocalUriHandler.current
-                IconButton(onClick = {
-                    uriHandler.openUri(SourceCodeUrl)
-                }) {
-                    Icon(Icons.Default.ForkRight, stringResource(Res.string.source_code))
+                var expanded by remember { mutableStateOf(false) }
+                Box {
+                    IconButton(onClick = { expanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                    }
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.settings)) },
+                            onClick = {
+                                expanded = false
+                                openSettings()
+                            }
+                        )
+                    }
                 }
             }
         )

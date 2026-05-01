@@ -121,11 +121,8 @@ private fun AppNavigation(
                     navHelper.navigate(Destination.Room(it))
                 }
             },
-            logout = {
-                scope.launch {
-                    service.logout()
-                    navHelper.navigate(Destination.SelectHomeserver)
-                }
+            openSettings = {
+                navHelper.navigate(Destination.SettingsScreen)
             }
         )
     }
@@ -182,6 +179,19 @@ private fun AppNavigation(
             roomId = route.roomId,
             transactionId = route.transactionId,
             onBack = { navHelper.popMainBackStack() }
+        )
+    }
+    composable<Destination.SettingsScreen> {
+        val scope = rememberCoroutineScope()
+        SettingsScreen(
+            onBack = { navHelper.popMainBackStack() },
+            onLogout = {
+                scope.launch {
+                    service.logout()
+                    settings.clearRememberedRoom()
+                    navHelper.navigate(Destination.SelectHomeserver)
+                }
+            }
         )
     }
 }

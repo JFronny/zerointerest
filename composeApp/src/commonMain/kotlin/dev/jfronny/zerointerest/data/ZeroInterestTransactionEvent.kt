@@ -1,13 +1,13 @@
 package dev.jfronny.zerointerest.data
 
-import io.ktor.http.URLBuilder
-import io.ktor.http.appendPathSegments
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import de.connect2x.trixnity.core.model.UserId
 import de.connect2x.trixnity.core.model.events.MessageEventContent
 import de.connect2x.trixnity.core.model.events.m.Mentions
 import de.connect2x.trixnity.core.model.events.m.RelatesTo
+import io.ktor.http.URLBuilder
+import io.ktor.http.appendPathSegments
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 @Serializable
 data class ZeroInterestTransactionEvent(

@@ -2,14 +2,26 @@ package dev.jfronny.zerointerest.service
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import de.connect2x.trixnity.core.model.RoomId
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import de.connect2x.trixnity.core.model.RoomId
 
 class Settings(private val store: DataStore<Preferences>) {
     private val rememberedRoom = stringPreferencesKey("rememberedRoom")
     private val defaultHomeserver = stringPreferencesKey("defaultHomeserver")
+    private val flipBalancesKey = booleanPreferencesKey("flipBalances")
+
+    val flipBalances = store.data.map { it[flipBalancesKey] ?: true }
+
+    suspend fun setFlipBalances(flip: Boolean) {
+        store.updateData {
+            it.toMutablePreferences().apply {
+                set(flipBalancesKey, flip)
+            }
+        }
+    }
 
     suspend fun rememberRoom(roomId: RoomId) {
         store.updateData {
