@@ -195,12 +195,17 @@ fun CreateTransactionScreen(
                                 }
                             )
                         } else {
+                            val total = parseAmount(totalAmountStr) ?: 0L
+                            val recipientAmounts = recipientAmountInputs.mapValues { parseAmount(it.value) ?: 0L }
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.save_as_template)) },
+                                enabled = recipientAmounts.isNotEmpty() && total > 0,
                                 onClick = {
                                     scope.launch {
-                                        val total = parseAmount(totalAmountStr) ?: 0L
-                                        val recipientAmounts = recipientAmountInputs.mapValues { parseAmount(it.value) ?: 0L }
+                                        // local copy, just to be extra sure
+                                        val total = total
+                                        val recipientAmounts = recipientAmounts
+
                                         if (recipientAmounts.isNotEmpty() && total > 0) {
                                             val template = TransactionTemplate(
                                                 id = Uuid.random().toString(),
