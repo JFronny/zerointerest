@@ -67,6 +67,7 @@
     <string name="continue_button">Continue</string>
     <string name="suggested_homeservers">Suggested Homeservers</string>
     <string name="password_login">Password</string>
+    <string name="token_login">Token</string>
     <string name="sso_login">SSO</string>
     <string name="login_with_sso">Login with SSO</string>
     <string name="choose_sso_provider">Choose an identity provider</string>

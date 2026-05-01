@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,17 +16,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryTabRow
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -42,13 +40,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import de.connect2x.trixnity.clientserverapi.model.authentication.LoginType
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.Url
 import kotlinx.coroutines.launch
-import de.connect2x.trixnity.clientserverapi.model.authentication.LoginType
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -64,7 +62,7 @@ private sealed class LoginState {
 }
 
 private enum class LoginMethod {
-    PASSWORD, SSO
+    PASSWORD, TOKEN, SSO
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -99,7 +97,6 @@ fun LoginMethodScreen(
     // Form states
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var useToken by remember { mutableStateOf(false) }
     var token by remember { mutableStateOf("") }
     
     // Tab state
@@ -116,6 +113,7 @@ fun LoginMethodScreen(
         buildList {
             if (hasPasswordLogin) add(LoginMethod.PASSWORD)
             if (hasSsoLogin) add(LoginMethod.SSO)
+            add(LoginMethod.TOKEN)
         }
     }
 
@@ -204,6 +202,7 @@ fun LoginMethodScreen(
                                     Text(
                                         when (method) {
                                             LoginMethod.PASSWORD -> stringResource(Res.string.password_login)
+                                            LoginMethod.TOKEN -> stringResource(Res.string.token_login)
                                             LoginMethod.SSO -> stringResource(Res.string.sso_login)
                                         }
                                     )
@@ -224,26 +223,33 @@ fun LoginMethodScreen(
                             onUsernameChange = { username = it },
                             password = password,
                             onPasswordChange = { password = it },
-                            useToken = useToken,
-                            onUseTokenChange = { useToken = it },
+                            enabled = state !is LoginState.Loading,
+                            onLogin = {
+                                state = LoginState.Loading
+                                tryAction {
+                                    matrixClient.loginWithPassword(
+                                        homeserver = Url(homeserver),
+                                        username = username,
+                                        password = password
+                                    )
+                                    settings.setDefaultHomeserver(homeserver)
+                                    onSuccess()
+                                }
+                            }
+                        )
+                    }
+                    LoginMethod.TOKEN -> {
+                        TokenLoginForm(
                             token = token,
                             onTokenChange = { token = it },
                             enabled = state !is LoginState.Loading,
                             onLogin = {
                                 state = LoginState.Loading
                                 tryAction {
-                                    if (useToken) {
-                                        matrixClient.loginWithToken(
-                                            homeserver = Url(homeserver),
-                                            token = token
-                                        )
-                                    } else {
-                                        matrixClient.loginWithPassword(
-                                            homeserver = Url(homeserver),
-                                            username = username,
-                                            password = password
-                                        )
-                                    }
+                                    matrixClient.loginWithToken(
+                                        homeserver = Url(homeserver),
+                                        token = token
+                                    )
                                     settings.setDefaultHomeserver(homeserver)
                                     onSuccess()
                                 }
@@ -279,8 +285,48 @@ private fun PasswordLoginForm(
     onUsernameChange: (String) -> Unit,
     password: String,
     onPasswordChange: (String) -> Unit,
-    useToken: Boolean,
-    onUseTokenChange: (Boolean) -> Unit,
+    enabled: Boolean,
+    onLogin: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        OutlinedTextField(
+            value = username,
+            onValueChange = onUsernameChange,
+            label = { Text(stringResource(Res.string.username)) },
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = password,
+            onValueChange = onPasswordChange,
+            label = { Text(stringResource(Res.string.password)) },
+            visualTransformation = PasswordVisualTransformation(),
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = onLogin,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = enabled
+        ) {
+            Text(stringResource(Res.string.login))
+        }
+    }
+}
+
+@Composable
+private fun TokenLoginForm(
     token: String,
     onTokenChange: (String) -> Unit,
     enabled: Boolean,
@@ -290,52 +336,14 @@ private fun PasswordLoginForm(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Toggle between password and token login
-        Row(
+        OutlinedTextField(
+            value = token,
+            onValueChange = onTokenChange,
+            label = { Text(stringResource(Res.string.access_token)) },
+            enabled = enabled,
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(stringResource(Res.string.use_access_token), modifier = Modifier.weight(1f))
-            Switch(
-                checked = useToken,
-                onCheckedChange = onUseTokenChange,
-                enabled = enabled
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        if (useToken) {
-            OutlinedTextField(
-                value = token,
-                onValueChange = onTokenChange,
-                label = { Text(stringResource(Res.string.access_token)) },
-                enabled = enabled,
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-        } else {
-            OutlinedTextField(
-                value = username,
-                onValueChange = onUsernameChange,
-                label = { Text(stringResource(Res.string.username)) },
-                enabled = enabled,
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = onPasswordChange,
-                label = { Text(stringResource(Res.string.password)) },
-                visualTransformation = PasswordVisualTransformation(),
-                enabled = enabled,
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-        }
+            singleLine = true
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -400,10 +408,6 @@ private fun PasswordLoginFormPreview() = dev.jfronny.zerointerest.ui.theme.AppTh
         onUsernameChange = {},
         password = "password",
         onPasswordChange = {},
-        useToken = false,
-        onUseTokenChange = {},
-        token = "",
-        onTokenChange = {},
         enabled = true,
         onLogin = {}
     )
@@ -417,9 +421,16 @@ private fun PasswordLoginFormPreviewDark() = dev.jfronny.zerointerest.ui.theme.A
         onUsernameChange = {},
         password = "password",
         onPasswordChange = {},
-        useToken = false,
-        onUseTokenChange = {},
-        token = "",
+        enabled = true,
+        onLogin = {}
+    )
+}
+
+@androidx.compose.ui.tooling.preview.Preview
+@Composable
+private fun TokenLoginFormPreview() = dev.jfronny.zerointerest.ui.theme.AppTheme {
+    TokenLoginForm(
+        token = "syt_xyz",
         onTokenChange = {},
         enabled = true,
         onLogin = {}
