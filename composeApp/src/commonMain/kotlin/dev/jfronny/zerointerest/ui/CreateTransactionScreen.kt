@@ -40,7 +40,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import de.connect2x.trixnity.client.MatrixClient
-import de.connect2x.trixnity.client.room
 import de.connect2x.trixnity.client.user
 import de.connect2x.trixnity.clientserverapi.client.SyncState
 import de.connect2x.trixnity.core.model.RoomId
@@ -48,14 +47,11 @@ import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
-import dev.jfronny.zerointerest.service.SummaryTrustService
+import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.service.ZeroInterestDatabase
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -81,7 +77,7 @@ fun CreateTransactionScreen(
     openSettings: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val trustService = koinInject<SummaryTrustService>()
+    val transactionService = koinInject<TransactionService>()
     val database = koinInject<ZeroInterestDatabase>()
     val users by remember(client) { client.user.getAll(roomId) }.collectAsState(emptyMap())
     val userIds = remember(users) { users.keys.toList() }
@@ -250,41 +246,25 @@ fun CreateTransactionScreen(
                             receivers = recipientAmounts
                         )
 
-                        val preparedSummary = try {
-                            trustService.prepareSummaryCreation(roomId, content)
-                        } catch (e: Exception) {
+                        try {
+                            transactionService.sendTransaction(roomId, content)
+                        } catch (e: TransactionService.FailedPrepareSummaryException) {
                             log.error(e) { "Could not prepare summary creation" }
                             error = getString(Res.string.failed_prepare_trust_summary, e.message.toString())
                             launched = false
                             return@launch
-                        }
-
-                        val txId = client.room.sendMessage(roomId) {
-                            content(content)
-                        }
-                        val outbox = client.room.getOutbox(roomId, txId)
-                            .filterNotNull()
-                            .filter { it.eventId != null || it.sendError != null }
-                            .firstOrNull()
-                        if (outbox == null) {
-                            error = getString(Res.string.failed_send_message)
+                        } catch (e: TransactionService.FailedSendMessageException) {
+                            log.error(e) { "Could not send transactions" }
+                            error = getString(Res.string.failed_send_message_with_error, e.message.toString())
                             launched = false
                             return@launch
-                        }
-                        if (outbox.sendError != null) {
-                            error = getString(Res.string.failed_send_message_with_error, outbox.sendError.toString())
-                            launched = false
-                            return@launch
-                        }
-
-                        try {
-                            trustService.createSummary(preparedSummary, outbox.eventId!!)
                         } catch (e: Exception) {
                             log.error(e) { "Could not submit summary" }
                             error = getString(Res.string.failed_create_trust_summary, e.message.toString())
                             launched = false
                             return@launch
                         }
+
                         onDone()
                     }
                 }

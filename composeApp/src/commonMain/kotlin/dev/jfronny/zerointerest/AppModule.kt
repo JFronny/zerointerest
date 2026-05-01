@@ -13,6 +13,7 @@ import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
+import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.service.ZeroInterestDatabase
 import dev.jfronny.zerointerest.service.createSsoLoginHandler
 import dev.jfronny.zerointerest.service.db.Migration1_2
@@ -35,6 +36,7 @@ fun createAppModule() = module {
     single { createSsoLoginHandler() }
     single { MatrixClientService(get(), get()) }
     single { SummaryTrustService(get(), get()) }
+    single { TransactionService(get(), get()) }
     single { Settings(get<Platform>().createDataStore()) }
     single {
         get<Platform>()
