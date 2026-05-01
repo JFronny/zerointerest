@@ -41,7 +41,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import de.connect2x.trixnity.client.MatrixClient
 import de.connect2x.trixnity.client.user
-import de.connect2x.trixnity.clientserverapi.client.SyncState
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
@@ -51,11 +50,11 @@ import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.service.ZeroInterestDatabase
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
+import dev.jfronny.zerointerest.ui.component.rememberTransactionLauncher
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import kotlin.math.roundToLong
@@ -87,8 +86,8 @@ fun CreateTransactionScreen(
     var totalAmountStr by remember { mutableStateOf("") }
     var selectedRecipients by remember { mutableStateOf(initialTemplate?.receivers?.keys ?: setOf()) }
     var recipientAmountInputs by remember { mutableStateOf(mapOf<UserId, String>()) }
-    var error by remember { mutableStateOf<String?>(null) }
     var isTemplateModified by remember { mutableStateOf(false) }
+    val launcher = rememberTransactionLauncher(client)
 
     fun parseAmount(s: String): Long? {
         return s.toDoubleOrNull()?.let { (it * 100).roundToLong() }
@@ -225,64 +224,32 @@ fun CreateTransactionScreen(
         },
 
         floatingActionButton = {
-            var launched by remember { mutableStateOf(false) }
             FloatingActionButton(onClick = {
-                if (launched) return@FloatingActionButton
-                val total = parseAmount(totalAmountStr) ?: 0L
-                val recipientAmounts = recipientAmountInputs.mapValues { parseAmount(it.value) ?: 0L }
-                val description = description.ifBlank { ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION }
-                if (recipientAmounts.isNotEmpty() && total > 0) {
-                    launched = true
-                    scope.launch {
-                        if (client.syncState.value != SyncState.RUNNING) {
-                            error = getString(Res.string.device_offline)
-                            launched = false
-                            return@launch
-                        }
+                val content = ZeroInterestTransactionEvent(
+                    description = description.ifBlank { ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION },
+                    sender = sender,
+                    receivers = recipientAmountInputs
+                        .mapValues { parseAmount(it.value) ?: 0L }
+                        .filter { it.value > 0L }
+                )
 
-                        val content = ZeroInterestTransactionEvent(
-                            description = description,
-                            sender = sender,
-                            receivers = recipientAmounts
-                        )
-
-                        try {
-                            transactionService.sendTransaction(roomId, content)
-                        } catch (e: TransactionService.FailedPrepareSummaryException) {
-                            log.error(e) { "Could not prepare summary creation" }
-                            error = getString(Res.string.failed_prepare_trust_summary, e.message.toString())
-                            launched = false
-                            return@launch
-                        } catch (e: TransactionService.FailedSendMessageException) {
-                            log.error(e) { "Could not send transactions" }
-                            error = getString(Res.string.failed_send_message_with_error, e.message.toString())
-                            launched = false
-                            return@launch
-                        } catch (e: Exception) {
-                            log.error(e) { "Could not submit summary" }
-                            error = getString(Res.string.failed_create_trust_summary, e.message.toString())
-                            launched = false
-                            return@launch
-                        }
-
-                        onDone()
+                if (content.receivers.isNotEmpty()) {
+                    launcher.tryLaunch {
+                        transactionService.sendTransaction(roomId, content)
                     }
                 }
             }) {
-                if (launched) LoadingIndicator()
+                if (launcher.isRunning) LoadingIndicator()
                 else Icon(Icons.Default.Check, stringResource(Res.string.save))
             }
         }
     ) { padding ->
+        launcher.ErrorDialog()
+
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item {
-                if (error != null) {
-                    Text(error!!, color = MaterialTheme.colorScheme.error)
-                }
-            }
             item {
                 OutlinedTextField(
                     value = description,

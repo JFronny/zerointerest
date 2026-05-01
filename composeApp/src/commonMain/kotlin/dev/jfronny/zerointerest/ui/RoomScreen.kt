@@ -131,7 +131,17 @@ fun RoomScreen(
                         BackButton(onBack = onBack)
                     },
                     actions = {
-                        MoreOptionsButton(openSettings = openSettings)
+                        MoreOptionsButton(openSettings = openSettings) { close ->
+                            if (roomIs(Destination.Room.RoomDestination.Balance)) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.settle_up)) },
+                                    onClick = {
+                                        close()
+                                        navHelper.navigate(Destination.SettleScreen(roomId))
+                                    }
+                                )
+                            }
+                        }
                     }
                 )
             },

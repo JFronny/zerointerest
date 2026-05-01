@@ -79,4 +79,12 @@
     <string name="flip_balances">Flip Balances</string>
     <string name="flip_balances_description">Swap positive and negative amounts</string>
     <string name="more_options">More Options</string>
+    <string name="settle_up">Settle Up</string>
+    <string name="settle_up_desc">Settle all debts</string>
+    <string name="accept_all">Accept All</string>
+    <string name="confirm_settle_all">Are you sure you want to apply all suggested transactions?</string>
+    <string name="confirm">Confirm</string>
+    <string name="no_debts">No debts to settle!</string>
+    <string name="transaction_applied">Transaction applied</string>
+    <string name="transaction_failed">Failed to apply transaction</string>
 </resources>

@@ -181,6 +181,14 @@ private fun AppNavigation(
             onBack = { navHelper.popMainBackStack() }
         )
     }
+    composable<Destination.SettleScreen>(typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)) {
+        val route = it.toRoute<Destination.SettleScreen>()
+        SettleScreen(
+            client = service.get(),
+            roomId = route.roomId,
+            onBack = { navHelper.popMainBackStack() }
+        )
+    }
     composable<Destination.SettingsScreen> {
         val scope = rememberCoroutineScope()
         SettingsScreen(

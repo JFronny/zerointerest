@@ -7,6 +7,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -65,6 +66,19 @@ fun SimpleIconButton(icon: ImageVector, description: String, onClick: () -> Unit
         state = rememberTooltipState(),
     ) {
         IconButton(onClick = onClick) {
+            Icon(icon, contentDescription = description)
+        }
+    }
+}
+
+@Composable
+fun SimpleFilledIconButton(icon: ImageVector, description: String, onClick: () -> Unit) {
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+        tooltip = { Text(description) },
+        state = rememberTooltipState(),
+    ) {
+        FilledIconButton(onClick = onClick) {
             Icon(icon, contentDescription = description)
         }
     }

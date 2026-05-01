@@ -19,4 +19,5 @@ sealed class Destination {
     @Serializable data class CreateTransaction(val roomId: RoomId, val templateId: String? = null) : Destination()
     @Serializable data class TransactionDetails(val roomId: RoomId, val transactionId: EventId) : Destination()
     @Serializable object SettingsScreen : Destination()
+    @Serializable data class SettleScreen(val roomId: RoomId) : Destination()
 }
