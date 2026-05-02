@@ -41,6 +41,15 @@ android {
                 "proguard-rules.pro"
             )
         }
+        register("unsignedRelease") {
+            initWith(release)
+            signingConfig = signingConfigs.getByName("debug")
+            applicationIdSuffix = ".unsigned"
+            versionNameSuffix = "-unsigned"
+            installation {
+                enableBaselineProfile = false
+            }
+        }
         getByName("debug") {
             isMinifyEnabled = false
             applicationIdSuffix = ".debug"
@@ -54,7 +63,10 @@ android {
 }
 
 dependencies {
-    implementation(projects.composeApp)
+    implementation(projects.composeApp) {
+        val uiTooling = libs.compose.uiTooling.get()
+        exclude(group = uiTooling.module.group, module = uiTooling.module.name)
+    }
     implementation(libs.koin.compose)
     implementation(libs.androidx.activity.compose)
     implementation(libs.trixnity.client)

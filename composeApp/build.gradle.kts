@@ -128,7 +128,6 @@ kotlin {
             implementation(libs.commons.logger)
         }
         androidMain.dependencies {
-            implementation(libs.compose.uiTooling)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.browser)
             implementation(libs.koin.android)
@@ -161,6 +160,7 @@ kotlin {
 }
 
 dependencies {
+    androidRuntimeClasspath(libs.compose.uiTooling)
     ksp(libs.androidx.room.compiler)
 }
 
