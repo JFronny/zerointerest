@@ -46,7 +46,7 @@ tasks {
     val pages by registering(Copy::class) {
         from(project(":composeApp").tasks["jsBrowserDistribution"])
         from(project(":androidApp").tasks["packageRelease"]) {
-            rename { if (it.endsWith(".apk")) "android.apk" else it }
+            rename { if (it.endsWith(".apk") && it.contains("-universal-")) "android.apk" else it }
             exclude { !it.name.endsWith(".apk") && it.name != "output-metadata.json" }
         }
         into(projectDir.resolve("pages"))

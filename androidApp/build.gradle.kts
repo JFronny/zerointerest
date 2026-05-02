@@ -15,6 +15,10 @@ kotlin {
     }
 }
 
+base {
+    archivesName = "zerointerest"
+}
+
 android {
     namespace = "dev.jfronny.zerointerest"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -41,7 +45,7 @@ android {
                 "proguard-rules.pro"
             )
         }
-        register("unsignedRelease") {
+        register("unsigned") {
             initWith(release)
             signingConfig = signingConfigs.getByName("debug")
             applicationIdSuffix = ".unsigned"
@@ -54,6 +58,14 @@ android {
             isMinifyEnabled = false
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+        }
+    }
+    splits {
+        abi {
+            isEnable = true
+            isUniversalApk = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
         }
     }
     compileOptions {
