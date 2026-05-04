@@ -236,6 +236,8 @@ fun CreateTransactionScreen(
                 if (content.receivers.isNotEmpty()) {
                     launcher.tryLaunch {
                         transactionService.sendTransaction(roomId, content)
+
+                        onDone()
                     }
                 }
             }) {
