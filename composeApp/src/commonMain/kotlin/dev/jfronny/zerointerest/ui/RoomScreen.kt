@@ -232,8 +232,8 @@ private fun BalancesTabPreview() = AppTheme {
         summary = SummaryTrustService.Summary.Trusted(ZeroInterestSummaryEvent(
             balances = mapOf(
                 UserId("@alice:example.org") to 4200,
-                UserId("@bob:example.org") to -1550,
                 UserId("@carol:example.org") to 0,
+                UserId("@bob:example.org") to -1550,
             ),
             parents = emptyMap()
         )),
@@ -268,9 +268,13 @@ private fun BalancesTab(
         }
         is SummaryTrustService.Summary.Trusted -> {
             val balances = summary.event.balances
+            //TODO this might not perform well with many users
+            //     consider that after it becomes a problem.
+            val uiBalances = balances.entries
+                .map { (k, v) -> v to userUI.component(k) }
+                .sortedBy { it.second.name }
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                items(balances.entries.toList()) { entry ->
-                    val balance = entry.value
+                items(uiBalances) { (balance, ui) ->
                     val color = when {
                         balance > 0 -> MaterialTheme.colorScheme.error
                         else -> MaterialTheme.colorScheme.primary
@@ -281,7 +285,7 @@ private fun BalancesTab(
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        userUI(entry.key)
+                        ui()
                         Spacer(modifier = Modifier.weight(1f))
                         Text(
                             text = formatBalance(if (flipBalances) -balance else balance),

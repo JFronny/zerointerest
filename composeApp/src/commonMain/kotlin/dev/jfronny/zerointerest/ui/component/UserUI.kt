@@ -32,12 +32,7 @@ import org.jetbrains.compose.resources.stringResource
 
 interface UserUI {
     @Composable
-    operator fun invoke(userId: UserId) {
-        val component = component(userId)
-        component.Icon()
-        Spacer(Modifier.width(8.dp))
-        component.Name()
-    }
+    operator fun invoke(userId: UserId) = component(userId)()
 
     @Composable
     fun component(userId: UserId): Component
@@ -48,6 +43,13 @@ interface UserUI {
             Text(name)
         }
         val name: String
+
+        @Composable
+        operator fun invoke() {
+            Icon()
+            Spacer(Modifier.width(8.dp))
+            Name()
+        }
     }
 
     companion object {
