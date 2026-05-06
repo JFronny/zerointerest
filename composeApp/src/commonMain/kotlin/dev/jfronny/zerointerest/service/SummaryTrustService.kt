@@ -73,6 +73,8 @@ class SummaryTrustService(
         val dbState = database.checkTrust(roomId, messageId)
         if (dbState != ZeroInterestDatabase.TrustState.UNTRUSTED) return dbState
 
+        log.info { "Checking trust for summary event $messageId in room $roomId" }
+
         log.info { "1. If a rejection for the summary exists, the summary is always rejected." }
         val reactions = client.room.getTimelineEventReactionAggregation(roomId, messageId).first().reactions[rejectionKey]
         if (reactions?.isNotEmpty() ?: false) return reject(roomId, messageId, "rejection in timeline: ${reactions.first().eventId}", send = false)
@@ -95,8 +97,9 @@ class SummaryTrustService(
         log.info { "Prefetch events as the next steps need them" }
         val summaries = mutableMapOf<EventId, Timed<ZeroInterestSummaryEvent>>()
         for (eventId in content.parents.keys) {
+            if (eventId == messageId) throw IllegalStateException("Summary event cannot reference itself as a parent. You have passed the wrong arguments to this function!")
             val event = client.getSummaryEventWithTimeout(roomId, eventId)?.getOrNull() ?: continue
-            summaries[eventId] = Timed(event.ts, content)
+            summaries[eventId] = Timed(event.ts, event.value)
         }
         val transactions = mutableMapOf<EventId, Timed<ZeroInterestTransactionEvent>>()
         for (eventId in content.parents.values.flatten()) {
