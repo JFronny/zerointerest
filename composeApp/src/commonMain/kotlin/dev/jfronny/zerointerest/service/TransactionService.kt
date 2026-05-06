@@ -65,7 +65,7 @@ class TransactionService(
                 parents = emptyMap()
             )
             val initialResponse = client.api.room.sendStateEvent(roomId, initialEvent, ZeroInterestSummaryEvent.TYPE).getOrThrow()
-            database.addTrustedSummary(roomId, initialResponse, initialEvent, clearHeads = true)
+            database.addTrustedSummary(roomId, initialResponse, initialEvent, isRoot = true)
 
             log.info { "Creating summary for first transactions $newTransactionIds in room $roomId" }
             val balances = mutableMapOf<UserId, Long>()

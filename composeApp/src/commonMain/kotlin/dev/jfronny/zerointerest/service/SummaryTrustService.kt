@@ -195,16 +195,24 @@ class SummaryTrustService(
         accept(summary.roomId, summary.messageId, summary.content, override = true)
     }
 
-    private suspend fun accept(roomId: RoomId, messageId: EventId, content: ZeroInterestSummaryEvent, override: Boolean = false): TrustState = withContext(NonCancellable) {
+    private suspend fun accept(
+        roomId: RoomId,
+        messageId: EventId,
+        content: ZeroInterestSummaryEvent,
+        override: Boolean = false,
+        isPropagation: Boolean = false,  // if we're overriding, we can assume all previous heads are invalid
+    ): TrustState = withContext(NonCancellable) {
         if (override && database.checkTrust(roomId, messageId) == TrustState.TRUSTED) return@withContext TrustState.TRUSTED
         log.info { "Accepting $messageId" }
         database.addTrustedSummary(
             roomId,
             messageId,
             content,
-            clearHeads = override,
+            isRoot = override,
+            updateHeads = !isPropagation,
         )
         if (override) {
+            log.info { "Propagating trust of $messageId" }
             val reactions = client.room.getTimelineEventReactionAggregation(roomId, messageId).first().reactions[rejectionKey]
             if (reactions != null) {
                 for (event in reactions) {
@@ -215,7 +223,8 @@ class SummaryTrustService(
             }
             for (id in content.parents.keys) {
                 val event = client.getSummaryEventWithTimeout(roomId, id)?.getOrNull() ?: continue
-                accept(roomId, id, event.value, override)
+                // do not clear heads when accepting parents
+                accept(roomId, id, event.value, override = true, isPropagation = true)
             }
         }
         return@withContext TrustState.TRUSTED

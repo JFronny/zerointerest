@@ -35,13 +35,16 @@ class ZeroInterestDatabase(val db: ZeroInterestRoomDatabase) {
         room: RoomId,
         eventId: EventId,
         event: ZeroInterestSummaryEvent,
-        clearHeads: Boolean = false,
+        isRoot: Boolean = false,
+        updateHeads: Boolean = true,
     ) = db.withWriteTransaction {
-        if (clearHeads) db.summaryHeadDao().clear(room.full)
-        db.summaryHeadDao().insert(SummaryHeadEntity(room.full, eventId.full))
-        event.parents.keys.forEach {
-            db.summaryHeadDao().removeHead(room.full, it.full)
-        }
+        if (updateHeads) {
+            if (isRoot) db.summaryHeadDao().clear(room.full)
+            db.summaryHeadDao().insert(SummaryHeadEntity(room.full, eventId.full))
+            event.parents.keys.forEach {
+                db.summaryHeadDao().removeHead(room.full, it.full)
+            }
+        } else require(!isRoot) { "Root summaries must not be added without updating heads" }
         db.summaryTrustDao().insert(SummaryTrustEntity(room.full, eventId.full, TrustState.TRUSTED))
         db.summaryDao().insertSummary(event.parents.keys.map {
             SummaryEntity(room.full, eventId.full, it.full)
