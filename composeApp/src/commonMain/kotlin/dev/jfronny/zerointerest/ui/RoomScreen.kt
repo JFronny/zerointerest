@@ -120,6 +120,9 @@ fun RoomScreen(
             label = { Text(stringResource(Res.string.transactions)) }
         )
     }) {
+        val settings = koinInject<Settings>()
+        val debugHints by settings.debugHints.collectAsState(initial = false)
+
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -140,6 +143,18 @@ fun RoomScreen(
                                         navHelper.navigate(Destination.SettleScreen(roomId))
                                     }
                                 )
+
+                                if (debugHints) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(Res.string.debug_reset_trust)) },
+                                        onClick = {
+                                            close()
+                                            scope.launch {
+                                                database.resetTrust(roomId)
+                                            }
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -194,9 +209,7 @@ fun RoomScreen(
                     var forceReload by remember { mutableIntStateOf(0) }
                     val flow = remember(roomId, forceReload) { trust.getSummary(roomId) }
                     val event by flow.collectAsState(null)
-                    val settings = koinInject<Settings>()
                     val flipBalances by settings.flipBalances.collectAsState(initial = true)
-                    val debugHints by settings.debugHints.collectAsState(initial = false)
                     event?.let {
                         BalancesTab(
                             summary = it,

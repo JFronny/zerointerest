@@ -52,6 +52,13 @@ class ZeroInterestDatabase(val db: ZeroInterestRoomDatabase) {
         }
     }
 
+    suspend fun resetTrust(room: RoomId) {
+        db.summaryHeadDao().clear(room.full)
+        db.summaryDao().clearSummaryTransactions(room.full)
+        db.summaryDao().clearSummaries(room.full)
+        db.summaryTrustDao().clear(room.full)
+    }
+
     suspend fun getSummaryParents(room: RoomId, summary: EventId): Set<EventId> {
         return db.summaryDao().getParents(room.full, summary.full).map { EventId(it) }.toSet()
     }

@@ -87,6 +87,12 @@ interface SummaryDao {
 
     @Query("SELECT * FROM SummaryTransactionEntity WHERE roomId = :roomId AND transactionId IN (:transactionIds)")
     suspend fun getSummariesForTransactions(roomId: String, transactionIds: List<String>): List<SummaryTransactionEntity>
+
+    @Query("DELETE FROM SummaryEntity WHERE roomId = :roomId")
+    suspend fun clearSummaries(roomId: String)
+
+    @Query("DELETE FROM SummaryTransactionEntity WHERE roomId = :roomId")
+    suspend fun clearSummaryTransactions(roomId: String)
 }
 
 
@@ -104,6 +110,9 @@ interface SummaryTrustDao {
 
     @Query("SELECT state FROM SummaryTrustEntity WHERE roomId = :roomId AND eventId = :eventId")
     suspend fun getTrustState(roomId: String, eventId: String): TrustState?
+
+    @Query("DELETE FROM SummaryTrustEntity WHERE roomId = :roomId")
+    suspend fun clear(roomId: String)
 }
 
 class ZeroInterestTypeConverters {

@@ -91,4 +91,5 @@
     <string name="summary_is_merge">Summary is a merge of multiple summaries</string>
     <string name="debug_hints">Debug Hints</string>
     <string name="debug_hints_description">Show debug hints in the UI</string>
+    <string name="debug_reset_trust">Reset Trust</string>
 </resources>
