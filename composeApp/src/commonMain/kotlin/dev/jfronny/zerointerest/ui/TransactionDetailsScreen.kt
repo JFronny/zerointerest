@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import de.connect2x.trixnity.client.MatrixClient
 import de.connect2x.trixnity.client.room
+import de.connect2x.trixnity.client.store.sender
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
@@ -56,9 +57,14 @@ fun TransactionDetailsScreen(
         client.room.getTimelineEvent(roomId, transactionId) {
             fetchTimeout = 5.seconds
             allowReplaceContent = false
-        }.map { it?.content?.getOrNull() as? ZeroInterestTransactionEvent }
+        }
     }
-    val transaction by transactionFlow.collectAsState(null)
+    val sender by transactionFlow
+        .map { it?.sender }
+        .collectAsState(null)
+    val transaction by transactionFlow
+        .map { it?.content?.getOrNull() as? ZeroInterestTransactionEvent }
+        .collectAsState(null)
     val trust = koinInject<SummaryTrustService>()
     val includedFlow = remember(roomId, transactionId) {
         flow {
@@ -78,8 +84,11 @@ fun TransactionDetailsScreen(
             )
         }
     ) { padding ->
-        val tx = transaction
-        if (tx == null) {
+        // local copy to allow smart null-safe access
+        val transaction = transaction
+        val sender = sender
+
+        if (transaction == null) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
@@ -113,31 +122,43 @@ fun TransactionDetailsScreen(
                 item {
                     Text(stringResource(Res.string.description), style = MaterialTheme.typography.labelMedium)
                     Text(
-                        text = if (tx.description == ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION) stringResource(Res.string.payment) else tx.description,
+                        text = if (transaction.description == ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION) stringResource(Res.string.payment) else transaction.description,
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
 
+                if (sender != null) {
+                    item {
+                        Text(stringResource(Res.string.entered_by), style = MaterialTheme.typography.labelMedium)
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            userUI(sender)
+                        }
+                    }
+                }
+
                 item {
-                    Text(stringResource(Res.string.sender), style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(Res.string.lender), style = MaterialTheme.typography.labelMedium)
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        userUI(tx.sender)
+                        userUI(transaction.sender)
                     }
                 }
 
                 item {
                     Text(stringResource(Res.string.total_amount), style = MaterialTheme.typography.labelMedium)
-                    Text(formatBalance(tx.total), style = MaterialTheme.typography.bodyLarge)
+                    Text(formatBalance(transaction.total), style = MaterialTheme.typography.bodyLarge)
                 }
 
                 item {
                     Text(stringResource(Res.string.recipients), style = MaterialTheme.typography.titleMedium)
                 }
 
-                items(tx.receivers.entries.toList()) { (userId, amount) ->
+                items(transaction.receivers.entries.toList()) { (userId, amount) ->
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically

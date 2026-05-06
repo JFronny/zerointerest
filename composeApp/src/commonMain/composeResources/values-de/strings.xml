@@ -29,7 +29,8 @@
     <string name="failed_create_trust_summary">Vertrauenszusammenfassung konnte nicht erstellt werden: %1$s</string>
     <string name="failed_prepare_trust_summary">Vertrauenszusammenfassung konnte nicht vorbereitet werden: %1$s</string>
     <string name="description">Beschreibung</string>
-    <string name="sender">Absender</string>
+    <string name="entered_by">Eingetragen von</string>
+    <string name="lender">Gläubiger</string>
     <string name="total_amount">Gesamtbetrag</string>
     <string name="recipients">Empfänger</string>
     <string name="amount">Betrag</string>

@@ -29,7 +29,8 @@
     <string name="failed_create_trust_summary">Failed to create trust summary: %1$s</string>
     <string name="failed_prepare_trust_summary">Failed to prepare trust summary: %1$s</string>
     <string name="description">Description</string>
-    <string name="sender">Sender</string>
+    <string name="entered_by">Entered by</string>
+    <string name="lender">Lender</string>
     <string name="total_amount">Total Amount</string>
     <string name="recipients">Recipients</string>
     <string name="amount">Amount</string>

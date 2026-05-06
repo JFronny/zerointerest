@@ -277,7 +277,7 @@ fun CreateTransactionScreen(
                             readOnly = true,
                             value = senderName ?: sender.full,
                             onValueChange = {},
-                            label = { Text("Options") },
+                            label = { Text(stringResource(Res.string.lender)) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         )
                     }
