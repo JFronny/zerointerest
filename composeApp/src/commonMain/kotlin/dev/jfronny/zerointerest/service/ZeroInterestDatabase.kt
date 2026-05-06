@@ -11,6 +11,7 @@ interface ZeroInterestDatabase {
     suspend fun markRejected(room: RoomId, event: EventId)
     suspend fun checkTrust(room: RoomId, event: EventId): TrustState
     suspend fun getHeads(room: RoomId): Set<EventId>
+    fun getHeadsFlow(room: RoomId): Flow<Set<EventId>>
     suspend fun addTrustedSummary(
         room: RoomId,
         eventId: EventId,

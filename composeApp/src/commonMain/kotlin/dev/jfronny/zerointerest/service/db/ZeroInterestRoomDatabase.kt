@@ -137,6 +137,9 @@ interface SummaryHeadDao {
     @Query("SELECT eventId FROM SummaryHeadEntity WHERE roomId = :roomId")
     suspend fun getHeads(roomId: String): List<String>
 
+    @Query("SELECT eventId FROM SummaryHeadEntity WHERE roomId = :roomId")
+    fun getHeadsFlow(roomId: String): Flow<List<String>>
+
     @Query("DELETE FROM SummaryHeadEntity WHERE roomId = :roomId AND eventId = :head")
     suspend fun removeHead(roomId: String, head: String)
 }

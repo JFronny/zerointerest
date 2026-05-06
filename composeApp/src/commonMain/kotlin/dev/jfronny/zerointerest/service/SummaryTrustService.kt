@@ -14,6 +14,7 @@ import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.util.Timed
 import dev.jfronny.zerointerest.util.cacheSummary
+import dev.jfronny.zerointerest.util.computeMergedSummary
 import dev.jfronny.zerointerest.util.getSummaryEventWithTimeout
 import dev.jfronny.zerointerest.util.getTransactionEventWithTimeout
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -22,7 +23,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.any
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.seconds
@@ -42,23 +44,37 @@ class SummaryTrustService(
     fun getSummary(roomId: RoomId): Flow<Summary> {
         return client.room
             .getState<ZeroInterestSummaryEvent>(roomId, ZeroInterestSummaryEvent.TYPE)
-            .mapLatest {
-                if (it !is RoomEvent.StateEvent) {
-                    log.info { "No summary found for room $roomId" }
-                    return@mapLatest Summary.Empty
-                }
-                cacheSummary(it)
-                log.info { "Received summary event: $it" }
-                val trust = withTimeoutOrNull(20.seconds) {
-                    checkTrusted(roomId, it.id, it.originTimestamp, it.content)
-                }
-                log.info { "Checked trust: $trust" }
-                if (trust == ZeroInterestDatabase.TrustState.TRUSTED) {
-                    log.info { "Trusted summary found for room $roomId" }
-                    Summary.Trusted(it.content)
-                } else {
-                    log.warn { "Latest summary found for room $roomId is not trusted" }
-                    Summary.Untrusted(roomId, it.id, it.content)
+            .flatMapLatest {
+                flow {
+                    if (it !is RoomEvent.StateEvent) {
+                        log.info { "No summary found for room $roomId" }
+                        emit(Summary.Empty)
+                        return@flow
+                    }
+                    cacheSummary(it)
+                    log.info { "Received summary event: $it" }
+                    val trust = withTimeoutOrNull(20.seconds) {
+                        checkTrusted(roomId, it.id, it.originTimestamp, it.content)
+                    }
+                    log.info { "Checked trust: $trust" }
+                    if (trust == ZeroInterestDatabase.TrustState.TRUSTED) {
+                        log.info { "Trusted summary found for room $roomId. Checking heads." }
+                        database.getHeadsFlow(roomId).collect { headIds ->
+                            if (headIds.isEmpty()) {
+                                emit(Summary.Empty)
+                            } else {
+                                val heads = headIds.associateWith { headId ->
+                                    client.getSummaryEventWithTimeout(roomId, headId)?.getOrNull()?.value
+                                }.filterValues { head -> head != null }.mapValues { head -> head.value!! }
+                                
+                                val merged = if (heads.size == 1) heads.values.first() else client.computeMergedSummary(roomId, heads)
+                                emit(Summary.Trusted(merged))
+                            }
+                        }
+                    } else {
+                        log.warn { "Latest summary found for room $roomId is not trusted" }
+                        emit(Summary.Untrusted(roomId, it.id, it.content))
+                    }
                 }
             }
     }

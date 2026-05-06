@@ -28,6 +28,10 @@ class RoomZeroInterestDatabase(val db: ZeroInterestRoomDatabase) : ZeroInterestD
         return db.summaryHeadDao().getHeads(room.full).map { EventId(it) }.toSet()
     }
 
+    override fun getHeadsFlow(room: RoomId): Flow<Set<EventId>> {
+        return db.summaryHeadDao().getHeadsFlow(room.full).map { list -> list.map { EventId(it) }.toSet() }
+    }
+
     override suspend fun addTrustedSummary(
         room: RoomId,
         eventId: EventId,
