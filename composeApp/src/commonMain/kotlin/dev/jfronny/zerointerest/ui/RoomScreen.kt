@@ -66,6 +66,7 @@ import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
+import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.component.PreviewUserUI
@@ -101,6 +102,7 @@ fun RoomScreen(
     val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
     val client = rxclient ?: return
     val trust = koinInject<SummaryTrustService>()
+    val transactions = koinInject<TransactionService>()
     val database = koinInject<ZeroInterestDatabase>()
     val roomNavHelper = navHelper.room()
     val roomIs = roomNavHelper.roomIs()
@@ -145,6 +147,17 @@ fun RoomScreen(
                                 )
 
                                 if (debugHints) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(Res.string.debug_new_summary)) },
+                                        onClick = {
+                                            close()
+                                            scope.launch {
+                                                val preparedSummary = transactions.prepareSummaryCreation(roomId, emptyList())
+                                                transactions.createSummary(preparedSummary, emptyList())
+                                            }
+                                        }
+                                    )
+
                                     DropdownMenuItem(
                                         text = { Text(stringResource(Res.string.debug_reset_trust)) },
                                         onClick = {
