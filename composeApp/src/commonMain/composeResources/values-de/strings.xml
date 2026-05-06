@@ -88,4 +88,7 @@
     <string name="no_debts">Keine Schulden zu begleichen!</string>
     <string name="transaction_applied">Transaktion angewendet</string>
     <string name="transaction_failed">Transaktion konnte nicht angewendet werden</string>
+    <string name="summary_is_merge">Die Zusammenfassung ist eine Zusammenführung mehrerer Zusammenfassungen</string>
+    <string name="debug_hints">Debug-Hinweise</string>
+    <string name="debug_hints_description">Zeige zusätzliche Informationen, die bei der Fehlersuche helfen können</string>
 </resources>

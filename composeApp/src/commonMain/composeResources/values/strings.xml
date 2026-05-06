@@ -88,4 +88,7 @@
     <string name="no_debts">No debts to settle!</string>
     <string name="transaction_applied">Transaction applied</string>
     <string name="transaction_failed">Failed to apply transaction</string>
+    <string name="summary_is_merge">Summary is a merge of multiple summaries</string>
+    <string name="debug_hints">Debug Hints</string>
+    <string name="debug_hints_description">Show debug hints in the UI</string>
 </resources>

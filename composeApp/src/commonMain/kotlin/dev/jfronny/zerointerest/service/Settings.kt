@@ -12,13 +12,23 @@ class Settings(private val store: DataStore<Preferences>) {
     private val rememberedRoom = stringPreferencesKey("rememberedRoom")
     private val defaultHomeserver = stringPreferencesKey("defaultHomeserver")
     private val flipBalancesKey = booleanPreferencesKey("flipBalances")
+    private val debugHintsKey = booleanPreferencesKey("debugHints")
 
     val flipBalances = store.data.map { it[flipBalancesKey] ?: true }
+    val debugHints = store.data.map { it[debugHintsKey] ?: false }
 
     suspend fun setFlipBalances(flip: Boolean) {
         store.updateData {
             it.toMutablePreferences().apply {
                 set(flipBalancesKey, flip)
+            }
+        }
+    }
+
+    suspend fun setDebugHints(enabled: Boolean) {
+        store.updateData {
+            it.toMutablePreferences().apply {
+                set(debugHintsKey, enabled)
             }
         }
     }

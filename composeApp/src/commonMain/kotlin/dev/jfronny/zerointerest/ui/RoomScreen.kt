@@ -196,11 +196,13 @@ fun RoomScreen(
                     val event by flow.collectAsState(null)
                     val settings = koinInject<Settings>()
                     val flipBalances by settings.flipBalances.collectAsState(initial = true)
+                    val debugHints by settings.debugHints.collectAsState(initial = false)
                     event?.let {
                         BalancesTab(
                             summary = it,
                             userUI = UserUI(client, roomId),
                             flipBalances = flipBalances,
+                            debugHints = debugHints,
                             forceTrust = {
                                 scope.launch {
                                     trust.forceAccept(it)
@@ -236,9 +238,10 @@ private fun BalancesTabPreview() = AppTheme {
                 UserId("@bob:example.org") to -1550,
             ),
             parents = emptyMap()
-        )),
+        ), isMerge = true),
         userUI = PreviewUserUI,
         flipBalances = true,
+        debugHints = true,
         forceTrust = {},
     )
 }
@@ -248,6 +251,7 @@ private fun BalancesTab(
     summary: SummaryTrustService.Summary,
     userUI: UserUI,
     flipBalances: Boolean,
+    debugHints: Boolean,
     forceTrust: (SummaryTrustService.Summary.Untrusted) -> Unit
 ) {
     when (summary) {
@@ -274,6 +278,20 @@ private fun BalancesTab(
                 .map { (k, v) -> v to userUI.component(k) }
                 .sortedBy { it.second.name }
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                if (summary.isMerge && debugHints) {
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(Res.string.summary_is_merge), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
                 items(uiBalances) { (balance, ui) ->
                     val color = when {
                         balance > 0 -> MaterialTheme.colorScheme.error

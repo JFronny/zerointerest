@@ -68,9 +68,12 @@ class SummaryTrustService(
                                 val heads = headIds.associateWith { headId ->
                                     client.getSummaryEventWithTimeout(roomId, headId)?.getOrNull()?.value
                                 }.filterValues { head -> head != null }.mapValues { head -> head.value!! }
-                                
-                                val merged = if (heads.size == 1) heads.values.first() else client.computeMergedSummary(roomId, heads)
-                                emit(Summary.Trusted(merged))
+
+                                if (heads.size == 1) {
+                                    emit(Summary.Trusted(heads.values.first(), isMerge = false))
+                                } else {
+                                    emit(Summary.Trusted(client.computeMergedSummary(roomId, heads), isMerge = true))
+                                }
                             }
                         }
                     } else {
@@ -84,7 +87,7 @@ class SummaryTrustService(
     sealed interface Summary {
         data class Untrusted(val roomId: RoomId, val messageId: EventId, val content: ZeroInterestSummaryEvent) : Summary
         object Empty : Summary
-        data class Trusted(val event: ZeroInterestSummaryEvent) : Summary
+        data class Trusted(val event: ZeroInterestSummaryEvent, val isMerge: Boolean) : Summary
     }
 
     suspend fun checkTrusted(roomId: RoomId, messageId: EventId, timestamp: Long, content: ZeroInterestSummaryEvent): TrustState {

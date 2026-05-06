@@ -61,6 +61,23 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit) {
                     scope.launch { settings.setFlipBalances(!flipBalances) }
                 }
             )
+
+            val debugHints by settings.debugHints.collectAsState(initial = false)
+            ListItem(
+                headlineContent = { Text(stringResource(Res.string.debug_hints)) },
+                supportingContent = { Text(stringResource(Res.string.debug_hints_description)) },
+                trailingContent = {
+                    Switch(
+                        checked = debugHints,
+                        onCheckedChange = {
+                            scope.launch { settings.setDebugHints(it) }
+                        }
+                    )
+                },
+                modifier = Modifier.clickable {
+                    scope.launch { settings.setDebugHints(!debugHints) }
+                }
+            )
             
             ListItem(
                 headlineContent = { Text(stringResource(Res.string.source_code)) },
