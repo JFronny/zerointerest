@@ -1,5 +1,6 @@
 package dev.jfronny.zerointerest.db
 
+import androidx.room3.withWriteTransaction
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
@@ -34,9 +35,9 @@ class ZeroInterestDatabase(val db: ZeroInterestRoomDatabase) {
         room: RoomId,
         eventId: EventId,
         event: ZeroInterestSummaryEvent,
-        root: Boolean = false,
-    ) {
-        if (root) db.summaryHeadDao().clear(room.full)
+        clearHeads: Boolean = false,
+    ) = db.withWriteTransaction {
+        if (clearHeads) db.summaryHeadDao().clear(room.full)
         db.summaryHeadDao().insert(SummaryHeadEntity(room.full, eventId.full))
         event.parents.keys.forEach {
             db.summaryHeadDao().removeHead(room.full, it.full)
@@ -52,7 +53,7 @@ class ZeroInterestDatabase(val db: ZeroInterestRoomDatabase) {
         }
     }
 
-    suspend fun resetTrust(room: RoomId) {
+    suspend fun resetTrust(room: RoomId) = db.withWriteTransaction {
         db.summaryHeadDao().clear(room.full)
         db.summaryDao().clearSummaryTransactions(room.full)
         db.summaryDao().clearSummaries(room.full)

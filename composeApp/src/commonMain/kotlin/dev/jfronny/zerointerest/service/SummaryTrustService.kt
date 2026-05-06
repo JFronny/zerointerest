@@ -191,16 +191,20 @@ class SummaryTrustService(
         return@withContext TrustState.REJECTED
     }
 
-    suspend fun forceAccept(summary: Summary.Untrusted) = accept(summary.roomId, summary.messageId, summary.content, retroactive = true)
-    private suspend fun accept(roomId: RoomId, messageId: EventId, content: ZeroInterestSummaryEvent, retroactive: Boolean = false): TrustState = withContext(NonCancellable) {
-        if (retroactive && database.checkTrust(roomId, messageId) == TrustState.TRUSTED) return@withContext TrustState.TRUSTED
+    suspend fun forceAccept(summary: Summary.Untrusted) {
+        accept(summary.roomId, summary.messageId, summary.content, override = true)
+    }
+
+    private suspend fun accept(roomId: RoomId, messageId: EventId, content: ZeroInterestSummaryEvent, override: Boolean = false): TrustState = withContext(NonCancellable) {
+        if (override && database.checkTrust(roomId, messageId) == TrustState.TRUSTED) return@withContext TrustState.TRUSTED
         log.info { "Accepting $messageId" }
         database.addTrustedSummary(
             roomId,
             messageId,
-            content
+            content,
+            clearHeads = override,
         )
-        if (retroactive) {
+        if (override) {
             val reactions = client.room.getTimelineEventReactionAggregation(roomId, messageId).first().reactions[rejectionKey]
             if (reactions != null) {
                 for (event in reactions) {
@@ -210,7 +214,7 @@ class SummaryTrustService(
                 }
             }
             for (id in content.parents.keys) {
-                accept(roomId, id, content, retroactive)
+                accept(roomId, id, content, override)
             }
         }
         return@withContext TrustState.TRUSTED
