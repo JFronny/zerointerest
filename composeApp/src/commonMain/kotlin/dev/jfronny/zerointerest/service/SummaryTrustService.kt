@@ -214,7 +214,8 @@ class SummaryTrustService(
                 }
             }
             for (id in content.parents.keys) {
-                accept(roomId, id, content, override)
+                val event = client.getSummaryEventWithTimeout(roomId, id)?.getOrNull() ?: continue
+                accept(roomId, id, event.value, override)
             }
         }
         return@withContext TrustState.TRUSTED
