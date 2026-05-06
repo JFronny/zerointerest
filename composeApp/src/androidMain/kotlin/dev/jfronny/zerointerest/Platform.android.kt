@@ -12,7 +12,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import de.connect2x.trixnity.client.store.repository.room.TrixnityRoomDatabase
-import dev.jfronny.zerointerest.service.db.ZeroInterestRoomDatabase
+import dev.jfronny.zerointerest.db.ZeroInterestRoomDatabase
 import io.ktor.client.engine.android.Android
 import okio.Path.Companion.toOkioPath
 import org.koin.android.ext.koin.androidContext

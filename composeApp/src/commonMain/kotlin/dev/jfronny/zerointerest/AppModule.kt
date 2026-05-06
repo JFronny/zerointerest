@@ -14,18 +14,16 @@ import dev.jfronny.zerointerest.service.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.TransactionService
-import dev.jfronny.zerointerest.service.ZeroInterestDatabase
 import dev.jfronny.zerointerest.service.createSsoLoginHandler
-import dev.jfronny.zerointerest.service.db.Migration1_2
-import dev.jfronny.zerointerest.service.db.Migration2_3
-import dev.jfronny.zerointerest.service.db.Migration3_4
-import dev.jfronny.zerointerest.service.db.RoomZeroInterestDatabase
+import dev.jfronny.zerointerest.db.Migration1_2
+import dev.jfronny.zerointerest.db.Migration2_3
+import dev.jfronny.zerointerest.db.Migration3_4
+import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.sync.Mutex
 import org.koin.compose.currentKoinScope
 import org.koin.core.qualifier.Qualifier
 import org.koin.core.scope.Scope
-import org.koin.dsl.bind
 import org.koin.dsl.module
 
 const val SourceCodeUrl = "https://git.jfronny.dev/Johannes/zerointerest"
@@ -46,9 +44,9 @@ fun createAppModule() = module {
             .build()
     }
     single {
-        RoomZeroInterestDatabase(get())
+        ZeroInterestDatabase(get())
             .apply { get<Platform>().handleZerointerestDatabase(this@apply) }
-    } bind ZeroInterestDatabase::class
+    }
 }
 
 fun createAppMatrixModule() = module {

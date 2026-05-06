@@ -1,49 +1,47 @@
-package dev.jfronny.zerointerest.service.db
+package dev.jfronny.zerointerest.db
 
 import dev.jfronny.zerointerest.data.TransactionTemplate
-import dev.jfronny.zerointerest.service.ZeroInterestDatabase.TrustState
-import dev.jfronny.zerointerest.service.ZeroInterestDatabase.TrustState.*
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
+import dev.jfronny.zerointerest.data.TrustState
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
-import dev.jfronny.zerointerest.service.ZeroInterestDatabase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-class RoomZeroInterestDatabase(val db: ZeroInterestRoomDatabase) : ZeroInterestDatabase {
-    override suspend fun markTrusted(room: RoomId, event: EventId) {
-        db.summaryTrustDao().insert(SummaryTrustEntity(room.full, event.full, TRUSTED))
+class ZeroInterestDatabase(val db: ZeroInterestRoomDatabase) {
+    suspend fun markTrusted(room: RoomId, event: EventId) {
+        db.summaryTrustDao().insert(SummaryTrustEntity(room.full, event.full, TrustState.TRUSTED))
     }
 
-    override suspend fun markRejected(room: RoomId, event: EventId) {
-        db.summaryTrustDao().insert(SummaryTrustEntity(room.full, event.full, REJECTED))
+    suspend fun markRejected(room: RoomId, event: EventId) {
+        db.summaryTrustDao().insert(SummaryTrustEntity(room.full, event.full, TrustState.REJECTED))
     }
 
-    override suspend fun checkTrust(room: RoomId, event: EventId): TrustState {
-        return db.summaryTrustDao().getTrustState(room.full, event.full) ?: UNTRUSTED
+    suspend fun checkTrust(room: RoomId, event: EventId): TrustState {
+        return db.summaryTrustDao().getTrustState(room.full, event.full) ?: TrustState.UNTRUSTED
     }
 
-    override suspend fun getHeads(room: RoomId): Set<EventId> {
+    suspend fun getHeads(room: RoomId): Set<EventId> {
         return db.summaryHeadDao().getHeads(room.full).map { EventId(it) }.toSet()
     }
 
-    override fun getHeadsFlow(room: RoomId): Flow<Set<EventId>> {
+    fun getHeadsFlow(room: RoomId): Flow<Set<EventId>> {
         return db.summaryHeadDao().getHeadsFlow(room.full).map { list -> list.map { EventId(it) }.toSet() }
     }
 
-    override suspend fun addTrustedSummary(
+    suspend fun addTrustedSummary(
         room: RoomId,
         eventId: EventId,
         event: ZeroInterestSummaryEvent,
-        root: Boolean,
+        root: Boolean = false,
     ) {
         if (root) db.summaryHeadDao().clear(room.full)
         db.summaryHeadDao().insert(SummaryHeadEntity(room.full, eventId.full))
         event.parents.keys.forEach {
             db.summaryHeadDao().removeHead(room.full, it.full)
         }
-        db.summaryTrustDao().insert(SummaryTrustEntity(room.full, eventId.full, TRUSTED))
+        db.summaryTrustDao().insert(SummaryTrustEntity(room.full, eventId.full, TrustState.TRUSTED))
         db.summaryDao().insertSummary(event.parents.keys.map {
             SummaryEntity(room.full, eventId.full, it.full)
         })
@@ -54,11 +52,11 @@ class RoomZeroInterestDatabase(val db: ZeroInterestRoomDatabase) : ZeroInterestD
         }
     }
 
-    override suspend fun getSummaryParents(room: RoomId, summary: EventId): Set<EventId> {
+    suspend fun getSummaryParents(room: RoomId, summary: EventId): Set<EventId> {
         return db.summaryDao().getParents(room.full, summary.full).map { EventId(it) }.toSet()
     }
 
-    override suspend fun getSummariesReferencingTransactions(room: RoomId, transactions: Set<EventId>): Map<EventId, Set<EventId>> {
+    suspend fun getSummariesReferencingTransactions(room: RoomId, transactions: Set<EventId>): Map<EventId, Set<EventId>> {
         val result = mutableMapOf<EventId, MutableSet<EventId>>()
         db.summaryDao().getSummariesForTransactions(room.full, transactions.map { it.full }).forEach {
             result.getOrPut(EventId(it.transactionId)) { mutableSetOf() }.add(EventId(it.summaryId))
@@ -66,7 +64,7 @@ class RoomZeroInterestDatabase(val db: ZeroInterestRoomDatabase) : ZeroInterestD
         return result
     }
 
-    override fun getTransactionTemplates(room: RoomId): Flow<List<TransactionTemplate>> {
+    fun getTransactionTemplates(room: RoomId): Flow<List<TransactionTemplate>> {
         return db.transactionTemplateDao().getTemplates(room.full).map { list ->
             list.map { entity ->
                 TransactionTemplate(
@@ -79,7 +77,7 @@ class RoomZeroInterestDatabase(val db: ZeroInterestRoomDatabase) : ZeroInterestD
         }
     }
 
-    override suspend fun addTransactionTemplate(room: RoomId, template: TransactionTemplate) {
+    suspend fun addTransactionTemplate(room: RoomId, template: TransactionTemplate) {
         db.transactionTemplateDao().insert(
             TransactionTemplateEntity(
                 roomId = room.full,
@@ -91,7 +89,7 @@ class RoomZeroInterestDatabase(val db: ZeroInterestRoomDatabase) : ZeroInterestD
         )
     }
 
-    override suspend fun removeTransactionTemplate(room: RoomId, templateId: String) {
+    suspend fun removeTransactionTemplate(room: RoomId, templateId: String) {
         db.transactionTemplateDao().delete(room.full, templateId)
     }
 }

@@ -1,4 +1,4 @@
-package dev.jfronny.zerointerest.service.db
+package dev.jfronny.zerointerest.db
 
 import androidx.room3.ConstructedBy
 import androidx.room3.Dao
@@ -12,7 +12,7 @@ import androidx.room3.RoomDatabaseConstructor
 import androidx.room3.TypeConverter
 import androidx.room3.TypeConverters
 import de.connect2x.trixnity.core.model.UserId
-import dev.jfronny.zerointerest.service.ZeroInterestDatabase
+import dev.jfronny.zerointerest.data.TrustState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
 
@@ -94,7 +94,7 @@ interface SummaryDao {
 data class SummaryTrustEntity(
     val roomId: String,
     val eventId: String,
-    val state: ZeroInterestDatabase.TrustState
+    val state: TrustState
 )
 
 @Dao
@@ -103,15 +103,15 @@ interface SummaryTrustDao {
     suspend fun insert(entity: SummaryTrustEntity)
 
     @Query("SELECT state FROM SummaryTrustEntity WHERE roomId = :roomId AND eventId = :eventId")
-    suspend fun getTrustState(roomId: String, eventId: String): ZeroInterestDatabase.TrustState?
+    suspend fun getTrustState(roomId: String, eventId: String): TrustState?
 }
 
 class ZeroInterestTypeConverters {
     @TypeConverter
-    fun toTrustState(value: String) = enumValueOf<ZeroInterestDatabase.TrustState>(value)
+    fun toTrustState(value: String) = enumValueOf<TrustState>(value)
 
     @TypeConverter
-    fun fromTrustState(value: ZeroInterestDatabase.TrustState) = value.name
+    fun fromTrustState(value: TrustState) = value.name
 
     @TypeConverter
     fun toReceivers(value: String): Map<UserId, Long> = Json.decodeFromString(value)

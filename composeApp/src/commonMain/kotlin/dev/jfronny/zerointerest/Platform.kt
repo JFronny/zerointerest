@@ -8,8 +8,8 @@ import androidx.room3.RoomDatabase
 import androidx.sqlite.SQLiteConnection
 import de.connect2x.trixnity.client.MediaStoreModule
 import de.connect2x.trixnity.client.RepositoriesModule
-import dev.jfronny.zerointerest.service.db.RoomZeroInterestDatabase
-import dev.jfronny.zerointerest.service.db.ZeroInterestRoomDatabase
+import dev.jfronny.zerointerest.db.ZeroInterestDatabase
+import dev.jfronny.zerointerest.db.ZeroInterestRoomDatabase
 import io.ktor.client.engine.HttpClientEngine
 import org.koin.core.scope.Scope
 
@@ -22,7 +22,7 @@ interface Platform {
     fun createDataStore(): DataStore<Preferences>
 
     fun zerointerestDatabaseBuilder(): RoomDatabase.Builder<ZeroInterestRoomDatabase>
-    fun handleZerointerestDatabase(db: RoomZeroInterestDatabase) {}
+    fun handleZerointerestDatabase(db: ZeroInterestDatabase) {}
 }
 
 expect fun Scope.getPlatform(): Platform

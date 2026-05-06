@@ -12,6 +12,8 @@ import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.events.ClientEvent.RoomEvent
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.TrustState
+import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import dev.jfronny.zerointerest.util.Timed
 import dev.jfronny.zerointerest.util.cacheSummary
 import dev.jfronny.zerointerest.util.computeMergedSummary
@@ -57,7 +59,7 @@ class SummaryTrustService(
                         checkTrusted(roomId, it.id, it.originTimestamp, it.content)
                     }
                     log.info { "Checked trust: $trust" }
-                    if (trust == ZeroInterestDatabase.TrustState.TRUSTED) {
+                    if (trust == TrustState.TRUSTED) {
                         log.info { "Trusted summary found for room $roomId. Checking heads." }
                         database.getHeadsFlow(roomId).collect { headIds ->
                             if (headIds.isEmpty()) {
@@ -85,9 +87,9 @@ class SummaryTrustService(
         data class Trusted(val event: ZeroInterestSummaryEvent) : Summary
     }
 
-    suspend fun checkTrusted(roomId: RoomId, messageId: EventId, timestamp: Long, content: ZeroInterestSummaryEvent): ZeroInterestDatabase.TrustState {
+    suspend fun checkTrusted(roomId: RoomId, messageId: EventId, timestamp: Long, content: ZeroInterestSummaryEvent): TrustState {
         val dbState = database.checkTrust(roomId, messageId)
-        if (dbState != ZeroInterestDatabase.TrustState.UNTRUSTED) return dbState
+        if (dbState != TrustState.UNTRUSTED) return dbState
 
         log.info { "Checking trust for summary event $messageId in room $roomId" }
 
@@ -128,7 +130,7 @@ class SummaryTrustService(
         for ((summaryId, transactionIds) in content.parents) {
             val summary = summaries[summaryId] ?: continue
             val trust = checkTrusted(roomId, summaryId, summary.ts, summary.value)
-            if (trust == ZeroInterestDatabase.TrustState.TRUSTED) {
+            if (trust == TrustState.TRUSTED) {
                 trustedParents[summaryId] = transactionIds
             }
         }
@@ -175,7 +177,7 @@ class SummaryTrustService(
         return accept(roomId, messageId, content)
     }
 
-    private suspend fun reject(roomId: RoomId, messageId: EventId, reason: String, send: Boolean = true): ZeroInterestDatabase.TrustState = withContext(NonCancellable) {
+    private suspend fun reject(roomId: RoomId, messageId: EventId, reason: String, send: Boolean = true): TrustState = withContext(NonCancellable) {
         log.info { "Rejecting $messageId. Reason: $reason" }
         database.markRejected(roomId, messageId)
         if (send) {
@@ -183,12 +185,12 @@ class SummaryTrustService(
                 react(messageId, rejectionKey)
             }
         }
-        return@withContext ZeroInterestDatabase.TrustState.REJECTED
+        return@withContext TrustState.REJECTED
     }
 
     suspend fun forceAccept(summary: Summary.Untrusted) = accept(summary.roomId, summary.messageId, summary.content, retroactive = true)
-    private suspend fun accept(roomId: RoomId, messageId: EventId, content: ZeroInterestSummaryEvent, retroactive: Boolean = false): ZeroInterestDatabase.TrustState = withContext(NonCancellable) {
-        if (retroactive && database.checkTrust(roomId, messageId) == ZeroInterestDatabase.TrustState.TRUSTED) return@withContext ZeroInterestDatabase.TrustState.TRUSTED
+    private suspend fun accept(roomId: RoomId, messageId: EventId, content: ZeroInterestSummaryEvent, retroactive: Boolean = false): TrustState = withContext(NonCancellable) {
+        if (retroactive && database.checkTrust(roomId, messageId) == TrustState.TRUSTED) return@withContext TrustState.TRUSTED
         log.info { "Accepting $messageId" }
         database.addTrustedSummary(
             roomId,
@@ -208,7 +210,7 @@ class SummaryTrustService(
                 accept(roomId, id, content, retroactive)
             }
         }
-        return@withContext ZeroInterestDatabase.TrustState.TRUSTED
+        return@withContext TrustState.TRUSTED
     }
 
     suspend fun getSummariesReferencingTransactions(roomId: RoomId, transactions: Set<EventId>): Map<EventId, Set<EventId>> {

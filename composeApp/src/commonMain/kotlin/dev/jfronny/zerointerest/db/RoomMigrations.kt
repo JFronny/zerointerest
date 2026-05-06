@@ -1,4 +1,4 @@
-package dev.jfronny.zerointerest.service.db
+package dev.jfronny.zerointerest.db
 
 import androidx.room3.migration.Migration
 import androidx.sqlite.SQLiteConnection

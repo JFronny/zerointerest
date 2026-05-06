@@ -8,7 +8,7 @@ import androidx.room.Room
 import androidx.room3.Room as Room3
 import io.ktor.client.engine.java.Java
 import de.connect2x.trixnity.client.store.repository.room.TrixnityRoomDatabase
-import dev.jfronny.zerointerest.service.db.ZeroInterestRoomDatabase
+import dev.jfronny.zerointerest.db.ZeroInterestRoomDatabase
 import okio.Path.Companion.toOkioPath
 import org.koin.core.scope.Scope
 import kotlin.io.path.absolutePathString

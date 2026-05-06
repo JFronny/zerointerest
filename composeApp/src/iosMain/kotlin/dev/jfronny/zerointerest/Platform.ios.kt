@@ -9,7 +9,7 @@ import androidx.room3.Room as Room3
 import io.ktor.client.engine.darwin.Darwin
 import kotlinx.cinterop.ExperimentalForeignApi
 import de.connect2x.trixnity.client.store.repository.room.TrixnityRoomDatabase
-import dev.jfronny.zerointerest.service.db.ZeroInterestRoomDatabase
+import dev.jfronny.zerointerest.db.ZeroInterestRoomDatabase
 import kotlinx.cinterop.staticCFunction
 import okio.Path.Companion.toPath
 import org.koin.core.scope.Scope
