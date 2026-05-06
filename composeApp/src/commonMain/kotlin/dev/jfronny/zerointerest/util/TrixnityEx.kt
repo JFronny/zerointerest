@@ -42,11 +42,12 @@ suspend fun MatrixClient.getSummaryEventWithTimeout(roomId: RoomId, eventId: Eve
     return withTimeoutOrNull(6.seconds) {
         val event = try {
             api.room.getEvent(roomId, eventId)
-                .getOrThrow() as ClientEvent.StateBaseEvent<ZeroInterestSummaryEvent>
+                .getOrThrow() as ClientEvent.StateBaseEvent<*>
         } catch (e: Exception) {
             return@withTimeoutOrNull Result.failure(e)
         }
-        val timed = Timed(event.originTimestamp!!, event.content)
+        val content = event.content as? ZeroInterestSummaryEvent ?: return@withTimeoutOrNull Result.failure(IllegalStateException("Event content is not a summary event"))
+        val timed = Timed(event.originTimestamp!!, content)
         summaryEventCache[roomId to eventId] = timed
         Result.success(timed)
     }
