@@ -10,6 +10,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
@@ -62,7 +63,7 @@ fun BackButton(onBack: () -> Unit) = SimpleIconButton(
 fun SimpleIconButton(icon: ImageVector, description: String, onClick: () -> Unit) {
     TooltipBox(
         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
-        tooltip = { Text(description) },
+        tooltip = { PlainTooltip { Text(description) } },
         state = rememberTooltipState(),
     ) {
         IconButton(onClick = onClick) {
@@ -75,7 +76,7 @@ fun SimpleIconButton(icon: ImageVector, description: String, onClick: () -> Unit
 fun SimpleFilledIconButton(icon: ImageVector, description: String, onClick: () -> Unit) {
     TooltipBox(
         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
-        tooltip = { Text(description) },
+        tooltip = { PlainTooltip { Text(description) } },
         state = rememberTooltipState(),
     ) {
         FilledIconButton(onClick = onClick) {
