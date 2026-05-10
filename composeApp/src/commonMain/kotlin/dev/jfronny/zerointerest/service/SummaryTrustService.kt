@@ -211,7 +211,7 @@ class SummaryTrustService(
             isRoot = override,
             updateHeads = !isPropagation,
         )
-        if (override) {
+        if (override || isPropagation) {
             log.info { "Propagating trust of $messageId" }
             val reactions = client.room.getTimelineEventReactionAggregation(roomId, messageId).first().reactions[rejectionKey]
             if (reactions != null) {
@@ -224,7 +224,7 @@ class SummaryTrustService(
             for (id in content.parents.keys) {
                 val event = client.getSummaryEventWithTimeout(roomId, id)?.getOrNull() ?: continue
                 // do not clear heads when accepting parents
-                accept(roomId, id, event.value, override = true, isPropagation = true)
+                accept(roomId, id, event.value, override = false, isPropagation = true)
             }
         }
         return@withContext TrustState.TRUSTED
