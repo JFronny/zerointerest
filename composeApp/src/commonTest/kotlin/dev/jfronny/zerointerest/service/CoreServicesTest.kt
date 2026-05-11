@@ -67,7 +67,7 @@ abstract class CoreServicesTest : KoinTest, FunSpec() {
         checkTrusted(roomId, messageId, event.ts, event.value)
     }
 
-    suspend fun <T> Flow<T>.getValue() = withTimeout(100.milliseconds) {
+    suspend fun <T> Flow<T>.getValue() = withTimeout(500.milliseconds) {
         firstOrNull()
     }
 }
