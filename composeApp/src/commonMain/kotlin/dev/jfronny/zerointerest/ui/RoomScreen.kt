@@ -132,6 +132,11 @@ fun RoomScreen(
     }) {
         val settings = koinInject<Settings>()
         val debugHints by settings.debugHints.collectAsState(initial = false)
+        val flipBalances by settings.flipBalances.collectAsState(initial = true)
+
+        var forceReload by remember { mutableIntStateOf(0) }
+        val flow = remember(roomId, forceReload) { trust.getSummary(roomId) }
+        val event by flow.collectAsState(null)
 
         Scaffold(
             topBar = {
@@ -181,7 +186,9 @@ fun RoomScreen(
                     }
                 )
             },
-            floatingActionButton = {
+            floatingActionButton = fab@{
+                if (event == null || event is SummaryTrustService.Summary.Untrusted) return@fab
+
                 val templatesFlow = remember(roomId) { database.getTransactionTemplates(roomId) }
                 val templates by templatesFlow.collectAsState(emptyList())
 
@@ -241,10 +248,6 @@ fun RoomScreen(
                 modifier = Modifier.padding(padding)
             ) {
                 composable<Destination.Room.RoomDestination.Balance> {
-                    var forceReload by remember { mutableIntStateOf(0) }
-                    val flow = remember(roomId, forceReload) { trust.getSummary(roomId) }
-                    val event by flow.collectAsState(null)
-                    val flipBalances by settings.flipBalances.collectAsState(initial = true)
                     event?.let {
                         BalancesTab(
                             summary = it,

@@ -60,7 +60,7 @@ fun SettleScreen(
     val transactionService = koinInject<TransactionService>()
     val userUI = UserUI(client, roomId)
 
-    val summaryState by trustService.getSummary(roomId).collectAsState(SummaryTrustService.Summary.Empty)
+    val summaryState by trustService.getSummary(roomId).collectAsState(null)
     
     var showConfirmDialog by remember { mutableStateOf(false) }
     val launcher = rememberTransactionLauncher(client)
@@ -69,7 +69,8 @@ fun SettleScreen(
         val balances = when (val s = summaryState) {
             is SummaryTrustService.Summary.Trusted -> s.event.balances
             is SummaryTrustService.Summary.Untrusted -> s.content.balances
-            else -> emptyMap()
+            is SummaryTrustService.Summary.Empty -> emptyMap()
+            null -> emptyMap()
         }
         calculateSettlementTransactions(balances)
     }

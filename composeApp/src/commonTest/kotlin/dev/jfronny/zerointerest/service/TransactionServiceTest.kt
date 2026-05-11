@@ -9,6 +9,7 @@ import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import dev.jfronny.zerointerest.readTestResource
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import org.koin.test.inject
 
@@ -29,7 +30,7 @@ class TransactionServiceTest : CoreServicesTest() {
             transactionService.sendTransaction(roomId, content)
             client.sync()
 
-            val summaryFlow = summaryService.getSummary(roomId)
+            val summaryFlow = summaryService.getSummary(roomId).filterNotNull()
             val summary = summaryFlow.first { it !is SummaryTrustService.Summary.Empty }
 
             summary::class shouldBe SummaryTrustService.Summary.Trusted::class

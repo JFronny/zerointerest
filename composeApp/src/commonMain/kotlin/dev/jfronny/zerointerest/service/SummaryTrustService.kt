@@ -34,7 +34,7 @@ class SummaryTrustService(
     private val client get() = clientProvider.get()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun getSummary(roomId: RoomId): Flow<Summary> {
+    fun getSummary(roomId: RoomId): Flow<Summary?> {
         return client.getSummaryStateFlow(roomId)
             .flatMapLatest {
                 flow {
@@ -43,6 +43,7 @@ class SummaryTrustService(
                         emit(Summary.Empty)
                         return@flow
                     }
+                    emit(null)
                     log.info { "Received summary event: $it" }
                     val trust = withTimeoutOrNull(20.seconds) {
                         checkTrusted(roomId, it.id, it.originTimestamp, it.content)

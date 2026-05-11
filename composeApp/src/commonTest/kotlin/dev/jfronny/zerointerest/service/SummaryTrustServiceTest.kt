@@ -10,6 +10,7 @@ import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import dev.jfronny.zerointerest.readTestResource
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.flow.filterNotNull
 import org.koin.test.inject
 
 class SummaryTrustServiceTest : CoreServicesTest() {
@@ -56,7 +57,7 @@ class SummaryTrustServiceTest : CoreServicesTest() {
 
             val trustStateS2 = summaryService.checkTrusted(roomId, s2Id)
             trustStateS2 shouldBe TrustState.REJECTED
-            val summary = summaryService.getSummary(roomId).getValue()!!
+            val summary = summaryService.getSummary(roomId).filterNotNull().getValue()
 
             require(summary is SummaryTrustService.Summary.Untrusted)
             summary.messageId shouldBe s2Id
