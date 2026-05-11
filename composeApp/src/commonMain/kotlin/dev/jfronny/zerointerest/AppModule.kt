@@ -10,7 +10,7 @@ import de.connect2x.trixnity.core.serialization.events.messageOf
 import de.connect2x.trixnity.core.serialization.events.stateOf
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
-import dev.jfronny.zerointerest.service.MatrixClientService
+import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.TransactionService
@@ -19,11 +19,13 @@ import dev.jfronny.zerointerest.db.Migration1_2
 import dev.jfronny.zerointerest.db.Migration2_3
 import dev.jfronny.zerointerest.db.Migration3_4
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
+import dev.jfronny.zerointerest.service.client.ZiClientProvider
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.sync.Mutex
 import org.koin.compose.currentKoinScope
 import org.koin.core.qualifier.Qualifier
 import org.koin.core.scope.Scope
+import org.koin.dsl.bind
 import org.koin.dsl.module
 
 const val SourceCodeUrl = "https://git.jfronny.dev/Johannes/zerointerest"
@@ -32,10 +34,11 @@ fun createAppModule() = module {
     single { getPlatform() }
     single { HttpClient(get<Platform>().getHttpClientEngine()) }
     single { createSsoLoginHandler() }
-    single { MatrixClientService(get(), get()) }
+    single { MatrixClientService(get(), get()) } bind ZiClientProvider::class
     single { SummaryTrustService(get(), get()) }
     single { TransactionService(get(), get()) }
     single { Settings(get<Platform>().createDataStore()) }
+    single { createSQLiteDriver() }
     single {
         get<Platform>()
             .zerointerestDatabaseBuilder()

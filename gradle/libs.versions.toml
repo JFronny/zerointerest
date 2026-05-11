@@ -1,4 +1,5 @@
 [versions]
+kotest = "6.1.11"
 agp = "9.2.1"
 android-buildTools = "36.1"
 android-compileSdk = "36"
@@ -10,8 +11,7 @@ androidx-browser = "1.10.0"
 androidx-core = "1.18.0"
 androidx-espresso = "3.7.0"
 androidx-lifecycle = "2.10.0"
-androidx-testExt = "1.3.0"
-composeHotReload = "1.1.0"
+composeHotReload = "1.1.1"
 coil = "3.4.0"
 composeMultiplatform = "1.11.0-beta03"
 copyWebpackPlugin = "14.0.0" # https://github.com/webpack-contrib/copy-webpack-plugin/releases
@@ -20,11 +20,10 @@ emojikt = "2.3.0"
 gradle-versions = "0.54.0"
 indexeddb = "0.12.0"
 jfcommons = "2.0.0"
-junit = "4.13.2"
 koin = "4.2.1"
 kotlin = "2.3.21"
-kotlin-logging = "8.0.01"
-kotlinx-coroutines = "1.10.2"
+kotlin-logging = "8.0.02"
+kotlinx-coroutines = "1.11.0"
 ksp = "2.3.7"
 ktor = "3.4.3"
 material3 = "1.11.0-alpha07"
@@ -35,10 +34,10 @@ sqlite = "2.7.0-alpha04"
 trixnity = "5.5.2"
 
 [libraries]
-kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
-junit = { module = "junit:junit", version.ref = "junit" }
-androidx-testExt-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-testExt" }
+kotest-framework-engine = { module = "io.kotest:kotest-framework-engine", version.ref = "kotest" }
+kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
+kotest-extensions-koin = { module = "io.kotest:kotest-extensions-koin", version.ref = "kotest" }
 
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
@@ -70,6 +69,7 @@ koin-android-compat = { module = "io.insert-koin:koin-android-compat", version.r
 koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
 koin-compose-viewmodel-navigation = { module = "io.insert-koin:koin-compose-viewmodel-navigation", version.ref = "koin" }
+koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin" }
 
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-java = { module = "io.ktor:ktor-client-java", version.ref = "ktor" }
@@ -108,3 +108,4 @@ kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+kotest = { id = "io.kotest", version.ref = "kotest" }

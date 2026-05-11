@@ -1,0 +1,16 @@
+digraph G {
+  node [shape=box];
+  "$1" [label="Tx $1\n@alice ->\n@bob:10\nTx1", style=filled, fillcolor=lightblue];
+  "$3" [label="Tx $3\n@bob ->\n@alice:5\nTx2", style=filled, fillcolor=lightblue];
+  "$0" [label="Summary $0\n", style=filled, fillcolor=lightgreen];
+  "$2" [label="Summary $2\n@alice: -10\n@bob: 10", style=filled, fillcolor=lightgreen];
+  "ind_$2_$0" [shape=point];
+  "$2" -> "ind_$2_$0" [color=green];
+  "ind_$2_$0" -> "$0" [color=green];
+  "ind_$2_$0" -> "$1" [color=blue];
+  "$4" [label="Summary $4\n@alice: -5\n@bob: 5", style=filled, fillcolor=lightgreen];
+  "ind_$4_$2" [shape=point];
+  "$4" -> "ind_$4_$2" [color=green];
+  "ind_$4_$2" -> "$2" [color=green];
+  "ind_$4_$2" -> "$3" [color=blue];
+}

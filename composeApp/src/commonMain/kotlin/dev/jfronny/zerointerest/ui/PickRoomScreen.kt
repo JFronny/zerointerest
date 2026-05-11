@@ -24,7 +24,7 @@ import de.connect2x.trixnity.client.store.Room
 import de.connect2x.trixnity.client.store.hasBeenReplaced
 import de.connect2x.trixnity.core.model.RoomId
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
-import dev.jfronny.zerointerest.service.MatrixClientService
+import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject

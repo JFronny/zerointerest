@@ -10,7 +10,7 @@ import coil3.fetch.SourceFetchResult
 import coil3.request.Options
 import de.connect2x.trixnity.client.MatrixClient
 import de.connect2x.trixnity.client.media
-import dev.jfronny.zerointerest.service.MatrixClientService
+import dev.jfronny.zerointerest.service.client.MatrixClientService
 import okio.Buffer
 
 class CoilMxcFetcher(

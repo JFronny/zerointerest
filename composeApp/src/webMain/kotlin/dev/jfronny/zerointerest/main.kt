@@ -34,7 +34,7 @@ fun main() {
     ComposeViewport {
         KoinApplication(configuration = koinConfiguration(declaration = {
             logger(KoinLogWrangler)
-            modules(createAppModule(), createExtraModule(), module {
+            modules(createAppModule(), module {
                 single { LoadingScreenExtras(
                     homeserver = params["homeserver"],
                     idpId = params["idpId"],

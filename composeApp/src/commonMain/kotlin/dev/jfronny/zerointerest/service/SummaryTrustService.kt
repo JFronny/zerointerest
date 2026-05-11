@@ -1,12 +1,9 @@
 package dev.jfronny.zerointerest.service
 
-import de.connect2x.trixnity.client.room
-import de.connect2x.trixnity.client.room.getState
-import de.connect2x.trixnity.client.room.getTimelineEventReactionAggregation
-import de.connect2x.trixnity.client.room.message.react
 import de.connect2x.trixnity.client.store.eventId
 import de.connect2x.trixnity.client.store.sender
-import de.connect2x.trixnity.clientserverapi.model.room.GetEvents
+import de.connect2x.trixnity.client.store.eventId
+import de.connect2x.trixnity.client.store.sender
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.events.ClientEvent.RoomEvent
@@ -14,16 +11,13 @@ import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.data.TrustState
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
+import dev.jfronny.zerointerest.service.client.ZiClientProvider
 import dev.jfronny.zerointerest.util.Timed
 import dev.jfronny.zerointerest.util.cacheSummary
-import dev.jfronny.zerointerest.util.computeMergedSummary
-import dev.jfronny.zerointerest.util.getSummaryEventWithTimeout
-import dev.jfronny.zerointerest.util.getTransactionEventWithTimeout
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.any
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -32,7 +26,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.seconds
 
 class SummaryTrustService(
-    private val clientService: MatrixClientService,
+    private val clientProvider: ZiClientProvider,
     private val database: ZeroInterestDatabase
 ) {
     companion object {
@@ -40,12 +34,11 @@ class SummaryTrustService(
         private val log = KotlinLogging.logger {}
     }
 
-    private val client get() = clientService.get()
+    private val client get() = clientProvider.get()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getSummary(roomId: RoomId): Flow<Summary> {
-        return client.room
-            .getState<ZeroInterestSummaryEvent>(roomId, ZeroInterestSummaryEvent.TYPE)
+        return client.getSummaryStateFlow(roomId)
             .flatMapLatest {
                 flow {
                     if (it !is RoomEvent.StateEvent) {
@@ -97,20 +90,13 @@ class SummaryTrustService(
         log.info { "Checking trust for summary event $messageId in room $roomId" }
 
         log.info { "1. If a rejection for the summary exists, the summary is always rejected." }
-        val reactions = client.room.getTimelineEventReactionAggregation(roomId, messageId).first().reactions[rejectionKey]
+        val reactions = client.getTimelineEventReactionAggregation(roomId, messageId).first()[rejectionKey]
         if (reactions?.isNotEmpty() ?: false) return reject(roomId, messageId, "rejection in timeline: ${reactions.first().eventId}", send = false)
 
         log.info { "2. Otherwise, if the summary event is the first summary event ever encountered in a room, it is trusted." }
         if (content.parents.isEmpty()) {
             log.info { "Get events before $messageId" }
-            val hasPrevious = client.room.getTimelineEvents(roomId, messageId, direction = GetEvents.Direction.BACKWARDS) {
-                maxSize = 1024 // trixnity doesn't easily allow us to filter just for ZeroInterestSummaryEvents, and this should be fine
-                fetchTimeout = 5.seconds
-                allowReplaceContent = false
-            }.any { timelineEventFlow ->
-                val event = timelineEventFlow.first()
-                event.eventId != messageId && event.content?.getOrNull() is ZeroInterestSummaryEvent
-            }
+            val hasPrevious = client.hasPreviousSummary(roomId, messageId)
             log.info { "Got events before $messageId" }
             if (!hasPrevious) return accept(roomId, messageId, content)
         }
@@ -184,9 +170,7 @@ class SummaryTrustService(
         log.info { "Rejecting $messageId. Reason: $reason" }
         database.markRejected(roomId, messageId)
         if (send) {
-            client.room.sendMessage(roomId) {
-                react(messageId, rejectionKey)
-            }
+            client.reactToEvent(roomId, messageId, rejectionKey)
         }
         return@withContext TrustState.REJECTED
     }
@@ -213,11 +197,11 @@ class SummaryTrustService(
         )
         if (override || isPropagation) {
             log.info { "Propagating trust of $messageId" }
-            val reactions = client.room.getTimelineEventReactionAggregation(roomId, messageId).first().reactions[rejectionKey]
+            val reactions = client.getTimelineEventReactionAggregation(roomId, messageId).first()[rejectionKey]
             if (reactions != null) {
                 for (event in reactions) {
                     if (event.sender == client.userId) {
-                        client.api.room.redactEvent(roomId, event.eventId, "Event became trusted")
+                        client.redactEvent(roomId, event.eventId, "Event became trusted")
                     }
                 }
             }

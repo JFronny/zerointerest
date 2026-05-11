@@ -1,3 +1,6 @@
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+
+import com.android.build.api.withAndroid
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import com.github.benmanes.gradle.versions.updates.resolutionstrategy.ComponentFilter
 import com.github.benmanes.gradle.versions.updates.resolutionstrategy.ComponentSelectionWithCurrent
@@ -79,14 +82,29 @@ kotlin {
         binaries.executable()
         useEsModules()
     }
-    
-    applyDefaultHierarchyTemplate()
+
+    applyHierarchyTemplate {
+        common {
+            group("nonJs") {
+                withJvm()
+                withAndroid()
+                group("apple") {
+                    group("ios") {
+                        withIos()
+                    }
+                }
+            }
+
+            group("web") {
+                withJs()
+                withWasmJs()
+            }
+        }
+    }
 
     sourceSets {
-        val nonJsMain by creating { dependsOn(commonMain.get()) }
-        jvmMain { dependsOn(nonJsMain) }
-        androidMain { dependsOn(nonJsMain) }
-        iosMain { dependsOn(nonJsMain) }
+        val nonJsMain = named("nonJsMain")
+        val nonJsTest = named("nonJsTest")
 
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -118,7 +136,11 @@ kotlin {
             implementation(libs.coil.svg)
         }
         commonTest.dependencies {
-            implementation(libs.kotlin.test)
+            implementation(libs.kotest.framework.engine)
+            implementation(libs.kotest.assertions.core)
+            implementation(libs.kotest.property)
+            implementation(libs.kotest.extensions.koin)
+            implementation(libs.koin.test)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
@@ -196,4 +218,8 @@ open class UpgradeToUnstableFilter : ComponentFilter {
 
 tasks.withType<DependencyUpdatesTask> {
     rejectVersionIf(UpgradeToUnstableFilter())
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }

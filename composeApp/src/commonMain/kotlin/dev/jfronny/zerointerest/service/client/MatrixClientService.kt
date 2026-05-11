@@ -1,4 +1,4 @@
-package dev.jfronny.zerointerest.service
+package dev.jfronny.zerointerest.service.client
 
 import de.connect2x.trixnity.client.CryptoDriverModule
 import de.connect2x.trixnity.client.MatrixClient
@@ -16,20 +16,26 @@ import de.connect2x.trixnity.clientserverapi.model.authentication.LoginType
 import dev.jfronny.zerointerest.Platform
 import dev.jfronny.zerointerest.SuspendLazy
 import dev.jfronny.zerointerest.createAppMatrixModule
+import dev.jfronny.zerointerest.service.SsoLoginHandler
 import dev.jfronny.zerointerest.ui.appName
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlin.collections.plus
 
 class MatrixClientService(
     private val platform: Platform,
     private val ssoLoginHandler: SsoLoginHandler
-) {
+) : ZiClientProvider {
     private val flow: MutableStateFlow<MatrixClient?> = MutableStateFlow(null)
     val client: StateFlow<MatrixClient?> = flow
 
-    fun get(): MatrixClient {
+    fun getMatrixClient(): MatrixClient {
         return flow.value ?: throw IllegalStateException("MatrixClient not initialized")
+    }
+
+    override fun get(): ZiClient {
+        return MatrixZiClient(getMatrixClient())
     }
 
     private val repositoriesModule = SuspendLazy { platform.getRepositoriesModule() }
@@ -103,7 +109,7 @@ class MatrixClientService(
      */
     suspend fun loginWithSso(homeserver: Url, idpId: String? = null, loginToken: String? = null) {
         close()
-        
+
         // Use loginWith to handle the SSO flow
         flow.value = MatrixClient.create(
             repositoriesModule = repositoriesModule.get(),

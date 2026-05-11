@@ -18,7 +18,7 @@ import de.connect2x.trixnity.client.verification.ActiveSasVerificationState
 import de.connect2x.trixnity.client.verification.ActiveVerificationState
 import de.connect2x.trixnity.core.model.events.m.key.verification.VerificationMethod
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
-import dev.jfronny.zerointerest.service.MatrixClientService
+import dev.jfronny.zerointerest.service.client.MatrixClientService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource

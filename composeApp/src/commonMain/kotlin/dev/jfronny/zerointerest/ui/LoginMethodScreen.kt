@@ -38,7 +38,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import de.connect2x.trixnity.clientserverapi.model.authentication.LoginType
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
-import dev.jfronny.zerointerest.service.MatrixClientService
+import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.ui.component.BackButton
 import io.github.oshai.kotlinlogging.KotlinLogging

@@ -1,30 +1,25 @@
 package dev.jfronny.zerointerest.service
 
-import de.connect2x.trixnity.client.room
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
-import dev.jfronny.zerointerest.util.getSummaryEventWithTimeout
-import dev.jfronny.zerointerest.util.computeMergedSummary
+import dev.jfronny.zerointerest.service.client.ZiClientProvider
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 
 private val log = KotlinLogging.logger {}
 
 class TransactionService(
-    private val clientService: MatrixClientService,
+    private val clientProvider: ZiClientProvider,
     private val database: ZeroInterestDatabase,
 ) {
-    private val client get() = clientService.get()
+    private val client get() = clientProvider.get()
 
     data class PreparedSummary(
         val roomId: RoomId,
@@ -64,7 +59,7 @@ class TransactionService(
                 balances = emptyMap(),
                 parents = emptyMap()
             )
-            val initialResponse = client.api.room.sendStateEvent(roomId, initialEvent, ZeroInterestSummaryEvent.TYPE).getOrThrow()
+            val initialResponse = client.sendStateEvent(roomId, initialEvent, ZeroInterestSummaryEvent.TYPE).getOrThrow()
             database.addTrustedSummary(roomId, initialResponse, initialEvent, isRoot = true)
 
             log.info { "Creating summary for first transactions $newTransactionIds in room $roomId" }
@@ -74,7 +69,7 @@ class TransactionService(
                 balances = balances,
                 parents = mapOf(initialResponse to newTransactionIds.toSet())
             )
-            val response = client.api.room.sendStateEvent(roomId, event, ZeroInterestSummaryEvent.TYPE).getOrThrow()
+            val response = client.sendStateEvent(roomId, event, ZeroInterestSummaryEvent.TYPE).getOrThrow()
             database.addTrustedSummary(roomId, response, event)
         } else {
             log.info { "Merging ${heads.size} heads for new transactions $newTransactionIds in room $roomId" }
@@ -82,7 +77,7 @@ class TransactionService(
             val event = client.computeMergedSummary(roomId, heads, newTransactionIds, contents)
             
             log.info { "Creating merged summary for new transactions $newTransactionIds in room $roomId" }
-            val response = client.api.room.sendStateEvent(roomId, event, ZeroInterestSummaryEvent.TYPE).getOrThrow()
+            val response = client.sendStateEvent(roomId, event, ZeroInterestSummaryEvent.TYPE).getOrThrow()
             database.addTrustedSummary(roomId, response, event)
         }
         log.info { "Summary creation for new transactions $newTransactionIds in room $roomId completed" }
@@ -98,21 +93,12 @@ class TransactionService(
 
         val txIds = contents.map { content ->
             try {
-                client.room.sendMessage(roomId) {
-                    content(content)
-                }
+                client.scheduleMessageEvent(roomId, content).getOrThrow()
             } catch (e: Exception) {
                 throw FailedSendMessageException(cause = e)
             }
         }.map { txId -> async {
-            val outbox = client.room.getOutbox(roomId, txId)
-                .filterNotNull()
-                .filter { it.eventId != null || it.sendError != null }
-                .firstOrNull()
-            if (outbox == null || outbox.sendError != null) {
-                throw FailedSendMessageException(outbox?.sendError?.toString() ?: "Outbox entry disappeared for tx $txId")
-            }
-            outbox.eventId!!
+            client.awaitScheduledMessageEvent(roomId, txId).getOrThrow()
         } }.awaitAll()
 
         createSummary(preparedSummary, txIds)

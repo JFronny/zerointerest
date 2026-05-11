@@ -25,7 +25,7 @@ import de.connect2x.trixnity.core.model.RoomId
 import dev.jfronny.zerointerest.Destination
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
-import dev.jfronny.zerointerest.service.MatrixClientService
+import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.ui.component.EmojiService
 import dev.jfronny.zerointerest.ui.component.VerificationDialog
@@ -158,7 +158,7 @@ private fun AppNavigation(
             }
         } else {
             CreateTransactionScreen(
-                client = service.get(),
+                client = service.getMatrixClient(),
                 roomId = route.roomId,
                 initialTemplate = initialTemplate,
                 onDone = { navHelper.popMainBackStack() },
@@ -175,7 +175,7 @@ private fun AppNavigation(
     ) {
         val route = it.toRoute<Destination.TransactionDetails>()
         TransactionDetailsScreen(
-            client = service.get(),
+            client = service.getMatrixClient(),
             roomId = route.roomId,
             transactionId = route.transactionId,
             onBack = { navHelper.popMainBackStack() }
@@ -184,7 +184,7 @@ private fun AppNavigation(
     composable<Destination.SettleScreen>(typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)) {
         val route = it.toRoute<Destination.SettleScreen>()
         SettleScreen(
-            client = service.get(),
+            client = service.getMatrixClient(),
             roomId = route.roomId,
             onBack = { navHelper.popMainBackStack() }
         )

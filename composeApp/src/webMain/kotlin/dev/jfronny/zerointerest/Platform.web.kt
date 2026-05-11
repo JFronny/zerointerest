@@ -56,11 +56,9 @@ class WebPlatform : Platform {
 actual fun Scope.getPlatform(): Platform = WebPlatform()
 
 @OptIn(ExperimentalWasmJsInterop::class)
-fun createExtraModule() = module {
-    single { WebWorkerSQLiteDriver(createSQLiteWorker().apply {
-        onerror = { e -> console.error("Error in SQL.js worker".toJsString(), e) }
-    }) } bind SQLiteDriver::class
-}
+actual fun createSQLiteDriver(): SQLiteDriver = WebWorkerSQLiteDriver(createSQLiteWorker().apply {
+    onerror = { e -> console.error("Error in SQL.js worker".toJsString(), e) }
+})
 
 expect fun WebWorkerSQLiteDriver(worker: Worker): WebWorkerSQLiteDriver
 
