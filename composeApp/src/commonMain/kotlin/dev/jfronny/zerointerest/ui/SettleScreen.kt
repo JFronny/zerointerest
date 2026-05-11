@@ -41,7 +41,7 @@ import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.SimpleFilledIconButton
 import dev.jfronny.zerointerest.ui.component.UserUI
 import dev.jfronny.zerointerest.ui.component.rememberTransactionLauncher
-import dev.jfronny.zerointerest.util.calculateSettlementTransactions
+import dev.jfronny.zerointerest.service.calculateSettlementTransactions
 import dev.jfronny.zerointerest.util.formatBalance
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.compose.resources.stringResource

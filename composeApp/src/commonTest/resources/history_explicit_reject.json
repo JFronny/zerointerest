@@ -1,0 +1,74 @@
+[
+    {
+        "type": "summary",
+        "sender": "@alice:example.com",
+        "roomId": "!test:example.com",
+        "event": {
+            "balances": {},
+            "parents": {}
+        }
+    },
+    {
+        "type": "transaction",
+        "sender": "@alice:example.com",
+        "roomId": "!test:example.com",
+        "event": {
+            "description": "Tx1",
+            "sender": "@alice:example.com",
+            "receivers": {
+                "@bob:example.com": 10
+            }
+        }
+    },
+    {
+        "type": "summary",
+        "sender": "@alice:example.com",
+        "roomId": "!test:example.com",
+        "event": {
+            "balances": {
+                "@alice:example.com": -10,
+                "@bob:example.com": 10
+            },
+            "parents": {
+                "$0": [
+                    "$1"
+                ]
+            }
+        }
+    },
+    {
+        "type": "transaction",
+        "sender": "@bob:example.com",
+        "roomId": "!test:example.com",
+        "event": {
+            "description": "Tx2",
+            "sender": "@bob:example.com",
+            "receivers": {
+                "@alice:example.com": 5
+            }
+        }
+    },
+    {
+        "type": "summary",
+        "sender": "@bob:example.com",
+        "roomId": "!test:example.com",
+        "event": {
+            "balances": {
+                "@alice:example.com": -5,
+                "@bob:example.com": 5
+            },
+            "parents": {
+                "$2": [
+                    "$3"
+                ]
+            }
+        }
+    },
+    {
+        "type": "reaction",
+        "sender": "@testuser:example.com",
+        "roomId": "!test:example.com",
+        "event": "$2",
+        "key": "\uD83D\uDC4E"
+    }
+]

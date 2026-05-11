@@ -7,6 +7,7 @@ import de.connect2x.trixnity.client.room.getTimelineEventReactionAggregation
 import de.connect2x.trixnity.client.room.message.react
 import de.connect2x.trixnity.client.store.TimelineEvent
 import de.connect2x.trixnity.client.store.eventId
+import de.connect2x.trixnity.client.store.originTimestamp
 import de.connect2x.trixnity.clientserverapi.model.room.GetEvents
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
@@ -17,9 +18,7 @@ import de.connect2x.trixnity.core.model.events.StateEventContent
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.util.Timed
-import dev.jfronny.zerointerest.util.computeMergedSummary
-import dev.jfronny.zerointerest.util.getSummaryEventWithTimeout
-import dev.jfronny.zerointerest.util.getTransactionEventWithTimeout
+import io.ktor.util.collections.ConcurrentMap
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.any
 import kotlinx.coroutines.flow.filter
@@ -27,23 +26,53 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.seconds
 
-class MatrixZiClient(private val client: MatrixClient) : ZiClient {
+class MatrixZiClient(
+    val client: MatrixClient,
+) : ZiClient {
     override val userId: UserId get() = client.userId
 
     override suspend fun getTransactionEventWithTimeout(
         roomId: RoomId,
         eventId: EventId
     ): Result<Timed<ZeroInterestTransactionEvent>>? {
-        return client.getTransactionEventWithTimeout(roomId, eventId)
+        return withTimeoutOrNull(6.seconds) {
+            val event = client.room.getTimelineEvent(roomId, eventId) {
+                fetchTimeout = 5.seconds
+                allowReplaceContent = false
+            }.filterNotNull().firstOrNull() ?: return@withTimeoutOrNull null
+            val content = event.content ?: return@withTimeoutOrNull null
+            content.map { content ->
+                Timed(event.originTimestamp, content as ZeroInterestTransactionEvent)
+            }
+        }
+    }
+
+    private val summaryEventCache: MutableMap<Pair<RoomId, EventId>, Timed<ZeroInterestSummaryEvent>> = ConcurrentMap()
+
+    fun cacheSummary(event: ClientEvent.RoomEvent.StateEvent<ZeroInterestSummaryEvent>) {
+        summaryEventCache[event.roomId to event.id] = Timed(event.originTimestamp, event.content)
     }
 
     override suspend fun getSummaryEventWithTimeout(
         roomId: RoomId,
         eventId: EventId
     ): Result<Timed<ZeroInterestSummaryEvent>>? {
-        return client.getSummaryEventWithTimeout(roomId, eventId)
+        summaryEventCache[roomId to eventId]?.let { return Result.success(it) }
+        return withTimeoutOrNull(6.seconds) {
+            val event = try {
+                client.api.room.getEvent(roomId, eventId)
+                    .getOrThrow() as ClientEvent.StateBaseEvent<*>
+            } catch (e: Exception) {
+                return@withTimeoutOrNull Result.failure(e)
+            }
+            val content = event.content as? ZeroInterestSummaryEvent ?: return@withTimeoutOrNull Result.failure(IllegalStateException("Event content is not a summary event"))
+            val timed = Timed(event.originTimestamp!!, content)
+            summaryEventCache[roomId to eventId] = timed
+            Result.success(timed)
+        }
     }
 
     override suspend fun sendStateEvent(
@@ -108,6 +137,10 @@ class MatrixZiClient(private val client: MatrixClient) : ZiClient {
     override fun getSummaryStateFlow(roomId: RoomId): Flow<ClientEvent.RoomEvent.StateEvent<ZeroInterestSummaryEvent>?> {
         return client.room.getState<ZeroInterestSummaryEvent>(roomId, ZeroInterestSummaryEvent.TYPE)
             .map { it as? ClientEvent.RoomEvent.StateEvent<ZeroInterestSummaryEvent> }
+            .map {
+                if (it != null) cacheSummary(it)
+                it
+            }
     }
 
     override fun getTimelineEventReactionAggregation(
@@ -126,14 +159,5 @@ class MatrixZiClient(private val client: MatrixClient) : ZiClient {
             val event = timelineEventFlow.first()
             event.eventId != messageId && event.content?.getOrNull() is ZeroInterestSummaryEvent
         }
-    }
-
-    override suspend fun computeMergedSummary(
-        roomId: RoomId,
-        heads: Map<EventId, ZeroInterestSummaryEvent>,
-        newTransactionIds: List<EventId>,
-        newTransactions: List<ZeroInterestTransactionEvent>
-    ): ZeroInterestSummaryEvent {
-        return client.computeMergedSummary(roomId, heads, newTransactionIds, newTransactions)
     }
 }

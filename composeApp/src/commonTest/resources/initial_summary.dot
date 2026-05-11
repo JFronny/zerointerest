@@ -1,6 +1,6 @@
 digraph G {
   node [shape=box];
-  "$0" [label="Tx $0\n@testuser0 ->\n@bob:100\nDinner", style=filled, fillcolor=lightblue];
+  "$0" [label="Tx $0\n@testuser ->\n@bob:100\nDinner", style=filled, fillcolor=lightblue];
   "$1" [label="Summary $1\n", style=filled, fillcolor=lightgreen];
   "$2" [label="Summary $2\n@alice: -100\n@bob: 100", style=filled, fillcolor=lightgreen];
   "ind_$2_$1" [shape=point];

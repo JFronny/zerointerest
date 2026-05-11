@@ -1,0 +1,39 @@
+[
+    {
+        "type": "summary",
+        "sender": "@alice:example.com",
+        "roomId": "!test:example.com",
+        "event": {
+            "balances": {},
+            "parents": {}
+        }
+    },
+    {
+        "type": "transaction",
+        "sender": "@alice:example.com",
+        "roomId": "!test:example.com",
+        "event": {
+            "description": "Tx1",
+            "sender": "@alice:example.com",
+            "receivers": {
+                "@bob:example.com": 10
+            }
+        }
+    },
+    {
+        "type": "summary",
+        "sender": "@alice:example.com",
+        "roomId": "!test:example.com",
+        "event": {
+            "balances": {
+                "@alice:example.com": -100,
+                "@bob:example.com": 100
+            },
+            "parents": {
+                "$0": [
+                    "$1"
+                ]
+            }
+        }
+    }
+]

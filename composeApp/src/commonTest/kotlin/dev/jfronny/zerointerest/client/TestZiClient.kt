@@ -193,22 +193,4 @@ class TestZiClient(
         val prevs = localEventHistory.toList().subList(0, idx)
         return prevs.any { it.first == roomId && it.second.content is ZeroInterestSummaryEvent }
     }
-
-    override suspend fun computeMergedSummary(
-        roomId: RoomId,
-        heads: Map<EventId, ZeroInterestSummaryEvent>,
-        newTransactionIds: List<EventId>,
-        newTransactions: List<ZeroInterestTransactionEvent>
-    ): ZeroInterestSummaryEvent {
-        // Minimal impl: just merge balances by adding transactions
-        val baseHead = heads.values.first()
-        val balances = baseHead.balances.toMutableMap()
-        for (tx in newTransactions) {
-            tx.apply(balances)
-        }
-        return ZeroInterestSummaryEvent(
-            balances = balances,
-            parents = heads.keys.associateWith { newTransactionIds.toSet() }
-        )
-    }
 }

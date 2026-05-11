@@ -30,13 +30,6 @@ interface ZiClient {
     fun getTimelineEventReactionAggregation(roomId: RoomId, eventId: EventId): Flow<Map<String, Set<TimelineEvent>>>
     
     suspend fun hasPreviousSummary(roomId: RoomId, messageId: EventId): Boolean
-    
-    suspend fun computeMergedSummary(
-        roomId: RoomId,
-        heads: Map<EventId, ZeroInterestSummaryEvent>,
-        newTransactionIds: List<EventId> = emptyList(),
-        newTransactions: List<ZeroInterestTransactionEvent> = emptyList()
-    ): ZeroInterestSummaryEvent
 }
 
 interface ZiClientProvider {

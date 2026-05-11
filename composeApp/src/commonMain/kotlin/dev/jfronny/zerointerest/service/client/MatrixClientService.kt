@@ -19,23 +19,26 @@ import dev.jfronny.zerointerest.createAppMatrixModule
 import dev.jfronny.zerointerest.service.SsoLoginHandler
 import dev.jfronny.zerointerest.ui.appName
 import io.ktor.http.Url
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlin.collections.plus
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 
 class MatrixClientService(
     private val platform: Platform,
     private val ssoLoginHandler: SsoLoginHandler
 ) : ZiClientProvider {
-    private val flow: MutableStateFlow<MatrixClient?> = MutableStateFlow(null)
-    val client: StateFlow<MatrixClient?> = flow
+    private val flow: MutableStateFlow<MatrixZiClient?> = MutableStateFlow(null)
+    val ziClient: StateFlow<MatrixZiClient?> = flow.asStateFlow()
+    val client: Flow<MatrixClient?> = flow.map { it?.client }
 
     fun getMatrixClient(): MatrixClient {
-        return flow.value ?: throw IllegalStateException("MatrixClient not initialized")
+        return flow.value?.client ?: throw IllegalStateException("MatrixClient not initialized")
     }
 
-    override fun get(): ZiClient {
-        return MatrixZiClient(getMatrixClient())
+    override fun get(): MatrixZiClient {
+        return flow.value ?: throw IllegalStateException("MatrixClient not initialized")
     }
 
     private val repositoriesModule = SuspendLazy { platform.getRepositoriesModule() }
@@ -63,7 +66,7 @@ class MatrixClientService(
             configuration = configuration,
         ).getOrThrow().apply {
             startSync()
-        }
+        }.let(::MatrixZiClient)
     }
 
     suspend fun loginWithPassword(homeserver: Url, username: String, password: String) {
@@ -82,7 +85,7 @@ class MatrixClientService(
             ).getOrThrow(),
         ).getOrThrow().apply {
             startSync()
-        }
+        }.let(::MatrixZiClient)
     }
 
     suspend fun loginWithToken(homeserver: Url, token: String) {
@@ -100,7 +103,7 @@ class MatrixClientService(
             ).getOrThrow(),
         ).getOrThrow().apply {
             startSync()
-        }
+        }.let(::MatrixZiClient)
     }
 
     /**
@@ -149,16 +152,16 @@ class MatrixClientService(
             }.getOrThrow(),
         ).getOrThrow().apply {
             startSync()
-        }
+        }.let(::MatrixZiClient)
     }
 
     suspend fun logout() {
-        flow.value?.logout()
+        flow.value?.client?.logout()
         close()
     }
 
     private suspend fun close() {
-        flow.value?.let {
+        flow.value?.client?.let {
             it.stopSync()
             it.closeSuspending()
         }

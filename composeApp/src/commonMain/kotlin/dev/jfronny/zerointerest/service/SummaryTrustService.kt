@@ -2,18 +2,15 @@ package dev.jfronny.zerointerest.service
 
 import de.connect2x.trixnity.client.store.eventId
 import de.connect2x.trixnity.client.store.sender
-import de.connect2x.trixnity.client.store.eventId
-import de.connect2x.trixnity.client.store.sender
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
-import de.connect2x.trixnity.core.model.events.ClientEvent.RoomEvent
+import dev.jfronny.zerointerest.data.TrustState
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
-import dev.jfronny.zerointerest.data.TrustState
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import dev.jfronny.zerointerest.service.client.ZiClientProvider
+import dev.jfronny.zerointerest.service.client.computeMergedSummary
 import dev.jfronny.zerointerest.util.Timed
-import dev.jfronny.zerointerest.util.cacheSummary
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
@@ -30,7 +27,7 @@ class SummaryTrustService(
     private val database: ZeroInterestDatabase
 ) {
     companion object {
-        private const val rejectionKey = "\uD83D\uDC4E"
+        const val rejectionKey = "\uD83D\uDC4E"
         private val log = KotlinLogging.logger {}
     }
 
@@ -41,12 +38,11 @@ class SummaryTrustService(
         return client.getSummaryStateFlow(roomId)
             .flatMapLatest {
                 flow {
-                    if (it !is RoomEvent.StateEvent) {
+                    if (it == null) {
                         log.info { "No summary found for room $roomId" }
                         emit(Summary.Empty)
                         return@flow
                     }
-                    cacheSummary(it)
                     log.info { "Received summary event: $it" }
                     val trust = withTimeoutOrNull(20.seconds) {
                         checkTrusted(roomId, it.id, it.originTimestamp, it.content)

@@ -1,0 +1,98 @@
+[
+    {
+        "type": "summary",
+        "sender": "@alice:example.com",
+        "roomId": "!test:example.com",
+        "event": {
+            "balances": {},
+            "parents": {}
+        }
+    },
+    {
+        "type": "transaction",
+        "sender": "@alice:example.com",
+        "roomId": "!test:example.com",
+        "event": {
+            "description": "Tx A",
+            "sender": "@alice:example.com",
+            "receivers": {
+                "@bob:example.com": 50
+            }
+        }
+    },
+    {
+        "type": "summary",
+        "sender": "@alice:example.com",
+        "roomId": "!test:example.com",
+        "event": {
+            "balances": {
+                "@alice:example.com": -50,
+                "@bob:example.com": 50
+            },
+            "parents": {
+                "$0": [
+                    "$1"
+                ]
+            }
+        }
+    },
+    {
+        "type": "transaction",
+        "sender": "@bob:example.com",
+        "roomId": "!test:example.com",
+        "event": {
+            "description": "Tx B",
+            "sender": "@bob:example.com",
+            "receivers": {
+                "@alice:example.com": 25
+            }
+        }
+    },
+    {
+        "type": "summary",
+        "sender": "@bob:example.com",
+        "roomId": "!test:example.com",
+        "event": {
+            "balances": {
+                "@bob:example.com": -25,
+                "@alice:example.com": 25
+            },
+            "parents": {
+                "$0": [
+                    "$3"
+                ]
+            }
+        }
+    },
+    {
+        "type": "transaction",
+        "sender": "@alice:example.com",
+        "roomId": "!test:example.com",
+        "event": {
+            "description": "Tx C",
+            "sender": "@alice:example.com",
+            "receivers": {
+                "@bob:example.com": 10
+            }
+        }
+    },
+    {
+        "type": "summary",
+        "sender": "@alice:example.com",
+        "roomId": "!test:example.com",
+        "event": {
+            "balances": {
+                "@alice:example.com": -60,
+                "@bob:example.com": 60
+            },
+            "parents": {
+                "$2": [
+                    "$5"
+                ],
+                "$4": [
+                    "$5"
+                ]
+            }
+        }
+    }
+]

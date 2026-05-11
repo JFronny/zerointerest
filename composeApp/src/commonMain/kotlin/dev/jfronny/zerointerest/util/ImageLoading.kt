@@ -37,8 +37,8 @@ class CoilMxcFetcher(
             imageLoader: ImageLoader
         ): Fetcher? {
             if (!data.scheme.equals("mxc", ignoreCase = true)) return null
-            val client = service.client.value ?: return null
-            return CoilMxcFetcher(client, data.toString(), options)
+            val client = service.ziClient.value ?: return null
+            return CoilMxcFetcher(client.client, data.toString(), options)
         }
     }
 }

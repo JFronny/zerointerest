@@ -2,6 +2,7 @@ package dev.jfronny.zerointerest.util
 
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.service.calculateSettlementTransactions
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 

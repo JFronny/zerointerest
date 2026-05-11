@@ -1,4 +1,4 @@
-package dev.jfronny.zerointerest.util
+package dev.jfronny.zerointerest.service
 
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
