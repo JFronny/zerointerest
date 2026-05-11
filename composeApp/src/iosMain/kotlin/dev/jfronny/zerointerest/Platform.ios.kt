@@ -54,9 +54,16 @@ actual fun Scope.getPlatform(): Platform = IOSPlatform()
 
 @Composable
 actual fun getPlatformTheme(darkTheme: Boolean): ColorScheme? = null
+private val shutdownHooks = mutableListOf<() -> Unit>()
+
+private fun onExit() {
+    shutdownHooks.forEach { it() }
+}
+
 @OptIn(ExperimentalForeignApi::class)
 actual fun addShutdownHook(block: () -> Unit) {
-    atexit(staticCFunction<Unit> {
-        block()
-    })
+    shutdownHooks.add(block)
+    if (shutdownHooks.size == 1) {
+        atexit(staticCFunction(::onExit))
+    }
 }

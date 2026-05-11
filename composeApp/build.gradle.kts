@@ -141,6 +141,7 @@ kotlin {
             implementation(libs.kotest.property)
             implementation(libs.kotest.extensions.koin)
             implementation(libs.koin.test)
+            implementation(libs.kotlin.test)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
