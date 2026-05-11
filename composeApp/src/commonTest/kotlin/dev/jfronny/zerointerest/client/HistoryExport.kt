@@ -37,9 +37,11 @@ suspend fun TestZiServer.exportHistory(): String = json.encodeToString(buildList
     }
 })
 
-suspend fun TestZiServer.restoreHistory(historyJson: String) {
-    nextUserId shouldBe 0
-    nextEventId shouldBe 0
+suspend fun TestZiServer.restoreHistory(historyJson: String, allowAppend: Boolean = false) {
+    if (!allowAppend) {
+        nextUserId shouldBe 0
+        nextEventId shouldBe 0
+    }
     val userClients = mutableMapOf<UserId, TestZiClient>()
     for (event in json.decodeFromString<List<TestZiEvent>>(historyJson)) {
         val client = userClients.getOrPut(event.sender) { TestZiClient(this, event.sender) }

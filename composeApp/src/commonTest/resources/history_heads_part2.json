@@ -1,0 +1,30 @@
+[
+  {
+    "type": "transaction",
+    "sender": "@bob:example.com",
+    "roomId": "!test:example.com",
+    "event": {
+      "description": "Tx B",
+      "sender": "@bob:example.com",
+      "receivers": {
+        "@alice:example.com": 25
+      }
+    }
+  },
+  {
+    "type": "summary",
+    "sender": "@bob:example.com",
+    "roomId": "!test:example.com",
+    "event": {
+      "balances": {
+        "@bob:example.com": -25,
+        "@alice:example.com": 25
+      },
+      "parents": {
+        "$0": [
+          "$3"
+        ]
+      }
+    }
+  }
+]
