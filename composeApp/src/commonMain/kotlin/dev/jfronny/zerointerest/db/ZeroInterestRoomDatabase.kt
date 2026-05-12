@@ -32,6 +32,8 @@ abstract class ZeroInterestRoomDatabase : RoomDatabase() {
     abstract fun transactionTemplateDao(): TransactionTemplateDao
 }
 
+// This is needed for Room which generates the actuals for us
+@Suppress("KotlinNoActualForExpect", "EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
 expect object ZeroInterestRoomDatabaseConstructor : RoomDatabaseConstructor<ZeroInterestRoomDatabase> {
     override fun initialize(): ZeroInterestRoomDatabase
 }

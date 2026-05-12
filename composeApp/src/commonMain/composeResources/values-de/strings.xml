@@ -93,4 +93,7 @@
     <string name="debug_hints_description">Zeige zusätzliche Informationen, die bei der Fehlersuche helfen können</string>
     <string name="debug_reset_trust">Vertrauen zurücksetzen</string>
     <string name="debug_new_summary">Neue Zusammenfassung</string>
+    <string name="monetary_unit">Währungseinheit</string>
+    <string name="monetary_unit_description">Währungssymbol für die Anzeige von Beträgen</string>
+    <string name="invalid_amount">Ungültiger Betrag</string>
 </resources>

@@ -4,16 +4,19 @@ import de.connect2x.trixnity.core.model.UserId
 import de.connect2x.trixnity.core.model.events.MessageEventContent
 import de.connect2x.trixnity.core.model.events.m.Mentions
 import de.connect2x.trixnity.core.model.events.m.RelatesTo
+import dev.jfronny.zerointerest.data.money.Money
+import dev.jfronny.zerointerest.data.money.sum
 import io.ktor.http.URLBuilder
 import io.ktor.http.appendPathSegments
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.getValue
 
 @Serializable
 data class ZeroInterestTransactionEvent(
     val description: String,
     val sender: UserId,
-    val receivers: Map<UserId, Long>,
+    val receivers: Map<UserId, Money>,
     @SerialName("m.relates_to") override val relatesTo: RelatesTo? = null,
 ) : MessageEventContent {
     val total by lazy { receivers.values.sum() }
@@ -39,10 +42,10 @@ data class ZeroInterestTransactionEvent(
 
     private fun UserId.mention() = """<a href="${URLBuilder("https://matrix.to/#").appendPathSegments(full, encodeSlash = true).build()}">${localpart}</a>"""
 
-    fun apply(balances: MutableMap<UserId, Long>) {
-        balances[sender] = (balances[sender] ?: 0L) - total
+    fun apply(balances: MutableMap<UserId, Money>) {
+        balances[sender] = (balances[sender] ?: Money.zero) - total
         for ((receiver, amount) in receivers) {
-            balances[receiver] = (balances[receiver] ?: 0L) + amount
+            balances[receiver] = (balances[receiver] ?: Money.zero) + amount
         }
     }
 

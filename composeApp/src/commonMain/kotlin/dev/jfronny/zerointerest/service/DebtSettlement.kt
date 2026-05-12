@@ -2,10 +2,11 @@ package dev.jfronny.zerointerest.service
 
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.money.Money
 
-fun calculateSettlementTransactions(balances: Map<UserId, Long>): List<ZeroInterestTransactionEvent> {
-    val debtors = balances.filterValues { it > 0 }.toList().sortedByDescending { it.second }.toMutableList()
-    val creditors = balances.filterValues { it < 0 }.toList().sortedBy { it.second }.toMutableList()
+fun calculateSettlementTransactions(balances: Map<UserId, Money>): List<ZeroInterestTransactionEvent> {
+    val debtors = balances.filterValues { it.amount > 0 }.toList().sortedByDescending { it.second }.toMutableList()
+    val creditors = balances.filterValues { it.amount < 0 }.toList().sortedBy { it.second }.toMutableList()
 
     val transactions = mutableListOf<ZeroInterestTransactionEvent>()
 
@@ -29,10 +30,10 @@ fun calculateSettlementTransactions(balances: Map<UserId, Long>): List<ZeroInter
         debtors[i] = debtor.copy(second = debtor.second - amount)
         creditors[j] = creditor.copy(second = creditor.second + amount)
 
-        if (debtors[i].second == 0L) {
+        if (debtors[i].second == Money.zero) {
             i++
         }
-        if (creditors[j].second == 0L) {
+        if (creditors[j].second == Money.zero) {
             j++
         }
     }

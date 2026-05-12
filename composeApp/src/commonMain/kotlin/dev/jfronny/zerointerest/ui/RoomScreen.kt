@@ -66,22 +66,38 @@ import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.Destination
-import dev.jfronny.zerointerest.composeapp.generated.resources.*
+import dev.jfronny.zerointerest.composeapp.generated.resources.Res
+import dev.jfronny.zerointerest.composeapp.generated.resources.add_transaction
+import dev.jfronny.zerointerest.composeapp.generated.resources.balances
+import dev.jfronny.zerointerest.composeapp.generated.resources.debug_new_summary
+import dev.jfronny.zerointerest.composeapp.generated.resources.debug_reset_trust
+import dev.jfronny.zerointerest.composeapp.generated.resources.latest_summary_not_trusted
+import dev.jfronny.zerointerest.composeapp.generated.resources.new_transaction
+import dev.jfronny.zerointerest.composeapp.generated.resources.no_balances_yet
+import dev.jfronny.zerointerest.composeapp.generated.resources.no_transactions_yet
+import dev.jfronny.zerointerest.composeapp.generated.resources.not_included_in_summary
+import dev.jfronny.zerointerest.composeapp.generated.resources.override
+import dev.jfronny.zerointerest.composeapp.generated.resources.payment
+import dev.jfronny.zerointerest.composeapp.generated.resources.room
+import dev.jfronny.zerointerest.composeapp.generated.resources.settle_up
+import dev.jfronny.zerointerest.composeapp.generated.resources.summary_is_merge
+import dev.jfronny.zerointerest.composeapp.generated.resources.transactions
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.money.MonetaryUnit
+import dev.jfronny.zerointerest.data.money.Money
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
-import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.TransactionService
+import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.component.PreviewUserUI
 import dev.jfronny.zerointerest.ui.component.UserUI
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import dev.jfronny.zerointerest.util.NavigationHelper
-import dev.jfronny.zerointerest.util.formatBalance
 import dev.jfronny.zerointerest.util.room
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -241,6 +257,7 @@ fun RoomScreen(
                 }
             }
         ) { padding ->
+            val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
             NavHost(
                 navController = roomNavHelper.room,
                 startDestination = Destination.Room.RoomDestination.Balance,
@@ -254,6 +271,7 @@ fun RoomScreen(
                             userUI = UserUI(client, roomId),
                             flipBalances = flipBalances,
                             debugHints = debugHints,
+                            monetaryUnit = monetaryUnit,
                             forceTrust = {
                                 scope.launch {
                                     trust.forceAccept(it)
@@ -271,7 +289,7 @@ fun RoomScreen(
                     }
                 }
                 composable<Destination.Room.RoomDestination.Transactions> {
-                    TransactionsTab(client, roomId, navHelper)
+                    TransactionsTab(client, roomId, navHelper, monetaryUnit)
                 }
             }
         }
@@ -284,15 +302,16 @@ private fun BalancesTabPreview() = AppTheme {
     BalancesTab(
         summary = SummaryTrustService.Summary.Trusted(ZeroInterestSummaryEvent(
             balances = mapOf(
-                UserId("@alice:example.org") to 4200,
-                UserId("@carol:example.org") to 0,
-                UserId("@bob:example.org") to -1550,
+                UserId("@alice:example.org") to Money(4200),
+                UserId("@carol:example.org") to Money.zero,
+                UserId("@bob:example.org") to Money(-1550),
             ),
             parents = emptyMap()
         ), isMerge = true),
         userUI = PreviewUserUI,
         flipBalances = true,
         debugHints = true,
+        monetaryUnit = MonetaryUnit.default,
         forceTrust = {},
     )
 }
@@ -303,6 +322,7 @@ private fun BalancesTab(
     userUI: UserUI,
     flipBalances: Boolean,
     debugHints: Boolean,
+    monetaryUnit: MonetaryUnit,
     forceTrust: (SummaryTrustService.Summary.Untrusted) -> Unit
 ) {
     when (summary) {
@@ -345,7 +365,7 @@ private fun BalancesTab(
                 }
                 items(uiBalances) { (balance, ui) ->
                     val color = when {
-                        balance > 0 -> MaterialTheme.colorScheme.error
+                        balance.amount > 0 -> MaterialTheme.colorScheme.error
                         else -> MaterialTheme.colorScheme.primary
                     }
                     Row(
@@ -357,7 +377,7 @@ private fun BalancesTab(
                         ui()
                         Spacer(modifier = Modifier.weight(1f))
                         Text(
-                            text = formatBalance(if (flipBalances) -balance else balance),
+                            text = (if (flipBalances) -balance else balance).format(monetaryUnit),
                             color = color
                         )
                     }
@@ -369,7 +389,12 @@ private fun BalancesTab(
 
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun TransactionsTab(client: MatrixClient, roomId: RoomId, navHelper: NavigationHelper) {
+private fun TransactionsTab(
+    client: MatrixClient,
+    roomId: RoomId,
+    navHelper: NavigationHelper,
+    monetaryUnit: MonetaryUnit,
+) {
     val roomService: RoomService = client.room
     val trust = koinInject<SummaryTrustService>()
 
@@ -513,6 +538,7 @@ private fun TransactionsTab(client: MatrixClient, roomId: RoomId, navHelper: Nav
                         transaction = transaction,
                         included = includedTransactions[eventId]?.isNotEmpty() ?: false,
                         userUI = userUI,
+                        monetaryUnit = monetaryUnit,
                         onClick = { navHelper.navigate(Destination.TransactionDetails(roomId, eventId)) }
                     )
                 }
@@ -553,6 +579,7 @@ private fun TransactionTabItem(
     transaction: ZeroInterestTransactionEvent,
     included: Boolean,
     userUI: UserUI,
+    monetaryUnit: MonetaryUnit,
     onClick: () -> Unit,
 ) {
     Row(
@@ -585,6 +612,6 @@ private fun TransactionTabItem(
             Text(text = component.name, style = MaterialTheme.typography.bodySmall)
         }
         Spacer(modifier = Modifier.weight(1f))
-        Text(text = formatBalance(transaction.total))
+        Text(text = transaction.total.format(monetaryUnit))
     }
 }

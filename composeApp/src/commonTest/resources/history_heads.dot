@@ -1,20 +1,20 @@
 digraph G {
   node [shape=box];
-  "$1" [label="Tx $1\n@alice ->\n@bob:50\nTx A", style=filled, fillcolor=lightblue];
-  "$3" [label="Tx $3\n@bob ->\n@alice:25\nTx B", style=filled, fillcolor=lightblue];
-  "$5" [label="Tx $5\n@testuser ->\n@bob:10\nTx C", style=filled, fillcolor=lightblue];
+  "$1" [label="Tx $1\n@alice ->\n@bob:0.50\nTx A", style=filled, fillcolor=lightblue];
+  "$3" [label="Tx $3\n@bob ->\n@alice:0.25\nTx B", style=filled, fillcolor=lightblue];
+  "$5" [label="Tx $5\n@testuser ->\n@bob:0.10\nTx C", style=filled, fillcolor=lightblue];
   "$0" [label="Summary $0\n", style=filled, fillcolor=lightgreen];
-  "$2" [label="Summary $2\n@alice: -50\n@bob: 50", style=filled, fillcolor=lightgreen];
+  "$2" [label="Summary $2\n@alice: 0.50\n@bob: 0.50", style=filled, fillcolor=lightgreen];
   "ind_$2_$0" [shape=point];
   "$2" -> "ind_$2_$0" [color=green];
   "ind_$2_$0" -> "$0" [color=green];
   "ind_$2_$0" -> "$1" [color=blue];
-  "$4" [label="Summary $4\n@bob: -25\n@alice: 25", style=filled, fillcolor=lightgreen];
+  "$4" [label="Summary $4\n@bob: 0.25\n@alice: 0.25", style=filled, fillcolor=lightgreen];
   "ind_$4_$0" [shape=point];
   "$4" -> "ind_$4_$0" [color=green];
   "ind_$4_$0" -> "$0" [color=green];
   "ind_$4_$0" -> "$3" [color=blue];
-  "$6" [label="Summary $6\n@alice: -35\n@bob: 35", style=filled, fillcolor=lightgreen];
+  "$6" [label="Summary $6\n@alice: 0.35\n@bob: 0.35", style=filled, fillcolor=lightgreen];
   "ind_$6_$2" [shape=point];
   "$6" -> "ind_$6_$2" [color=green];
   "ind_$6_$2" -> "$2" [color=green];

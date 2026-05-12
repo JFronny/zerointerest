@@ -35,6 +35,9 @@ import de.connect2x.trixnity.client.MatrixClient
 import de.connect2x.trixnity.core.model.RoomId
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.money.MonetaryUnit
+import dev.jfronny.zerointerest.data.money.sum
+import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.ui.component.BackButton
@@ -42,7 +45,6 @@ import dev.jfronny.zerointerest.ui.component.SimpleFilledIconButton
 import dev.jfronny.zerointerest.ui.component.UserUI
 import dev.jfronny.zerointerest.ui.component.rememberTransactionLauncher
 import dev.jfronny.zerointerest.service.calculateSettlementTransactions
-import dev.jfronny.zerointerest.util.formatBalance
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -58,6 +60,7 @@ fun SettleScreen(
 ) {
     val trustService = koinInject<SummaryTrustService>()
     val transactionService = koinInject<TransactionService>()
+    val settings = koinInject<Settings>()
     val userUI = UserUI(client, roomId)
 
     val summaryState by trustService.getSummary(roomId).collectAsState(null)
@@ -142,6 +145,7 @@ fun SettleScreen(
                     modifier = Modifier.align(Alignment.Center)
                 )
             } else {
+                val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(remainingTransactions, key = { it.hashCode() }) { transaction ->
                         val senderUI = userUI.component(transaction.sender)
@@ -157,7 +161,7 @@ fun SettleScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text("${senderUI.name} → ${receiverUI?.name ?: "Unknown"}")
-                                    Text(formatBalance(amount), style = MaterialTheme.typography.titleMedium)
+                                    Text(amount.format(monetaryUnit), style = MaterialTheme.typography.titleMedium)
                                 }
                                 SimpleFilledIconButton(Icons.Default.Check, stringResource(Res.string.accept), onClick = {
                                     accept(transaction)

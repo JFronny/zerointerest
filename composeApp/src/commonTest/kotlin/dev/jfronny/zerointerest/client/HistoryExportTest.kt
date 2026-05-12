@@ -6,6 +6,7 @@ import de.connect2x.trixnity.core.model.UserId
 import de.connect2x.trixnity.core.model.events.ClientEvent
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.money.toMoney
 import dev.jfronny.zerointerest.readTestResource
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -30,14 +31,14 @@ class HistoryExportTest : FunSpec() {
             server.stateEvents[roomId to ZeroInterestSummaryEvent.TYPE] = initialClientEvent
 
             // 2. Tx 1
-            val tx1Event = ZeroInterestTransactionEvent("Tx1", alice, mapOf(bob to 10L))
+            val tx1Event = ZeroInterestTransactionEvent("Tx1", alice, mapOf(bob to 10L.toMoney()))
             val tx1Id = EventId("\$1")
             server.eventHistory.add(roomId to ClientEvent.RoomEvent.MessageEvent(
                 content = tx1Event, id = tx1Id, sender = alice, roomId = roomId, originTimestamp = 1
             ))
 
             // 3. Summary 1 (untrusted at first due to db being fresh, but wait, it's not first so it needs checks)
-            val s1Event = ZeroInterestSummaryEvent(mapOf(alice to -10L, bob to 10L), mapOf(initialId to setOf(tx1Id)))
+            val s1Event = ZeroInterestSummaryEvent(mapOf(alice to (-10L).toMoney(), bob to 10L.toMoney()), mapOf(initialId to setOf(tx1Id)))
             val s1Id = EventId("\$2")
             val s1ClientEvent = ClientEvent.RoomEvent.StateEvent(
                 content = s1Event, id = s1Id, sender = alice, roomId = roomId, originTimestamp = 2, stateKey = ZeroInterestSummaryEvent.TYPE
@@ -46,14 +47,14 @@ class HistoryExportTest : FunSpec() {
             server.stateEvents[roomId to ZeroInterestSummaryEvent.TYPE] = s1ClientEvent
 
             // 4. Tx 2
-            val tx2Event = ZeroInterestTransactionEvent("Tx2", bob, mapOf(alice to 5L))
+            val tx2Event = ZeroInterestTransactionEvent("Tx2", bob, mapOf(alice to 5L.toMoney()))
             val tx2Id = EventId("\$3")
             server.eventHistory.add(roomId to ClientEvent.RoomEvent.MessageEvent(
                 content = tx2Event, id = tx2Id, sender = bob, roomId = roomId, originTimestamp = 3
             ))
 
             // 5. Summary 2
-            val s2Event = ZeroInterestSummaryEvent(mapOf(alice to -5L, bob to 5L), mapOf(s1Id to setOf(tx2Id)))
+            val s2Event = ZeroInterestSummaryEvent(mapOf(alice to (-5L).toMoney(), bob to 5L.toMoney()), mapOf(s1Id to setOf(tx2Id)))
             val s2Id = EventId("\$4")
             val s2ClientEvent = ClientEvent.RoomEvent.StateEvent(
                 content = s2Event, id = s2Id, sender = bob, roomId = roomId, originTimestamp = 4, stateKey = ZeroInterestSummaryEvent.TYPE

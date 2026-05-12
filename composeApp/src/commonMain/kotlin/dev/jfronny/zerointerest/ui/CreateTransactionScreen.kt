@@ -37,6 +37,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import de.connect2x.trixnity.client.MatrixClient
@@ -46,22 +47,26 @@ import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.money.MonetaryUnit
+import dev.jfronny.zerointerest.data.money.Money
+import dev.jfronny.zerointerest.data.money.MoneyParser
+import dev.jfronny.zerointerest.data.money.sum
+import dev.jfronny.zerointerest.data.money.sumOfM
+import dev.jfronny.zerointerest.data.money.toMoney
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
+import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.component.rememberTransactionLauncher
-import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
-import kotlin.math.roundToLong
+import kotlin.collections.forEachIndexed
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
-
-private val log = KotlinLogging.logger {}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalUuidApi::class,
     ExperimentalMaterial3ExpressiveApi::class
@@ -78,6 +83,9 @@ fun CreateTransactionScreen(
     val scope = rememberCoroutineScope()
     val transactionService = koinInject<TransactionService>()
     val database = koinInject<ZeroInterestDatabase>()
+    val settings = koinInject<Settings>()
+    val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
+
     val users by remember(client) { client.user.getAll(roomId) }.collectAsState(emptyMap())
     val userIds = remember(users) { users.keys.toList() }
 
@@ -87,46 +95,51 @@ fun CreateTransactionScreen(
     var selectedRecipients by remember { mutableStateOf(initialTemplate?.receivers?.keys ?: setOf()) }
     var recipientAmountInputs by remember { mutableStateOf(mapOf<UserId, String>()) }
     var isTemplateModified by remember { mutableStateOf(false) }
+    var submitAttempted by remember { mutableStateOf(false) }
+    var totalAmountBlurred by remember { mutableStateOf(false) }
+    var recipientAmountsBlurred by remember { mutableStateOf(setOf<UserId>()) }
     val launcher = rememberTransactionLauncher(client)
 
-    fun parseAmount(s: String): Long? {
-        return s.toDoubleOrNull()?.let { (it * 100).roundToLong() }
+    fun parseAmount(s: String): Result<Money> = try {
+        Result.success(Money.parse(s, monetaryUnit))
+    } catch (e: MoneyParser.ParseException) {
+        Result.failure(e)
     }
 
-    fun formatAmount(l: Long): String {
-        val d = l / 100.0
-        return d.toString()
-    }
+    val totalAmountValid = parseAmount(totalAmountStr).isSuccess
+    val totalAmountError = !totalAmountValid && (submitAttempted || totalAmountBlurred)
+    val allValid = totalAmountValid && selectedRecipients.all { parseAmount(recipientAmountInputs[it] ?: "").isSuccess }
+
     // Initialize amounts if template provided
     LaunchedEffect(initialTemplate) {
         if (initialTemplate != null) {
             val total = initialTemplate.receivers.values.sum()
-            totalAmountStr = formatAmount(total)
-            recipientAmountInputs = initialTemplate.receivers.mapValues { formatAmount(it.value) }
+            totalAmountStr = total.toString()
+            recipientAmountInputs = initialTemplate.receivers.mapValues { it.value.toString() }
         }
     }
 
     fun checkForModifications() {
         if (initialTemplate == null) return
-        val currentRecipients = recipientAmountInputs.mapValues { parseAmount(it.value) ?: 0L }
+        val currentRecipients = recipientAmountInputs.mapValues { parseAmount(it.value).getOrDefault(Money.zero) }
         isTemplateModified = description != initialTemplate.description ||
                 sender != initialTemplate.sender ||
                 currentRecipients != initialTemplate.receivers
     }
 
-    fun distribute(total: Long, recipients: Set<UserId>) {
+    fun distribute(total: Money, recipients: Set<UserId>) {
         if (recipients.isEmpty()) {
             recipientAmountInputs = emptyMap()
             return
         }
         val count = recipients.size
-        val base = total / count
-        val remainder = total % count
+        val base = total.amount / count
+        val remainder = total.amount % count
 
         val newInputs = mutableMapOf<UserId, String>()
         recipients.forEachIndexed { index, userId ->
             val amount = base + if (index < remainder) 1 else 0
-            newInputs[userId] = formatAmount(amount)
+            newInputs[userId] = amount.toMoney().toString()
         }
         recipientAmountInputs = newInputs
         checkForModifications()
@@ -134,7 +147,7 @@ fun CreateTransactionScreen(
 
     fun onTotalChanged(newTotalStr: String) {
         totalAmountStr = newTotalStr
-        val total = parseAmount(newTotalStr)
+        val total = parseAmount(newTotalStr).getOrNull()
         if (total != null) {
             distribute(total, selectedRecipients)
         }
@@ -143,7 +156,7 @@ fun CreateTransactionScreen(
 
     fun onRecipientsChanged(newRecipients: Set<UserId>) {
         selectedRecipients = newRecipients
-        val total = parseAmount(totalAmountStr)
+        val total = parseAmount(totalAmountStr).getOrNull()
         if (total != null) {
             distribute(total, newRecipients)
         } else {
@@ -159,8 +172,8 @@ fun CreateTransactionScreen(
         newInputs[userId] = newAmountStr
         recipientAmountInputs = newInputs
 
-        val total = newInputs.values.sumOf { parseAmount(it) ?: 0L }
-        totalAmountStr = formatAmount(total)
+        val total = newInputs.values.sumOfM { parseAmount(it).getOrDefault(Money.zero) }
+        totalAmountStr = total.format(monetaryUnit)
         checkForModifications()
     }
     
@@ -190,18 +203,18 @@ fun CreateTransactionScreen(
                                 }
                             )
                         } else {
-                            val total = parseAmount(totalAmountStr) ?: 0L
-                            val recipientAmounts = recipientAmountInputs.mapValues { parseAmount(it.value) ?: 0L }
+                            val total = parseAmount(totalAmountStr).getOrDefault(Money.zero)
+                            val recipientAmounts = recipientAmountInputs.mapValues { parseAmount(it.value).getOrDefault(Money.zero) }
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.save_as_template)) },
-                                enabled = recipientAmounts.isNotEmpty() && total > 0,
+                                enabled = recipientAmounts.isNotEmpty() && total.amount > 0,
                                 onClick = {
                                     scope.launch {
                                         // local copy, just to be extra sure
                                         val total = total
                                         val recipientAmounts = recipientAmounts
 
-                                        if (recipientAmounts.isNotEmpty() && total > 0) {
+                                        if (recipientAmounts.isNotEmpty() && total.amount > 0) {
                                             val template = TransactionTemplate(
                                                 id = Uuid.random().toString(),
                                                 description = description,
@@ -225,12 +238,15 @@ fun CreateTransactionScreen(
 
         floatingActionButton = {
             FloatingActionButton(onClick = {
+                submitAttempted = true
+                if (!allValid) return@FloatingActionButton
+
                 val content = ZeroInterestTransactionEvent(
                     description = description.ifBlank { ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION },
                     sender = sender,
                     receivers = recipientAmountInputs
-                        .mapValues { parseAmount(it.value) ?: 0L }
-                        .filter { it.value > 0L }
+                        .mapValues { parseAmount(it.value).getOrDefault(Money.zero) }
+                        .filter { it.value.amount > 0L }
                 )
 
                 if (content.receivers.isNotEmpty()) {
@@ -305,10 +321,17 @@ fun CreateTransactionScreen(
             item {
                 OutlinedTextField(
                     value = totalAmountStr,
-                    onValueChange = { onTotalChanged(it) },
+                    onValueChange = {
+                        onTotalChanged(it)
+                        totalAmountBlurred = false
+                    },
                     label = { Text(stringResource(Res.string.total_amount)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth()
+                    isError = totalAmountError,
+                    supportingText = if (totalAmountError) { { Text(stringResource(Res.string.invalid_amount)) } } else null,
+                    modifier = Modifier.fillMaxWidth().onFocusChanged { 
+                        if (!it.isFocused) totalAmountBlurred = true
+                    }
                 )
             }
 
@@ -339,12 +362,22 @@ fun CreateTransactionScreen(
 
                 if (isSelected) {
                     val amountStr = recipientAmountInputs[userId] ?: ""
+                    val isError = !parseAmount(amountStr).isSuccess && (submitAttempted || userId in recipientAmountsBlurred)
                     OutlinedTextField(
                         value = amountStr,
-                        onValueChange = { onIndividualAmountChanged(userId, it) },
+                        onValueChange = {
+                            onIndividualAmountChanged(userId, it)
+                            recipientAmountsBlurred = recipientAmountsBlurred - userId
+                        },
                         label = { Text(stringResource(Res.string.amount)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.fillMaxWidth().padding(start = 48.dp)
+                        isError = isError,
+                        supportingText = if (isError) { { Text(stringResource(Res.string.invalid_amount)) } } else null,
+                        modifier = Modifier.fillMaxWidth().padding(start = 48.dp).onFocusChanged {
+                            if (!it.isFocused) {
+                                recipientAmountsBlurred = recipientAmountsBlurred + userId
+                            }
+                        }
                     )
                 }
             }

@@ -5,6 +5,7 @@ import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.money.Money
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import dev.jfronny.zerointerest.service.client.ZiClientProvider
 import dev.jfronny.zerointerest.service.client.computeMergedSummary
@@ -64,7 +65,7 @@ class TransactionService(
             database.addTrustedSummary(roomId, initialResponse, initialEvent, isRoot = true)
 
             log.info { "Creating summary for first transactions $newTransactionIds in room $roomId" }
-            val balances = mutableMapOf<UserId, Long>()
+            val balances = mutableMapOf<UserId, Money>()
             contents.forEach { it.apply(balances) }
             val event = ZeroInterestSummaryEvent(
                 balances = balances,

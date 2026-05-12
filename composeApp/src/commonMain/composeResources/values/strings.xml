@@ -93,4 +93,7 @@
     <string name="debug_hints_description">Show debug hints in the UI</string>
     <string name="debug_reset_trust">Reset Trust</string>
     <string name="debug_new_summary">New Summary</string>
+    <string name="monetary_unit">Monetary Unit</string>
+    <string name="monetary_unit_description">Currency symbol used for displaying amounts</string>
+    <string name="invalid_amount">Invalid amount</string>
 </resources>

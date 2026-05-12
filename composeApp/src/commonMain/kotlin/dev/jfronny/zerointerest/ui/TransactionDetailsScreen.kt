@@ -35,10 +35,11 @@ import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.money.MonetaryUnit
+import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.UserUI
-import dev.jfronny.zerointerest.util.formatBalance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import org.jetbrains.compose.resources.stringResource
@@ -73,6 +74,8 @@ fun TransactionDetailsScreen(
     }
     val included by includedFlow.collectAsState(emptyMap())
     val userUI = UserUI(client, roomId)
+    val settings = koinInject<Settings>()
+    val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
 
     Scaffold(
         topBar = {
@@ -151,7 +154,7 @@ fun TransactionDetailsScreen(
 
                 item {
                     Text(stringResource(Res.string.total_amount), style = MaterialTheme.typography.labelMedium)
-                    Text(formatBalance(transaction.total), style = MaterialTheme.typography.bodyLarge)
+                    Text(transaction.total.format(monetaryUnit), style = MaterialTheme.typography.bodyLarge)
                 }
 
                 item {
@@ -165,7 +168,7 @@ fun TransactionDetailsScreen(
                     ) {
                         userUI(userId)
                         Spacer(Modifier.weight(1f))
-                        Text(formatBalance(amount))
+                        Text(amount.format(monetaryUnit))
                     }
                 }
             }

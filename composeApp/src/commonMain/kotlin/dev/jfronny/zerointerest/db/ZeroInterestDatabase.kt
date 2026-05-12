@@ -7,6 +7,7 @@ import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.data.TrustState
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
+import dev.jfronny.zerointerest.data.money.Money
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -82,7 +83,7 @@ class ZeroInterestDatabase(val db: ZeroInterestRoomDatabase) {
                     id = entity.id,
                     description = entity.description,
                     sender = UserId(entity.sender),
-                    receivers = entity.receivers
+                    receivers = entity.receivers.mapValues { Money(it.value) }
                 )
             }
         }
@@ -95,7 +96,7 @@ class ZeroInterestDatabase(val db: ZeroInterestRoomDatabase) {
                 id = template.id,
                 description = template.description,
                 sender = template.sender.full,
-                receivers = template.receivers
+                receivers = template.receivers.mapValues { it.value.amount }
             )
         )
     }

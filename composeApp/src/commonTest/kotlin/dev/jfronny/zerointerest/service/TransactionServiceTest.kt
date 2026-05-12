@@ -6,6 +6,7 @@ import dev.jfronny.zerointerest.client.TestZiServer
 import dev.jfronny.zerointerest.client.restoreHistory
 import dev.jfronny.zerointerest.client.toGraphviz
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.money.toMoney
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import dev.jfronny.zerointerest.readTestResource
 import io.kotest.matchers.shouldBe
@@ -24,7 +25,7 @@ class TransactionServiceTest : CoreServicesTest() {
             val content = ZeroInterestTransactionEvent(
                 description = "Dinner",
                 sender = UserId("@alice:example.com"),
-                receivers = mapOf(UserId("@bob:example.com") to 100L)
+                receivers = mapOf(UserId("@bob:example.com") to 100L.toMoney())
             )
 
             transactionService.sendTransaction(roomId, content)
@@ -52,7 +53,7 @@ class TransactionServiceTest : CoreServicesTest() {
             summaryFlow.first { it is SummaryTrustService.Summary.Trusted }
 
             // Create one more transaction on top of the restored history
-            transactionService.sendTransaction(roomId, ZeroInterestTransactionEvent("Tx 3", alice, mapOf(bob to 5L)))
+            transactionService.sendTransaction(roomId, ZeroInterestTransactionEvent("Tx 3", alice, mapOf(bob to 5L.toMoney())))
             client.sync()
 
             val updatedSummary = summaryFlow.first {
@@ -60,8 +61,8 @@ class TransactionServiceTest : CoreServicesTest() {
                         it.event.parents.keys.first().full == $$"$4" // Should refer to the last summary from starter history
             } as SummaryTrustService.Summary.Trusted
 
-            updatedSummary.event.balances[alice] shouldBe -10L
-            updatedSummary.event.balances[bob] shouldBe 10L
+            updatedSummary.event.balances[alice] shouldBe (-10L).toMoney()
+            updatedSummary.event.balances[bob] shouldBe 10L.toMoney()
         }
 
         test("TransactionService merges multiple heads correctly") {
@@ -88,7 +89,7 @@ class TransactionServiceTest : CoreServicesTest() {
             db.getHeadsFlow(roomId).first { it.size == 2 }
 
             // Sending a transaction merges the heads
-            transactionService.sendTransaction(roomId, ZeroInterestTransactionEvent("Tx C", alice, mapOf(bob to 10L)))
+            transactionService.sendTransaction(roomId, ZeroInterestTransactionEvent("Tx C", alice, mapOf(bob to 10L.toMoney())))
             client.sync()
 
             server.toGraphviz() shouldBe readTestResource("history_heads.dot")
