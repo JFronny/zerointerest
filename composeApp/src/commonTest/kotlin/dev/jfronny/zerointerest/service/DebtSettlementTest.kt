@@ -1,11 +1,10 @@
-package dev.jfronny.zerointerest.util
+package dev.jfronny.zerointerest.service
 
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.data.money.sum
 import dev.jfronny.zerointerest.data.money.sumOfM
 import dev.jfronny.zerointerest.data.money.toMoney
-import dev.jfronny.zerointerest.service.calculateSettlementTransactions
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 

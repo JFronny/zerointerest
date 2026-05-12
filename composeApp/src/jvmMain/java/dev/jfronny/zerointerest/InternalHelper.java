@@ -1,4 +1,4 @@
-package dev.jfronnz.zerointerest;
+package dev.jfronny.zerointerest;
 
 import androidx.compose.ui.platform.DesktopUriHandler;
 import androidx.compose.ui.platform.UriHandler;

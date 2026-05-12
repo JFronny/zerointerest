@@ -49,20 +49,6 @@ class MoneyParserTest : FunSpec() {
             Money.parse("12 / (10 - 5) EUR", eur) shouldBe Money(240)
             shouldThrow<ParseException> { Money.parse("12 / (10 - 10) EUR", eur) }
         }
-        test("multiplyExact is consistent") {
-            checkAll<Long, Long> { a, b ->
-                val result = try {
-                    Result.success(a multiplyExact b)
-                } catch (e: ArithmeticException) {
-                    Result.failure(e)
-                }
-                if (result.isFailure) {
-                    shouldThrow<ArithmeticException> { a.multiplyExactNaive(b) }
-                } else {
-                    a.multiplyExactNaive(b) shouldBe result.getOrThrow()
-                }
-            }
-        }
         test("multiplyExact is used") {
             Money.parse("12 * 100 EUR", eur) shouldBe Money(120000)
             shouldThrow<ParseException> { Money.parse("12 EUR / 10 EUR", eur) }

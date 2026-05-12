@@ -1,7 +1,7 @@
 package dev.jfronny.zerointerest.service
 
 import com.sun.net.httpserver.HttpServer
-import dev.jfronnz.zerointerest.InternalHelper
+import dev.jfronny.zerointerest.InternalHelper
 import io.ktor.http.Url
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.koin.core.scope.Scope
