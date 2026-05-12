@@ -95,6 +95,7 @@
     <string name="debug_new_summary">New Summary</string>
     <string name="monetary_unit">Monetary Unit</string>
     <string name="monetary_unit_description">Currency symbol used for displaying amounts</string>
+    <string name="monetary_unit_warning">zerointerest assumes that all users in a room are using the same unit</string>
     <string name="invalid_amount">Invalid amount</string>
     <string name="select_all">Select All</string>
     <string name="deselect">Deselect</string>

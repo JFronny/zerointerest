@@ -97,7 +97,7 @@ class MoneyParser(
                     if (term.consumedUnit) throw error("Cannot multiply by monetary amount")
                     val amount = if (consumedUnit!!.key == targetUnit) term.amount
                     else (term.amount * consumedUnit!!.value).toLong()
-                    term.copy(amount = amount, consumedUnit = true)
+                    term.copy(amount = amount, consumedUnit = true, usedMath = term.usedMath || consumedUnit!!.key != targetUnit)
                 }
                 else -> return term
             }

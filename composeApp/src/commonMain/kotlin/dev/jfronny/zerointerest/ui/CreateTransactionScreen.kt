@@ -60,6 +60,7 @@ import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.service.getActive
+import dev.jfronny.zerointerest.service.getExchangeRates
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.component.SimpleFilledIconButton
@@ -103,13 +104,16 @@ fun CreateTransactionScreen(
     var recipientAmountsBlurred by remember { mutableStateOf(setOf<UserId>()) }
     val launcher = rememberTransactionLauncher(client)
 
-    fun parseAmount(s: String): Result<Money> = try {
-        Result.success(Money.parse(s, monetaryUnit))
+    fun parseAmount(s: String): Result<MoneyParser.Result> = try {
+        Result.success(MoneyParser.parse(s, monetaryUnit, getExchangeRates(monetaryUnit)))
     } catch (e: MoneyParser.ParseException) {
         Result.failure(e)
     }
 
-    val totalAmountValid = parseAmount(totalAmountStr).isSuccess
+    val (totalAmountValid, hint) = parseAmount(totalAmountStr).fold(
+        onFailure = { false to null },
+        onSuccess = { true to if (it.usedMath) it.toMoney() else null }
+    )
     val totalAmountError = !totalAmountValid && (submitAttempted || totalAmountBlurred)
     val allValid = totalAmountValid && selectedRecipients.all { parseAmount(recipientAmountInputs[it] ?: "").isSuccess }
 
@@ -124,7 +128,7 @@ fun CreateTransactionScreen(
 
     fun checkForModifications() {
         if (initialTemplate == null) return
-        val currentRecipients = recipientAmountInputs.mapValues { parseAmount(it.value).getOrDefault(Money.zero) }
+        val currentRecipients = recipientAmountInputs.mapValues { parseAmount(it.value).map(MoneyParser.Result::toMoney).getOrDefault(Money.zero) }
         isTemplateModified = description != initialTemplate.description ||
                 sender != initialTemplate.sender ||
                 currentRecipients != initialTemplate.receivers
@@ -150,7 +154,7 @@ fun CreateTransactionScreen(
 
     fun onTotalChanged(newTotalStr: String) {
         totalAmountStr = newTotalStr
-        val total = parseAmount(newTotalStr).getOrNull()
+        val total = parseAmount(newTotalStr).map(MoneyParser.Result::toMoney).getOrNull()
         if (total != null) {
             distribute(total, selectedRecipients)
         }
@@ -159,7 +163,7 @@ fun CreateTransactionScreen(
 
     fun onRecipientsChanged(newRecipients: Set<UserId>) {
         selectedRecipients = newRecipients
-        val total = parseAmount(totalAmountStr).getOrNull()
+        val total = parseAmount(totalAmountStr).map(MoneyParser.Result::toMoney).getOrNull()
         if (total != null) {
             distribute(total, newRecipients)
         } else {
@@ -175,7 +179,7 @@ fun CreateTransactionScreen(
         newInputs[userId] = newAmountStr
         recipientAmountInputs = newInputs
 
-        val total = newInputs.values.sumOfM { parseAmount(it).getOrDefault(Money.zero) }
+        val total = newInputs.values.sumOfM { parseAmount(it).map(MoneyParser.Result::toMoney).getOrDefault(Money.zero) }
         totalAmountStr = total.format(monetaryUnit)
         checkForModifications()
     }
@@ -206,8 +210,8 @@ fun CreateTransactionScreen(
                                 }
                             )
                         } else {
-                            val total = parseAmount(totalAmountStr).getOrDefault(Money.zero)
-                            val recipientAmounts = recipientAmountInputs.mapValues { parseAmount(it.value).getOrDefault(Money.zero) }
+                            val total = parseAmount(totalAmountStr).map(MoneyParser.Result::toMoney).getOrDefault(Money.zero)
+                            val recipientAmounts = recipientAmountInputs.mapValues { parseAmount(it.value).map(MoneyParser.Result::toMoney).getOrDefault(Money.zero) }
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.save_as_template)) },
                                 enabled = recipientAmounts.isNotEmpty() && total.amount > 0,
@@ -248,7 +252,7 @@ fun CreateTransactionScreen(
                     description = description.ifBlank { ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION },
                     sender = sender,
                     receivers = recipientAmountInputs
-                        .mapValues { parseAmount(it.value).getOrDefault(Money.zero) }
+                        .mapValues { parseAmount(it.value).map(MoneyParser.Result::toMoney).getOrDefault(Money.zero) }
                         .filter { it.value.amount > 0L }
                 )
 
@@ -333,6 +337,12 @@ fun CreateTransactionScreen(
                         if (!it.isFocused) totalAmountBlurred = true
                     }
                 )
+            }
+
+            item {
+                if (hint != null) {
+                    Text(hint.format(monetaryUnit), style = MaterialTheme.typography.bodySmall)
+                }
             }
 
             item {

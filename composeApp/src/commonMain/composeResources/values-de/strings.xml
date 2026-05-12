@@ -95,6 +95,7 @@
     <string name="debug_new_summary">Neue Zusammenfassung</string>
     <string name="monetary_unit">Währungseinheit</string>
     <string name="monetary_unit_description">Währungssymbol für die Anzeige von Beträgen</string>
+    <string name="monetary_unit_warning">zerointerest geht davon aus, dass alle Nutzer in einem Raum die gleiche Währung nutzen</string>
     <string name="invalid_amount">Ungültiger Betrag</string>
     <string name="select_all">Alle Auswählen</string>
     <string name="deselect">Abwählen</string>
