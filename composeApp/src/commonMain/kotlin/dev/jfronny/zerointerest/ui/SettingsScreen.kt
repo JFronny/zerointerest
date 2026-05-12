@@ -95,6 +95,23 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit) {
                 }
             )
 
+            val requestFullKeyboard by settings.requestFullKeyboard.collectAsState(initial = false)
+            ListItem(
+                headlineContent = { Text(stringResource(Res.string.request_full_keyboard)) },
+                supportingContent = { Text(stringResource(Res.string.request_full_keyboard_description)) },
+                trailingContent = {
+                    Switch(
+                        checked = requestFullKeyboard,
+                        onCheckedChange = {
+                            scope.launch { settings.setRequestFullKeyboard(it) }
+                        }
+                    )
+                },
+                modifier = Modifier.clickable {
+                    scope.launch { settings.setRequestFullKeyboard(!requestFullKeyboard) }
+                }
+            )
+
             val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
             var showMonetaryUnitDialog by remember { mutableStateOf(false) }
 

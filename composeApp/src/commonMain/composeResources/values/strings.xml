@@ -99,4 +99,6 @@
     <string name="invalid_amount">Invalid amount</string>
     <string name="select_all">Select All</string>
     <string name="deselect">Deselect</string>
+    <string name="request_full_keyboard">Request full keyboard</string>
+    <string name="request_full_keyboard_description">Request a full text keyboard everywhere (even for numbers)</string>
 </resources>

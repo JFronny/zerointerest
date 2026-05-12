@@ -89,6 +89,7 @@ fun CreateTransactionScreen(
     val database = koinInject<ZeroInterestDatabase>()
     val settings = koinInject<Settings>()
     val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
+    val requestFullKeyboard by settings.requestFullKeyboard.collectAsState(initial = false)
 
     val users by remember(client) { client.user.getActive(roomId, trustService) }.collectAsState(emptyMap())
     val userIds = remember(users) { users.keys.toList() }
@@ -330,7 +331,7 @@ fun CreateTransactionScreen(
                         totalAmountBlurred = false
                     },
                     label = { Text(stringResource(Res.string.total_amount)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(keyboardType = if (requestFullKeyboard) KeyboardType.Unspecified else KeyboardType.Decimal),
                     isError = totalAmountError,
                     supportingText = if (totalAmountError) { { Text(stringResource(Res.string.invalid_amount)) } } else null,
                     modifier = Modifier.fillMaxWidth().onFocusChanged { 
@@ -390,7 +391,7 @@ fun CreateTransactionScreen(
                             recipientAmountsBlurred = recipientAmountsBlurred - userId
                         },
                         label = { Text(stringResource(Res.string.amount)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        keyboardOptions = KeyboardOptions(keyboardType = if (requestFullKeyboard) KeyboardType.Unspecified else KeyboardType.Decimal),
                         isError = isError,
                         supportingText = if (isError) { { Text(stringResource(Res.string.invalid_amount)) } } else null,
                         modifier = Modifier.fillMaxWidth().padding(start = 48.dp).onFocusChanged {

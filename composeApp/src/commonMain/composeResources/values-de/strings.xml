@@ -99,4 +99,6 @@
     <string name="invalid_amount">Ungültiger Betrag</string>
     <string name="select_all">Alle Auswählen</string>
     <string name="deselect">Abwählen</string>
+    <string name="request_full_keyboard">Vollständige Tastatur anfordern</string>
+    <string name="request_full_keyboard_description">Überall eine vollständige Texttastatur anfordern (auch für Zahlen)</string>
 </resources>

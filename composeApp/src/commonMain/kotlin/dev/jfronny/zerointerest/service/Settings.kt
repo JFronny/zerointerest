@@ -15,10 +15,12 @@ class Settings(private val store: DataStore<Preferences>) {
     private val flipBalancesKey = booleanPreferencesKey("flipBalances")
     private val debugHintsKey = booleanPreferencesKey("debugHints")
     private val monetaryUnitKey = stringPreferencesKey("monetaryUnit")
+    private val requestFullKeyboardKey = booleanPreferencesKey("requestFullKeyboard")
 
     val flipBalances = store.data.map { it[flipBalancesKey] ?: true }
     val debugHints = store.data.map { it[debugHintsKey] ?: false }
     val monetaryUnit = store.data.map { it[monetaryUnitKey]?.let(::MonetaryUnit) ?: MonetaryUnit.default }
+    val requestFullKeyboard = store.data.map { it[requestFullKeyboardKey] ?: false }
 
     suspend fun setFlipBalances(flip: Boolean) {
         store.updateData {
@@ -32,6 +34,14 @@ class Settings(private val store: DataStore<Preferences>) {
         store.updateData {
             it.toMutablePreferences().apply {
                 set(debugHintsKey, enabled)
+            }
+        }
+    }
+
+    suspend fun setRequestFullKeyboard(enabled: Boolean) {
+        store.updateData {
+            it.toMutablePreferences().apply {
+                set(requestFullKeyboardKey, enabled)
             }
         }
     }
