@@ -55,7 +55,9 @@ import dev.jfronny.zerointerest.data.money.sumOfM
 import dev.jfronny.zerointerest.data.money.toMoney
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import dev.jfronny.zerointerest.service.Settings
+import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.TransactionService
+import dev.jfronny.zerointerest.service.getActive
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.component.rememberTransactionLauncher
@@ -81,12 +83,13 @@ fun CreateTransactionScreen(
     openSettings: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val trustService = koinInject<SummaryTrustService>()
     val transactionService = koinInject<TransactionService>()
     val database = koinInject<ZeroInterestDatabase>()
     val settings = koinInject<Settings>()
     val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
 
-    val users by remember(client) { client.user.getAll(roomId) }.collectAsState(emptyMap())
+    val users by remember(client) { client.user.getActive(roomId, trustService) }.collectAsState(emptyMap())
     val userIds = remember(users) { users.keys.toList() }
 
     var description by remember { mutableStateOf(initialTemplate?.description ?: "") }
@@ -286,12 +289,10 @@ fun CreateTransactionScreen(
                     onExpandedChange = { expanded = it },
                 ) {
                     run {
-                        val flow = remember(sender, users) { users[sender]?.map { it?.name } ?: flowOf(null) }
-                        val senderName by flow.collectAsState(null)
                         OutlinedTextField(
                             modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
                             readOnly = true,
-                            value = senderName ?: sender.full,
+                            value = users[sender]?.name ?: sender.full,
                             onValueChange = {},
                             label = { Text(stringResource(Res.string.lender)) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
@@ -304,8 +305,7 @@ fun CreateTransactionScreen(
                         for ((userId, user) in users) {
                             DropdownMenuItem(
                                 text = { Box {
-                                    val name by user.map { it?.name }.collectAsState(null)
-                                    Text(name ?: userId.full)
+                                    Text(user?.name ?: userId.full)
                                 } },
                                 onClick = {
                                     sender = userId
@@ -341,8 +341,6 @@ fun CreateTransactionScreen(
 
             items(userIds) { userId ->
                 val isSelected = userId in selectedRecipients
-                val name by (users[userId]?.map { it?.name } ?: flowOf(null)).collectAsState(null)
-
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable {
@@ -357,7 +355,7 @@ fun CreateTransactionScreen(
                             onRecipientsChanged(newSet)
                         }
                     )
-                    Text(name ?: userId.full)
+                    Text(users[userId]?.name ?: userId.full)
                 }
 
                 if (isSelected) {
