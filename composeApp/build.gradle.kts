@@ -200,14 +200,19 @@ compose.desktop {
         mainClass = "dev.jfronny.zerointerest.MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.AppImage)
-            packageName = "dev.jfronny.zerointerest"
+            packageName = "zerointerest"
             packageVersion = computedVersionName.substringBefore('+')
+            description = "Simple money lending"
+            vendor = "JFronny"
+
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.AppImage)
             modules("java.net.http", "jdk.unsupported")
             jvmArgs("--enable-native-access=ALL-UNNAMED")
 
             windows {
                 iconFile = rootProject.file("icon.ico")
+                perUserInstall = true
+                console = false
             }
             linux {
                 packageVersion = computedVersionName
@@ -239,7 +244,7 @@ afterEvaluate {
     val packageTasks = tasks.withType(AbstractJPackageTask::class)
     val appDirSrc = project.file("appimage")
 
-    fun configureAppImage(type: String) {
+    fun configurePackageTasks(type: String) {
         packageTasks.findByName("package${type}AppImage")?.let {
             val files = it.outputs.files.files
             require(files.size == 1) { "Expected exactly one file, got ${files.size}" }
@@ -257,7 +262,7 @@ afterEvaluate {
                 exclude { it.path.contains("/legal/") }
                 doLast {
                     appDir.get().asFile.let {
-                        it.resolve("lib/dev.jfronny.zerointerest.png").copyTo(it.resolve("zerointerest.png"), overwrite = true)
+                        it.resolve("lib/zerointerest.png").copyTo(it.resolve("zerointerest.png"), overwrite = true)
                     }
                 }
             }
@@ -274,10 +279,21 @@ afterEvaluate {
                 outputs.file(finalOutput)
             }
         }
+
+        packageTasks.findByName("package${type}Msi")?.let {
+            val appName = it.packageName.get()
+
+            val moveMsi = tasks.register("move${type}Msi", Copy::class) {
+                dependsOn(it)
+                from(it.outputs.files.files.first())
+                into(layout.buildDirectory.dir("msi"))
+                rename { "$appName.msi" }
+            }
+        }
     }
 
-    configureAppImage("")
-    configureAppImage("Release")
+    configurePackageTasks("")
+    configurePackageTasks("Release")
 }
 
 open class UpgradeToUnstableFilter : ComponentFilter {

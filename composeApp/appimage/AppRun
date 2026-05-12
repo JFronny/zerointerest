@@ -14,7 +14,7 @@ fi
 DESKTOP_DIR="$HOME/.local/share/applications"
 mkdir -p "$DESKTOP_DIR"
 APPIMAGE_PATH="${APPIMAGE:-$SELF}"
-sed "s|Exec=bin/dev.jfronny.zerointerest|Exec=$APPIMAGE_PATH|" "$HERE/zerointerest.desktop" > "$DESKTOP_DIR/dev-jfronny-zerointerest-MainKt.desktop"
+sed "s|Exec=bin/zerointerest|Exec=$APPIMAGE_PATH|" "$HERE/zerointerest.desktop" > "$DESKTOP_DIR/dev-jfronny-zerointerest-MainKt.desktop"
 update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
 cd "$HERE"
-exec bin/dev.jfronny.zerointerest "$@"
+exec bin/zerointerest "$@"
