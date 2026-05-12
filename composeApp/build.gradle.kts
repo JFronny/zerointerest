@@ -287,7 +287,7 @@ afterEvaluate {
                 dependsOn(it)
                 from(it.outputs.files.files.first())
                 into(layout.buildDirectory.dir("msi"))
-                rename { "$appName.msi" }
+                rename { "$appName-x86_64.msi" }
             }
         }
     }
