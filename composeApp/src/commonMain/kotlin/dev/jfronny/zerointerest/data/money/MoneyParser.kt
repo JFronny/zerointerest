@@ -129,7 +129,7 @@ class MoneyParser(
             1
         }
         while (current < input.length && input[current].isDigit()) current++
-        if (current < input.length && (input[current] == '.' || input[current] == ',')) {
+        val value = if (current < input.length && (input[current] == '.' || input[current] == ',')) {
             val left = input.substring(start, current)
             current++
             start = current
@@ -137,13 +137,20 @@ class MoneyParser(
                 || !input[current++].isDigit())
                 throw error("Expected two digits after decimal point")
             val right = input.substring(start, current)
-            return Result(sign * (left + right).toLong(), consumedUnit = false, usedMath = false)
-        }
-        val part = input.substring(start, current)
-        val value = try {
-            sign * part.toLong() multiplyExact 100
-        } catch (_: ArithmeticException) {
-            throw error("Overflow")
+            try {
+                sign * (left + right).toLong()
+            } catch (_: NumberFormatException) {
+                throw error("Invalid number")
+            }
+        } else {
+            val part = input.substring(start, current)
+            try {
+                sign * part.toLong() multiplyExact 100
+            } catch (_: ArithmeticException) {
+                throw error("Overflow")
+            } catch (_: NumberFormatException) {
+                throw error("Invalid number")
+            }
         }
         return Result(value, consumedUnit = false, usedMath = false)
     }

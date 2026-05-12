@@ -1,12 +1,9 @@
 package dev.jfronny.zerointerest.data.money
 
 import dev.jfronny.zerointerest.data.money.MoneyParser.ParseException
-import dev.jfronny.zerointerest.util.multiplyExact
-import dev.jfronny.zerointerest.util.multiplyExactNaive
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.property.checkAll
 
 class MoneyParserTest : FunSpec() {
     init {
@@ -29,6 +26,8 @@ class MoneyParserTest : FunSpec() {
             shouldThrow<ParseException> { Money.parse("100 EUR", MonetaryUnit("USD")) }
             shouldThrow<ParseException> { Money.parse("100.5", eur) }
             shouldThrow<ParseException> { Money.parse("100.500", eur) }
+            shouldThrow<ParseException> { Money.parse("${Long.MAX_VALUE}", eur) }
+            shouldThrow<ParseException> { Money.parse("${Long.MAX_VALUE}.50", eur) }
         }
         test("handles whitespace") {
             Money.parse("100 EUR ", eur) shouldBe Money(10000)
