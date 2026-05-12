@@ -43,7 +43,7 @@ jobs:
           echo $KEYSTORE_FILE | base64 -d > zerointerest.keystore.jks
           ./gradlew clean jvmTest pages -Pandroid.injected.signing.store.file=$(pwd)/zerointerest.keystore.jks -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD -Pandroid.injected.signing.key.alias=$KEY_ALIAS -Pandroid.injected.signing.key.password=$KEY_PASSWORD
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: 'pages'
       - name: Deploy to GitHub Pages
