@@ -96,4 +96,6 @@
     <string name="monetary_unit">Monetary Unit</string>
     <string name="monetary_unit_description">Currency symbol used for displaying amounts</string>
     <string name="invalid_amount">Invalid amount</string>
+    <string name="select_all">Select All</string>
+    <string name="deselect">Deselect</string>
 </resources>

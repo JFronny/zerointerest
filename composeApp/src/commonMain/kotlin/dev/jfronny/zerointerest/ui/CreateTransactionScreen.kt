@@ -12,6 +12,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Deselect
+import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -60,13 +62,11 @@ import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.service.getActive
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
+import dev.jfronny.zerointerest.ui.component.SimpleFilledIconButton
 import dev.jfronny.zerointerest.ui.component.rememberTransactionLauncher
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
-import kotlin.collections.forEachIndexed
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -336,7 +336,19 @@ fun CreateTransactionScreen(
             }
 
             item {
-                Text(stringResource(Res.string.recipients), style = MaterialTheme.typography.titleMedium)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(Res.string.recipients), style = MaterialTheme.typography.titleMedium)
+                    if (selectedRecipients.isNotEmpty()) {
+                        SimpleFilledIconButton(Icons.Default.Deselect, stringResource(Res.string.deselect), onClick = {
+                            onRecipientsChanged(emptySet())
+                        })
+                    } else {
+                        SimpleFilledIconButton(Icons.Default.SelectAll, stringResource(Res.string.select_all), onClick = {
+                            val newSet = selectedRecipients + userIds
+                            onRecipientsChanged(newSet)
+                        })
+                    }
+                }
             }
 
             items(userIds) { userId ->
