@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=zerointerest
+Comment=zerointerest - Simple money lending
+Exec=bin/dev.jfronny.zerointerest %u
+Icon=zerointerest
+Terminal=false
+Categories=Audio;AudioVideo;
+StartupWMClass=dev-jfronny-zerointerest-MainKt

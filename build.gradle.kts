@@ -12,8 +12,8 @@ plugins {
 }
 
 val versionMajor = 1
-val versionMinor = 0
-val versionPatch = 1
+val versionMinor = 1
+val versionPatch = 0
 val versionBuild = System.getenv("CI_PIPELINE_IID")?.toInt() ?: 0
 
 val computedVersionName by extra {
@@ -45,6 +45,7 @@ val computedVersionCode by extra {
 tasks {
     val pages by registering(Copy::class) {
         from(project(":composeApp").tasks["jsBrowserDistribution"])
+        from(project(":composeApp").tasks["buildReleaseAppImage"])
         from(project(":androidApp").tasks["packageRelease"]) {
             rename { if (it.endsWith(".apk") && it.contains("-universal-")) "android.apk" else it }
             exclude { !it.name.endsWith(".apk") && it.name != "output-metadata.json" }

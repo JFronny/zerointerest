@@ -1,0 +1,20 @@
+#!/bin/sh
+SELF=$(readlink -f "$0")
+HERE=${SELF%/*}
+# Install icon to XDG icon directories for desktop integration
+HERE_ICON="$HERE/zerointerest.png"
+ICON_DIR="$HOME/.local/share/icons/hicolor/256x256/apps"
+INSTALLED_ICON="$ICON_DIR/zerointerest.png"
+if [ ! -f "$INSTALLED_ICON" ] || [ "$HERE_ICON" -nt "$INSTALLED_ICON" ]; then
+mkdir -p "$ICON_DIR"
+cp "$HERE_ICON" "$INSTALLED_ICON"
+gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" 2>/dev/null || true
+fi
+# Install .desktop file with WM_CLASS name so GNOME/KDE can match window to icon
+DESKTOP_DIR="$HOME/.local/share/applications"
+mkdir -p "$DESKTOP_DIR"
+APPIMAGE_PATH="${APPIMAGE:-$SELF}"
+sed "s|Exec=bin/dev.jfronny.zerointerest|Exec=$APPIMAGE_PATH|" "$HERE/zerointerest.desktop" > "$DESKTOP_DIR/dev-jfronny-zerointerest-MainKt.desktop"
+update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
+cd "$HERE"
+exec bin/dev.jfronny.zerointerest "$@"

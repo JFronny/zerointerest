@@ -1,0 +1,1 @@
+-keep class de.connect2x.trixnity.vodozemac.** { *; }

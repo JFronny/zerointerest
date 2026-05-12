@@ -1,2 +1,1 @@
--keep class de.connect2x.trixnity.vodozemac.** { *; }
 -keep class dev.jfronny.zerointerest.AndroidServiceProvider { *; }
