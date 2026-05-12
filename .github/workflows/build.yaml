@@ -30,6 +30,8 @@ jobs:
           build-scan-terms-of-use-agree: "yes"
           validate-wrappers: true
 #      - uses: valeriangalliat/action-sshd-cloudflared@f231ff81b1a41b9dc7c3aab65e4a1b08d952f068
+      - name: Install libfuse2
+        run: sudo apt install libfuse2
       - name: Build and test with Gradle
         env:
           KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
@@ -68,8 +70,7 @@ jobs:
       - name: Build and test with Gradle
         env:
           CI_PIPELINE_IID: ${{ github.run_number }}
-        run: |
-          .\gradlew.bat clean packageReleaseMsi
+        run: .\gradlew.bat clean packageReleaseMsi
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
