@@ -13,7 +13,9 @@ value class MonetaryUnit(val code: String) {
     init {
         require(code.trim() == code)
         require(code.isNotBlank())
-        require(code.none { it.isDigit() || it == '.' || it == ',' || it in MoneyParser.symbols })
+        val first = code.first()
+        require(first != '.' && first != ',') { "Currency code must not start with a decimal point or comma: $code" }
+        require(code.none { it.isDigit() || it in MoneyParser.symbols }) { "Invalid currency code: $code" }
     }
 
     override fun toString(): String = code

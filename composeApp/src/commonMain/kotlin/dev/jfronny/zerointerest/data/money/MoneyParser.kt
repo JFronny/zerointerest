@@ -179,7 +179,7 @@ class MoneyParser(
     }
 
     companion object {
-        val symbols = setOf('+', '*', '/', '(', ')', ',', '.')
+        val symbols = setOf('+', '*', '/', '(', ')') // See also ConvertExchangeRatesTask.bannedSymbols
         fun parse(input: String, unit: MonetaryUnit) = MoneyParser(input, unit).parse()
         fun parse(input: String, targetUnit: MonetaryUnit, exchangeRates: Map<MonetaryUnit, Double>) =
             MoneyParser(input, targetUnit, exchangeRates).parse()

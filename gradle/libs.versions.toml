@@ -24,7 +24,9 @@ jfcommons = "2.0.0"
 koin = "4.2.1"
 kotlin = "2.3.21"
 kotlin-logging = "8.0.02"
+kotlinpoet = "2.3.0"
 kotlinx-coroutines = "1.11.0"
+kotlinx-serialization = "1.11.0"
 ksp = "2.3.7"
 ktor = "3.4.3"
 material3 = "1.11.0-alpha07"
@@ -40,6 +42,7 @@ kotest-framework-engine = { module = "io.kotest:kotest-framework-engine", versio
 kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
 kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
 kotest-extensions-koin = { module = "io.kotest:kotest-extensions-koin", version.ref = "kotest" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
@@ -56,6 +59,7 @@ androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.r
 androidx-sqlite-web =  { module = "androidx.sqlite:sqlite-web", version.ref = "sqlite" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 
 trixnity-client = { module = "de.connect2x.trixnity:trixnity-client", version.ref = "trixnity" }
 trixnity-client-repository-room = { module = "de.connect2x.trixnity:trixnity-client-repository-room", version.ref = "trixnity" }
@@ -72,7 +76,6 @@ koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
 koin-compose-viewmodel-navigation = { module = "io.insert-koin:koin-compose-viewmodel-navigation", version.ref = "koin" }
 koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin" }
-kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-java = { module = "io.ktor:ktor-client-java", version.ref = "ktor" }
@@ -99,6 +102,9 @@ compose-material3AdaptiveNavigationSuite = { module = "org.jetbrains.compose.mat
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-emojikt = { module = "org.kodein.emoji:emoji-kt", version.ref = "emojikt" }
 
+kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
+gradleVersions = { module = "com.github.ben-manes.versions:com.github.ben-manes.versions.gradle.plugin", version.ref = "gradle-versions" }
+
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
@@ -106,7 +112,6 @@ androidx-room = { id = "androidx.room3", version.ref = "room" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 composeHotReload = { id = "org.jetbrains.compose.hot-reload", version.ref = "composeHotReload" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
-gradleVersions = { id = "com.github.ben-manes.versions", version.ref = "gradle-versions" }
 kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

@@ -1,11 +1,10 @@
 @file:OptIn(ExperimentalKotlinGradlePluginApi::class)
 
 import com.android.build.api.withAndroid
-import com.android.utils.forEach
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
-import com.github.benmanes.gradle.versions.updates.resolutionstrategy.ComponentFilter
-import com.github.benmanes.gradle.versions.updates.resolutionstrategy.ComponentSelectionWithCurrent
 import de.undercouch.gradle.tasks.download.Download
+import dev.jfronny.zerointerest.ConvertExchangeRatesTask
+import dev.jfronny.zerointerest.UpgradeToUnstableFilter
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
@@ -13,8 +12,6 @@ import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.InternalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmRun
-import org.w3c.dom.Element
-import javax.xml.parsers.DocumentBuilderFactory
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -25,7 +22,7 @@ plugins {
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
-    alias(libs.plugins.gradleVersions)
+    com.github.`ben-manes`.versions
 //    alias(libs.plugins.kotest) // temporarily disabled: breaks kotlin
     alias(libs.plugins.download)
 }
@@ -299,20 +296,6 @@ afterEvaluate {
     configurePackageTasks("Release")
 }
 
-open class UpgradeToUnstableFilter : ComponentFilter {
-    override fun reject(candidate: ComponentSelectionWithCurrent) = reject(candidate.currentVersion, candidate.candidate.version)
-
-    open fun reject(old: String, new: String): Boolean {
-        return !isStable(new) && isStable(old) // no unstable proposals for stable dependencies
-    }
-
-    open fun isStable(version: String): Boolean {
-        val stableKeyword = setOf("RELEASE", "FINAL", "GA").any { version.uppercase().contains(it) }
-        val stablePattern = version.matches(Regex("""^[0-9,.v-]+(-r)?$"""))
-        return stableKeyword || stablePattern
-    }
-}
-
 tasks.withType<DependencyUpdatesTask> {
     rejectVersionIf(UpgradeToUnstableFilter())
 }
@@ -321,9 +304,16 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-val downloadExchangeRates by tasks.registering(Download::class) {
+val downloadEcbExchangeRates by tasks.registering(Download::class) {
     src("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml")
     dest(layout.buildDirectory.file("tmp/exchange-rates.xml"))
+    overwrite(true)
+    onlyIfModified(false)
+}
+
+val downloadFrankfurterExchangeRates by tasks.registering(Download::class) {
+    src("https://api.frankfurter.dev/v2/rates?base=EUR")
+    dest(layout.buildDirectory.file("tmp/exchange-rates.json"))
     overwrite(true)
     onlyIfModified(false)
 }
@@ -335,66 +325,13 @@ val downloadSymbolMap by tasks.registering(Download::class) {
     onlyIfModified(false)
 }
 
-val generatedSourcesDir = layout.buildDirectory.dir("generated/jfCodegenInline")
-val convertExchangeRates by tasks.registering {
-    notCompatibleWithConfigurationCache("Uses build script variable as target for simplicity")
-    dependsOn(downloadExchangeRates, downloadSymbolMap)
-    inputs.files(downloadExchangeRates.get().dest, downloadSymbolMap.get().dest)
-    outputs.dir(generatedSourcesDir)
-    doLast {
-        val ratesMap = buildMap {
-            val factory = DocumentBuilderFactory.newInstance()
-            val builder = factory.newDocumentBuilder()
-            val doc = builder.parse(downloadExchangeRates.get().dest)
-            val rates = doc.getElementsByTagName("Cube")
-            rates.forEach {
-                if (it !is Element) return@forEach
-                val currency = it.getAttribute("currency").ifBlank { null } ?: return@forEach
-                require(currency.matches(Regex("[A-Z]{3}"))) { "Invalid currency code: $currency" }
-                val rate = it.getAttribute("rate").toDouble()
-                this@buildMap[currency] = rate
-            }
-        }
-        val symbolsMap = buildMap {
-            downloadSymbolMap.get().dest.useLines { it.filter { it.isNotBlank() && it.startsWith("  ") }.forEach { line ->
-                val pair = line.trim().trimEnd(',').split(":")
-                require(pair.size == 2) { "Invalid line: $line" }
-                val currency = pair[0].trim()
-                val symbol = pair[1].trim().trim('\'')
-                require(currency.matches(Regex("[A-Z]{3}"))) { "Invalid currency code: $currency" }
-                require(symbol.isNotBlank() && !symbol.contains("\\") && !symbol.contains("\"")) { "Invalid symbol: $symbol" }
-                this@buildMap[currency] = symbol
-            } }
-            // the adjustment sets were chosen arbitrarily to meet the map interface
-            val prioritizedCurrencies = ratesMap.keys -
-                    setOf("AUD", "CAD", "HKD", "MXN", "NZD", "JPY", "DKK", "ISK", "NOK") +
-                    setOf("HNL", "ANG", "UZS", "BYN", "QAR", "LKR", "MMK", "MRU", "STN")
-            for (e in entries.map { it.key to it.value }) {
-                val matching = entries.filter { it.value == e.second }
-                if (matching.size == 1) continue
-                val prioritized = matching.filter { it.key in prioritizedCurrencies }
-                require(prioritized.count() == 1) { "No clear prioritized currency found for ${e.second}: $prioritized" }
-                if (e.first !in prioritizedCurrencies) remove(e.first)
-            }
-        }
-        val kotlinFile = generatedSourcesDir.get().asFile.resolve("dev/jfronny/zerointerest/service/ImportedExchangeRates.kt")
-        kotlinFile.parentFile.mkdirs()
-        kotlinFile.writeText("""
-            |package dev.jfronny.zerointerest.service
-            |
-            |val importedExchangeRateOrigin = "EUR"
-            |val importedExchangeRates = mapOf(${ratesMap.entries.joinToString(separator = ",", postfix = "\n") { (currency, rate) -> "\n    \"$currency\" to $rate" }})
-            |val importedSymbolToCurrency = mapOf(${symbolsMap.entries.joinToString(separator = ",", postfix = "\n") { (currency, symbol) -> "\n    \"${symbol.replace("$", "\\$", ignoreCase = true)}\" to \"$currency\"" }})
-            |val importedCurrencyToSymbol = importedSymbolToCurrency.entries.associate { it.value to it.key }
-            |
-            """.trimMargin())
-    }
+val convertExchangeRates by tasks.registering(ConvertExchangeRatesTask::class) {
+    dependsOn(downloadEcbExchangeRates, downloadFrankfurterExchangeRates, downloadSymbolMap)
+    ecbExchangeRatesFile = downloadEcbExchangeRates.map { it.dest }
+    frankfurterExchangeRatesFile = downloadFrankfurterExchangeRates.map { it.dest }
+    symbolMapFile = downloadSymbolMap.map { it.dest }
 }
 
-kotlin {
-    sourceSets {
-        commonMain {
-            kotlin.srcDir(convertExchangeRates)
-        }
-    }
+kotlin.sourceSets.commonMain {
+    kotlin.srcDir(convertExchangeRates)
 }
