@@ -158,7 +158,6 @@ private fun AppNavigation(
             }
         } else {
             CreateTransactionScreen(
-                client = service.getMatrixClient(),
                 roomId = route.roomId,
                 initialTemplate = initialTemplate,
                 onDone = { navHelper.popMainBackStack() },
@@ -184,7 +183,7 @@ private fun AppNavigation(
     composable<Destination.SettleScreen>(typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)) {
         val route = it.toRoute<Destination.SettleScreen>()
         SettleScreen(
-            client = service.getMatrixClient(),
+            client = service.get(),
             roomId = route.roomId,
             onBack = { navHelper.popMainBackStack() }
         )

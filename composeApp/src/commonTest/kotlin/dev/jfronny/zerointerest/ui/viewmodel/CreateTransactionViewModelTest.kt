@@ -40,8 +40,8 @@ class CreateTransactionViewModelTest : CoreServicesTest() {
             viewModel.onTotalChanged("10.00")
 
             val state = viewModel.state.value
-            state.totalAmountStr shouldBe "10.00"
-            state.recipientAmountInputs shouldContainExactly mapOf(
+            state.total.amountStr shouldBe "10.00"
+            state.recipients.mapValues { it.value.amountStr } shouldContainExactly mapOf(
                 alice to "5.00",
                 bob to "5.00"
             )
@@ -56,8 +56,8 @@ class CreateTransactionViewModelTest : CoreServicesTest() {
             viewModel.onTotalChanged("10.01")
 
             val state = viewModel.state.value
-            state.totalAmountStr shouldBe "10.01"
-            state.recipientAmountInputs shouldContainExactly mapOf(
+            state.total.amountStr shouldBe "10.01"
+            state.recipients.mapValues { it.value.amountStr } shouldContainExactly mapOf(
                 alice to "5.01",
                 bob to "5.00"
             )
@@ -72,8 +72,8 @@ class CreateTransactionViewModelTest : CoreServicesTest() {
             viewModel.onIndividualAmountChanged(bob, "4.50")
 
             val state = viewModel.state.value
-            state.totalAmountStr shouldBe "7.50 €"
-            state.recipientAmountInputs shouldContainExactly mapOf(
+            state.total.amountStr shouldBe "7.50"
+            state.recipients.mapValues { it.value.amountStr } shouldContainExactly mapOf(
                 alice to "3.00",
                 bob to "4.50"
             )
@@ -84,12 +84,12 @@ class CreateTransactionViewModelTest : CoreServicesTest() {
                 parametersOf(roomId, null)
             }
             viewModel.onTotalChanged("invalid")
-            val state = viewModel.state.first { it.totalAmountStr == "invalid" }
-            state.totalAmountValid shouldBe false
+            val state = viewModel.state.first { it.total.amountStr == "invalid" }
+            state.total.isValid shouldBe false
             
             viewModel.onTotalChanged("12.34")
-            val stateValid = viewModel.state.first { it.totalAmountStr == "12.34" && it.totalAmountValid }
-            stateValid.totalAmountValid shouldBe true
+            val stateValid = viewModel.state.first { it.total.amountStr == "12.34" && it.total.isValid }
+            stateValid.total.isValid shouldBe true
         }
 
         test("submit calls transaction service and triggers onDone") {
@@ -103,7 +103,7 @@ class CreateTransactionViewModelTest : CoreServicesTest() {
             viewModel.onTotalChanged("15.00")
             
             // Wait for all updates to settle
-            viewModel.state.first { it.totalAmountStr == "15.00" && it.allValid }
+            viewModel.state.first { it.total.amountStr == "15.00" && it.allValid }
             
             viewModel.submit { doneCalled = true }
 

@@ -4,7 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
-import dev.jfronny.zerointerest.composeapp.generated.resources.*
+import dev.jfronny.zerointerest.composeapp.generated.resources.Res
+import dev.jfronny.zerointerest.composeapp.generated.resources.device_offline
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
@@ -20,7 +21,7 @@ import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.service.client.ZiClient
 import dev.jfronny.zerointerest.service.getActive
 import dev.jfronny.zerointerest.service.getExchangeRates
-import io.github.oshai.kotlinlogging.KotlinLogging
+import dev.jfronny.zerointerest.ui.component.TransactionLauncher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,8 +32,6 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
-
-private val log = KotlinLogging.logger {}
 
 class CreateTransactionViewModel(
     val roomId: RoomId,
@@ -48,7 +47,8 @@ class CreateTransactionViewModel(
         State(
             description = initialTemplate?.description ?: "",
             sender = initialTemplate?.sender ?: client.userId,
-            selectedRecipients = initialTemplate?.receivers?.keys ?: emptySet()
+            total = initialTemplate?.receivers?.values?.sum()?.let(::MoneyState) ?: MoneyState.zero,
+            recipients = initialTemplate?.receivers?.mapValues { MoneyState(it.value) } ?: emptyMap()
         )
     )
     val state = _state.asStateFlow()
@@ -56,22 +56,40 @@ class CreateTransactionViewModel(
     data class State(
         val description: String = "",
         val sender: UserId,
-        val totalAmountStr: String = "",
-        val selectedRecipients: Set<UserId> = emptySet(),
-        val recipientAmountInputs: Map<UserId, String> = emptyMap(),
+        val total: MoneyState = MoneyState.zero,
+        val recipients: Map<UserId, MoneyState> = emptyMap(),
         val isTemplateModified: Boolean = false,
         val submitAttempted: Boolean = false,
-        val totalAmountBlurred: Boolean = false,
-        val recipientAmountsBlurred: Set<UserId> = emptySet(),
-
-        val totalAmountValid: Boolean = true,
-        val totalAmountError: Boolean = false,
-        val allValid: Boolean = true,
-        val totalHint: Money? = null,
 
         val isRunning: Boolean = false,
         val errorMessage: String? = null
-    )
+    ) {
+        val allValid: Boolean get() = total.isValid && recipients.values.all { it.isValid }
+    }
+
+    data class MoneyState(
+        val amount: Money?,
+        val hint: Boolean,
+        val amountStr: String,
+        val isBlurred: Boolean,
+    ) {
+        constructor(amount: Money) : this(amount, false, amount.toString(), false)
+
+        val isValid: Boolean get() = amount != null
+        val showError: Boolean get() = amount == null && isBlurred
+
+        companion object {
+            val zero = MoneyState(Money.zero, false, "", false)
+
+            operator fun invoke(amountStr: String, unit: MonetaryUnit): MoneyState {
+                val (amount, hint) = parseAmount(amountStr, unit).fold(
+                    onSuccess = { it.toMoney() to it.usedMath },
+                    onFailure = { null to false }
+                )
+                return MoneyState(amount, hint, amountStr, false)
+            }
+        }
+    }
 
     val monetaryUnit: StateFlow<MonetaryUnit> = settings.monetaryUnit.stateIn(
         scope = viewModelScope,
@@ -89,42 +107,6 @@ class CreateTransactionViewModel(
         initialValue = emptyMap()
     )
 
-    init {
-        if (initialTemplate != null) {
-            val total = initialTemplate.receivers.values.sum()
-            _state.update {
-                it.copy(
-                    totalAmountStr = total.toString(),
-                    recipientAmountInputs = initialTemplate.receivers.mapValues { entry -> entry.value.toString() }
-                )
-            }
-        }
-        
-        viewModelScope.launch {
-            _state.collect { currentState ->
-                val mu = monetaryUnit.value
-                val (valid, hint) = parseAmount(currentState.totalAmountStr, mu).fold(
-                    onSuccess = { true to if (it.usedMath) it.toMoney() else null },
-                    onFailure = { false to null }
-                )
-                
-                val allValid = valid && currentState.selectedRecipients.all { userId ->
-                    parseAmount(currentState.recipientAmountInputs[userId] ?: "0.0", mu).isSuccess
-                }
-                
-                _state.update {
-                    it.copy(
-                        totalAmountValid = valid,
-                        totalAmountError = !valid && (it.submitAttempted || it.totalAmountBlurred),
-                        allValid = allValid,
-                        totalHint = hint
-                    )
-                }
-            }
-        }
-    }
-
-    private fun parseAmount(s: String) = parseAmount(s, monetaryUnit.value)
     companion object {
         private fun parseAmount(s: String, unit: MonetaryUnit): Result<MoneyParser.Result> = try {
             Result.success(MoneyParser.parse(s, unit, getExchangeRates(unit)))
@@ -136,9 +118,7 @@ class CreateTransactionViewModel(
     private fun checkForModifications() {
         if (initialTemplate == null) return
         val currentState = _state.value
-        val currentRecipients = currentState.recipientAmountInputs.mapValues { 
-            parseAmount(it.value).map(MoneyParser.Result::toMoney).getOrDefault(Money.zero) 
-        }
+        val currentRecipients = currentState.recipients.mapValues { it.value.amount ?: Money.zero }
         val modified = currentState.description != initialTemplate.description ||
                 currentState.sender != initialTemplate.sender ||
                 currentRecipients != initialTemplate.receivers
@@ -148,63 +128,67 @@ class CreateTransactionViewModel(
 
     private fun distribute(total: Money, recipients: Set<UserId>) {
         if (recipients.isEmpty()) {
-            _state.update { it.copy(recipientAmountInputs = emptyMap()) }
+            _state.update { it.copy(recipients = emptyMap()) }
             return
         }
         val count = recipients.size
         val base = total.amount / count
         val remainder = total.amount % count
 
-        val newInputs = mutableMapOf<UserId, String>()
+        val newInputs = mutableMapOf<UserId, MoneyState>()
         recipients.forEachIndexed { index, userId ->
             val amount = base + if (index < remainder) 1 else 0
-            newInputs[userId] = amount.toMoney().toString()
+            newInputs[userId] = MoneyState(amount.toMoney())
         }
-        _state.update { it.copy(recipientAmountInputs = newInputs) }
+        _state.update { it.copy(recipients = newInputs) }
         checkForModifications()
     }
 
     fun onTotalChanged(newTotalStr: String) {
-        _state.update { it.copy(totalAmountStr = newTotalStr, totalAmountBlurred = false) }
-        val total = parseAmount(newTotalStr).map(MoneyParser.Result::toMoney).getOrNull()
-        if (total != null) {
-            distribute(total, _state.value.selectedRecipients)
+        val newState = MoneyState(newTotalStr, monetaryUnit.value)
+        _state.update { it.copy(
+            total = newState
+        ) }
+        if (newState.amount != null) {
+            distribute(newState.amount, _state.value.recipients.keys)
         }
         checkForModifications()
     }
     
     fun onTotalBlurred() {
-        _state.update { it.copy(totalAmountBlurred = true) }
+        _state.update { it.copy(total = it.total.copy(isBlurred = true)) }
     }
 
     fun onRecipientsChanged(newRecipients: Set<UserId>) {
-        _state.update { it.copy(selectedRecipients = newRecipients) }
-        val total = parseAmount(_state.value.totalAmountStr).map(MoneyParser.Result::toMoney).getOrNull()
+        val total = _state.value.total.amount
         if (total != null) {
             distribute(total, newRecipients)
         } else {
-            val newInputs = newRecipients.associateWith { _state.value.recipientAmountInputs[it] ?: "0.0" }
-            _state.update { it.copy(recipientAmountInputs = newInputs) }
+            val newInputs = newRecipients.associateWith { _state.value.recipients[it] ?: MoneyState.zero }
+            _state.update { it.copy(recipients = newInputs) }
         }
         checkForModifications()
     }
 
     fun onIndividualAmountChanged(userId: UserId, newAmountStr: String) {
-        val newInputs = _state.value.recipientAmountInputs.toMutableMap()
-        newInputs[userId] = newAmountStr
         _state.update {
-            val total = newInputs.values.sumOfM { parseAmount(it).map(MoneyParser.Result::toMoney).getOrDefault(Money.zero) }
+            val newInputs = it.recipients.toMutableMap()
+            newInputs[userId] = MoneyState(newAmountStr, monetaryUnit.value)
+            val total = newInputs.values.sumOfM { it.amount ?: Money.zero }
             it.copy(
-                recipientAmountInputs = newInputs,
-                recipientAmountsBlurred = it.recipientAmountsBlurred - userId,
-                totalAmountStr = total.format(monetaryUnit.value)
+                recipients = newInputs,
+                total = MoneyState(total)
             )
         }
         checkForModifications()
     }
     
     fun onIndividualAmountBlurred(userId: UserId) {
-        _state.update { it.copy(recipientAmountsBlurred = it.recipientAmountsBlurred + userId) }
+        _state.update {
+            val newInputs = it.recipients.toMutableMap()
+            newInputs[userId] = newInputs[userId]?.copy(isBlurred = true) ?: MoneyState.zero
+            it.copy(recipients = newInputs)
+        }
     }
 
     fun onDescriptionChanged(newDescription: String) {
@@ -221,10 +205,8 @@ class CreateTransactionViewModel(
     fun saveAsTemplate(onDone: () -> Unit) {
         viewModelScope.launch {
             val currentState = _state.value
-            val total = parseAmount(currentState.totalAmountStr).map(MoneyParser.Result::toMoney).getOrDefault(Money.zero)
-            val recipientAmounts = currentState.recipientAmountInputs.mapValues { 
-                parseAmount(it.value).map(MoneyParser.Result::toMoney).getOrDefault(Money.zero) 
-            }
+            val total = currentState.total.amount ?: Money.zero
+            val recipientAmounts = currentState.recipients.mapValues { it.value.amount ?: Money.zero }
 
             if (recipientAmounts.isNotEmpty() && total.amount > 0) {
                 val template = TransactionTemplate(
@@ -251,51 +233,35 @@ class CreateTransactionViewModel(
     }
 
     fun submit(onDone: () -> Unit) {
-        viewModelScope.launch {
-            _state.update { it.copy(submitAttempted = true) }
-            val currentState = _state.value
-            if (!currentState.allValid) return@launch
+        val currentState = _state.value
+        if (!currentState.allValid) return
 
-            if (currentState.isRunning) return@launch
-            _state.update { it.copy(isRunning = true, errorMessage = null) }
-            
+        val content = ZeroInterestTransactionEvent(
+            description = currentState.description.ifBlank { ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION },
+            sender = currentState.sender,
+            receivers = currentState.recipients
+                .mapValues { it.value.amount ?: Money.zero }
+                .filter { it.value.amount > 0L }
+        )
+
+        viewModelScope.launch {
             if (client.offline) {
                 _state.update { it.copy(errorMessage = getString(Res.string.device_offline), isRunning = false) }
                 return@launch
             }
-
-            val content = ZeroInterestTransactionEvent(
-                description = currentState.description.ifBlank { ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION },
-                sender = currentState.sender,
-                receivers = currentState.recipientAmountInputs
-                    .mapValues { parseAmount(it.value).map(MoneyParser.Result::toMoney).getOrDefault(Money.zero) }
-                    .filter { it.value.amount > 0L }
-            )
-
-            if (content.receivers.isNotEmpty()) {
-                try {
-                    transactionService.sendTransaction(roomId, content)
-                    onDone()
-                } catch (e: TransactionService.FailedPrepareSummaryException) {
-                    log.error(e) { "Could not prepare summary creation" }
-                    _state.update { it.copy(errorMessage = getString(Res.string.failed_prepare_trust_summary, e.message.toString())) }
-                } catch (e: TransactionService.FailedSendMessageException) {
-                    log.error(e) { "Could not send transactions" }
-                    _state.update { it.copy(errorMessage = getString(Res.string.failed_send_message_with_error, e.message.toString())) }
-                } catch (e: Exception) {
-                    log.error(e) { "Could not submit summary" }
-                    _state.update { it.copy(errorMessage = getString(Res.string.failed_create_trust_summary, e.message.toString())) }
-                }
+            _state.update { it.copy(submitAttempted = true) }
+            try {
+                transactionService.sendTransaction(roomId, content)
+                onDone()
+            } catch (e: Exception) {
+                _state.update { it.copy(errorMessage = getString(TransactionLauncher.logAndLocalize(e), e.message ?: "")) }
+            } finally {
+                _state.update { it.copy(isRunning = false) }
             }
-            _state.update { it.copy(isRunning = false) }
         }
     }
     
     fun clearError() {
         _state.update { it.copy(errorMessage = null) }
-    }
-    
-    fun isAmountValid(amountStr: String): Boolean {
-        return parseAmount(amountStr).isSuccess
     }
 }

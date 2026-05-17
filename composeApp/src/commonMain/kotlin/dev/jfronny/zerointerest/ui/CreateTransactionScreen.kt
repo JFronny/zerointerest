@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Deselect
 import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,7 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -42,24 +40,25 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import de.connect2x.trixnity.client.MatrixClient
 import de.connect2x.trixnity.client.store.RoomUser
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
+import dev.jfronny.zerointerest.data.money.toMoney
 import dev.jfronny.zerointerest.ui.component.BackButton
+import dev.jfronny.zerointerest.ui.component.ErrorDialog
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.component.SimpleFilledIconButton
 import dev.jfronny.zerointerest.ui.viewmodel.CreateTransactionViewModel
+import dev.jfronny.zerointerest.ui.viewmodel.CreateTransactionViewModel.MoneyState
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 @Composable
 fun CreateTransactionScreen(
-    client: MatrixClient,
     roomId: RoomId,
     initialTemplate: TransactionTemplate?,
     onDone: () -> Unit,
@@ -137,7 +136,7 @@ fun CreateTransactionContent(
                         } else {
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.save_as_template)) },
-                                enabled = state.recipientAmountInputs.isNotEmpty() && state.totalAmountStr.isNotEmpty(),
+                                enabled = state.recipients.isNotEmpty() && state.total.amountStr.isNotEmpty(),
                                 onClick = {
                                     onSaveAsTemplate()
                                     close()
@@ -155,18 +154,7 @@ fun CreateTransactionContent(
             }
         }
     ) { padding ->
-        if (state.errorMessage != null) {
-            AlertDialog(
-                onDismissRequest = onClearError,
-                confirmButton = {
-                    TextButton(onClick = onClearError) {
-                        Text(stringResource(Res.string.ok))
-                    }
-                },
-                title = { Text(stringResource(Res.string.transaction_failed)) },
-                text = { Text(state.errorMessage) }
-            )
-        }
+        if (state.errorMessage != null) ErrorDialog(state.errorMessage, onDismiss = { onClearError() })
 
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
@@ -218,36 +206,40 @@ fun CreateTransactionContent(
                 }
             }
 
+            @Composable
+            fun MoneyStateField(state: CreateTransactionViewModel.MoneyState, onChange: (String) -> Unit, onBlurred: () -> Unit) = OutlinedTextField(
+                value = state.amountStr,
+                onValueChange = onChange,
+                label = { Text(stringResource(Res.string.amount)) },
+                keyboardOptions = KeyboardOptions(keyboardType = if (requestFullKeyboard) KeyboardType.Unspecified else KeyboardType.Decimal),
+                isError = state.showError,
+                supportingText = if (state.showError) { { Text(stringResource(Res.string.invalid_amount)) } } else null,
+                modifier = Modifier.fillMaxWidth().onFocusChanged {
+                    if (!it.isFocused) onBlurred()
+                }
+            )
+
             item {
-                OutlinedTextField(
-                    value = state.totalAmountStr,
-                    onValueChange = onTotalChanged,
-                    label = { Text(stringResource(Res.string.total_amount)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = if (requestFullKeyboard) KeyboardType.Unspecified else KeyboardType.Decimal),
-                    isError = state.totalAmountError,
-                    supportingText = if (state.totalAmountError) { { Text(stringResource(Res.string.invalid_amount)) } } else null,
-                    modifier = Modifier.fillMaxWidth().onFocusChanged { 
-                        if (!it.isFocused) onTotalBlurred()
-                    }
-                )
+                MoneyStateField(state.total, onTotalChanged, onTotalBlurred)
             }
 
             item {
-                if (state.totalHint != null) {
-                    Text(state.totalHint.format(monetaryUnit), style = MaterialTheme.typography.bodySmall)
+                if (state.total.hint) {
+                    val hint = state.total.amount?.format(monetaryUnit) ?: return@item
+                    Text(hint, style = MaterialTheme.typography.bodySmall)
                 }
             }
 
             item {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(Res.string.recipients), style = MaterialTheme.typography.titleMedium)
-                    if (state.selectedRecipients.isNotEmpty()) {
+                    if (state.recipients.isNotEmpty()) {
                         SimpleFilledIconButton(Icons.Default.Deselect, stringResource(Res.string.deselect), onClick = {
                             onRecipientsChanged(emptySet())
                         })
                     } else {
                         SimpleFilledIconButton(Icons.Default.SelectAll, stringResource(Res.string.select_all), onClick = {
-                            val newSet = state.selectedRecipients + userIds
+                            val newSet = state.recipients.keys + userIds
                             onRecipientsChanged(newSet)
                         })
                     }
@@ -255,18 +247,19 @@ fun CreateTransactionContent(
             }
 
             items(userIds) { userId ->
-                val isSelected = userId in state.selectedRecipients
+                val moneyState = state.recipients[userId]
+                val isSelected = moneyState != null
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable {
-                        val newSet = if (isSelected) state.selectedRecipients - userId else state.selectedRecipients + userId
+                        val newSet = if (isSelected) state.recipients.keys - userId else state.recipients.keys + userId
                         onRecipientsChanged(newSet)
                     }
                 ) {
                     Checkbox(
                         checked = isSelected,
                         onCheckedChange = { checked ->
-                            val newSet = if (checked) state.selectedRecipients + userId else state.selectedRecipients - userId
+                            val newSet = if (checked) state.recipients.keys + userId else state.recipients.keys - userId
                             onRecipientsChanged(newSet)
                         }
                     )
@@ -274,23 +267,7 @@ fun CreateTransactionContent(
                 }
 
                 if (isSelected) {
-                    val amountStr = state.recipientAmountInputs[userId] ?: ""
-                    val isBlurred = userId in state.recipientAmountsBlurred
-                    val isError = amountStr.isBlank() && (state.submitAttempted || isBlurred)
-
-                    OutlinedTextField(
-                        value = amountStr,
-                        onValueChange = { onIndividualAmountChanged(userId, it) },
-                        label = { Text(stringResource(Res.string.amount)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = if (requestFullKeyboard) KeyboardType.Unspecified else KeyboardType.Decimal),
-                        isError = isError,
-                        supportingText = if (isError) { { Text(stringResource(Res.string.invalid_amount)) } } else null,
-                        modifier = Modifier.fillMaxWidth().padding(start = 48.dp).onFocusChanged {
-                            if (!it.isFocused) {
-                                onIndividualAmountBlurred(userId)
-                            }
-                        }
-                    )
+                    MoneyStateField(moneyState, { onIndividualAmountChanged(userId, it) }, { onIndividualAmountBlurred(userId) })
                 }
             }
         }
@@ -304,8 +281,8 @@ fun CreateTransactionScreenPreview() {
         state = CreateTransactionViewModel.State(
             description = "Pizza",
             sender = UserId("alice", "example.com"),
-            totalAmountStr = "12.50",
-            selectedRecipients = setOf(UserId("bob", "example.com"))
+            total = MoneyState(1250L.toMoney()),
+            recipients = mapOf(UserId("bob", "example.com") to MoneyState(100L.toMoney())),
         ),
         monetaryUnit = MonetaryUnit.default,
         requestFullKeyboard = false,

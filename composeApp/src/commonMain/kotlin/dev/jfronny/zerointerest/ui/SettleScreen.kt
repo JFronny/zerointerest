@@ -31,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import de.connect2x.trixnity.client.MatrixClient
 import de.connect2x.trixnity.core.model.RoomId
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
@@ -40,28 +39,26 @@ import dev.jfronny.zerointerest.data.money.sum
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.TransactionService
+import dev.jfronny.zerointerest.service.calculateSettlementTransactions
+import dev.jfronny.zerointerest.service.client.MatrixZiClient
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.SimpleFilledIconButton
 import dev.jfronny.zerointerest.ui.component.UserUI
 import dev.jfronny.zerointerest.ui.component.rememberTransactionLauncher
-import dev.jfronny.zerointerest.service.calculateSettlementTransactions
-import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
-
-private val log = KotlinLogging.logger {}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettleScreen(
-    client: MatrixClient,
+    client: MatrixZiClient,
     roomId: RoomId,
     onBack: () -> Unit
 ) {
     val trustService = koinInject<SummaryTrustService>()
     val transactionService = koinInject<TransactionService>()
     val settings = koinInject<Settings>()
-    val userUI = UserUI(client, roomId)
+    val userUI = UserUI(client.client, roomId)
 
     val summaryState by trustService.getSummary(roomId).collectAsState(null)
     
