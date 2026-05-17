@@ -1,6 +1,5 @@
 package dev.jfronny.zerointerest.service
 
-import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.room3.Room
 import de.connect2x.trixnity.core.model.EventId
@@ -28,6 +27,7 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.test.inject
+import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
 
 abstract class CoreServicesTest : KoinTest, FunSpec() {
@@ -53,7 +53,7 @@ abstract class CoreServicesTest : KoinTest, FunSpec() {
             } }
             single { TransactionService(get(), get()) }
             single { SummaryTrustService(get(), get()) }
-            viewModel { params -> CreateTransactionViewModel(params.get(), params.getOrNull(), get<ZiClientProvider>().get(), get(), get(), get(), get()) }
+            viewModel { params -> CreateTransactionViewModel(params.get(), params.getOrNull(), get<ZiClientProvider>().get(), get(), get(), get(), get(), distributeRandom = Random(0)) }
         }, mode = KoinLifecycleMode.Test))
     }
 

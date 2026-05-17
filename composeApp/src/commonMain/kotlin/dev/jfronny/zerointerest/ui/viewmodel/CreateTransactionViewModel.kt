@@ -30,6 +30,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
+import kotlin.random.Random
+import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -40,7 +42,8 @@ class CreateTransactionViewModel(
     private val trustService: SummaryTrustService,
     private val transactionService: TransactionService,
     private val database: ZeroInterestDatabase,
-    private val settings: Settings
+    private val settings: Settings,
+    private val distributeRandom: Random = Random(Clock.System.now().toEpochMilliseconds()),
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
@@ -136,7 +139,7 @@ class CreateTransactionViewModel(
         val remainder = total.amount % count
 
         val newInputs = mutableMapOf<UserId, MoneyState>()
-        recipients.forEachIndexed { index, userId ->
+        recipients.shuffled(distributeRandom).forEachIndexed { index, userId ->
             val amount = base + if (index < remainder) 1 else 0
             newInputs[userId] = MoneyState(amount.toMoney())
         }

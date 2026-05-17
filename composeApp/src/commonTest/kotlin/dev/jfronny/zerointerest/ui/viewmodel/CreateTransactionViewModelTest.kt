@@ -58,8 +58,8 @@ class CreateTransactionViewModelTest : CoreServicesTest() {
             val state = viewModel.state.value
             state.total.amountStr shouldBe "10.01"
             state.recipients.mapValues { it.value.amountStr } shouldContainExactly mapOf(
-                alice to "5.01",
-                bob to "5.00"
+                alice to "5.00",
+                bob to "5.01"
             )
         }
 
