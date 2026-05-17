@@ -1,5 +1,6 @@
 package dev.jfronny.zerointerest.service.client
 
+import de.connect2x.trixnity.client.store.RoomUser
 import de.connect2x.trixnity.client.store.TimelineEvent
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
@@ -14,9 +15,12 @@ import kotlinx.coroutines.flow.Flow
 
 interface ZiClient {
     val userId: UserId
+    val offline: Boolean
     
     suspend fun getTransactionEventWithTimeout(roomId: RoomId, eventId: EventId): Result<Timed<ZeroInterestTransactionEvent>>?
     suspend fun getSummaryEventWithTimeout(roomId: RoomId, eventId: EventId): Result<Timed<ZeroInterestSummaryEvent>>?
+
+    fun getUsers(roomId: RoomId): Flow<Map<UserId, Flow<RoomUser?>>>
     
     suspend fun sendStateEvent(roomId: RoomId, event: StateEventContent, stateKey: String): Result<EventId>
     suspend fun scheduleMessageEvent(roomId: RoomId, event: MessageEventContent): Result<String>

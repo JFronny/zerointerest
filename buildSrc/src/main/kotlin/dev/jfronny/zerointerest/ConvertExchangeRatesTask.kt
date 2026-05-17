@@ -96,7 +96,7 @@ abstract class ConvertExchangeRatesTask : DefaultTask() {
     private fun readFrankfurterRatesFile(): Map<String, Double> {
         val rates = frankfurterExchangeRatesFile.asFile.get().inputStream().use { Json.decodeFromStream<List<FrankfurterRate>>(it) }
         val dates = rates.distinctBy { it.date }
-        require(dates.size <= 2) { "Expected exactly one date in Frankfurter exchange rates file, got $dates" }
+        require(dates.size <= 3) { "Expected exactly one date in Frankfurter exchange rates file, got $dates" }
         val bases = rates.map { it.base }.distinct()
         require(bases.size == 1) { "Expected exactly one base currency in Frankfurter exchange rates file, got $bases" }
         return rates.associate { it.quote to it.rate }

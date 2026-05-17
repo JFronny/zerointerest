@@ -1,5 +1,6 @@
 package dev.jfronny.zerointerest.client
 
+import de.connect2x.trixnity.client.store.RoomUser
 import de.connect2x.trixnity.client.store.TimelineEvent
 import de.connect2x.trixnity.client.store.eventId
 import de.connect2x.trixnity.core.model.EventId
@@ -10,6 +11,8 @@ import de.connect2x.trixnity.core.model.events.MessageEventContent
 import de.connect2x.trixnity.core.model.events.StateEventContent
 import de.connect2x.trixnity.core.model.events.m.ReactionEventContent
 import de.connect2x.trixnity.core.model.events.m.RelatesTo
+import de.connect2x.trixnity.core.model.events.m.room.MemberEventContent
+import de.connect2x.trixnity.core.model.events.m.room.Membership
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.service.client.ZiClient
@@ -22,6 +25,7 @@ class TestZiClient(
     val server: TestZiServer,
     override val userId: UserId = UserId("@testuser${server.nextUserId++}:example.com"),
     var nextTransactionId: Int = 0,
+    override var offline: Boolean = false,
 ) : ZiClient {
     val localEventHistory = linkedSetOf<Pair<RoomId, ClientEvent.RoomEvent<*>>>()
     val localStateEvents = mutableMapOf<Pair<RoomId, String>, ClientEvent.RoomEvent.StateEvent<*>>()
@@ -33,6 +37,9 @@ class TestZiClient(
     val sentMessages = mutableMapOf<String, EventId>()
 
     private fun nextTransactionId() = "tx_${nextTransactionId++}"
+
+    fun registerIfAbsent(roomId: RoomId, extra: MemberEventContent = MemberEventContent(membership = Membership.JOIN)) =
+        server.registerIfAbsent(roomId, userId, extra)
 
     fun sync() {
         // Pull events from server
@@ -110,6 +117,8 @@ class TestZiClient(
             )
         )
     }
+
+    override fun getUsers(roomId: RoomId): Flow<Map<UserId, Flow<RoomUser?>>> = server.getUsers(roomId)
 
     override suspend fun sendStateEvent(roomId: RoomId, event: StateEventContent, stateKey: String): Result<EventId> {
         // send immediately

@@ -14,10 +14,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Deselect
 import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -28,52 +28,35 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.connect2x.trixnity.client.MatrixClient
-import de.connect2x.trixnity.client.user
+import de.connect2x.trixnity.client.store.RoomUser
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.composeapp.generated.resources.*
 import dev.jfronny.zerointerest.data.TransactionTemplate
-import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
-import dev.jfronny.zerointerest.data.money.Money
-import dev.jfronny.zerointerest.data.money.MoneyParser
-import dev.jfronny.zerointerest.data.money.sum
-import dev.jfronny.zerointerest.data.money.sumOfM
-import dev.jfronny.zerointerest.data.money.toMoney
-import dev.jfronny.zerointerest.db.ZeroInterestDatabase
-import dev.jfronny.zerointerest.service.Settings
-import dev.jfronny.zerointerest.service.SummaryTrustService
-import dev.jfronny.zerointerest.service.TransactionService
-import dev.jfronny.zerointerest.service.getActive
-import dev.jfronny.zerointerest.service.getExchangeRates
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.component.SimpleFilledIconButton
-import dev.jfronny.zerointerest.ui.component.rememberTransactionLauncher
-import kotlinx.coroutines.launch
+import dev.jfronny.zerointerest.ui.viewmodel.CreateTransactionViewModel
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalUuidApi::class,
-    ExperimentalMaterial3ExpressiveApi::class
-)
 @Composable
 fun CreateTransactionScreen(
     client: MatrixClient,
@@ -83,113 +66,57 @@ fun CreateTransactionScreen(
     onBack: () -> Unit,
     openSettings: () -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
-    val trustService = koinInject<SummaryTrustService>()
-    val transactionService = koinInject<TransactionService>()
-    val database = koinInject<ZeroInterestDatabase>()
-    val settings = koinInject<Settings>()
-    val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
-    val requestFullKeyboard by settings.requestFullKeyboard.collectAsState(initial = false)
-
-    val users by remember(client) { client.user.getActive(roomId, trustService) }.collectAsState(emptyMap())
-    val userIds = remember(users) { users.keys.toList() }
-
-    var description by remember { mutableStateOf(initialTemplate?.description ?: "") }
-    var sender by remember { mutableStateOf(initialTemplate?.sender ?: client.userId) }
-    var totalAmountStr by remember { mutableStateOf("") }
-    var selectedRecipients by remember { mutableStateOf(initialTemplate?.receivers?.keys ?: setOf()) }
-    var recipientAmountInputs by remember { mutableStateOf(mapOf<UserId, String>()) }
-    var isTemplateModified by remember { mutableStateOf(false) }
-    var submitAttempted by remember { mutableStateOf(false) }
-    var totalAmountBlurred by remember { mutableStateOf(false) }
-    var recipientAmountsBlurred by remember { mutableStateOf(setOf<UserId>()) }
-    val launcher = rememberTransactionLauncher(client)
-
-    fun parseAmount(s: String): Result<MoneyParser.Result> = try {
-        Result.success(MoneyParser.parse(s, monetaryUnit, getExchangeRates(monetaryUnit)))
-    } catch (e: MoneyParser.ParseException) {
-        Result.failure(e)
-    }
-
-    val (totalAmountValid, hint) = parseAmount(totalAmountStr).fold(
-        onFailure = { false to null },
-        onSuccess = { true to if (it.usedMath) it.toMoney() else null }
-    )
-    val totalAmountError = !totalAmountValid && (submitAttempted || totalAmountBlurred)
-    val allValid = totalAmountValid && selectedRecipients.all { parseAmount(recipientAmountInputs[it] ?: "").isSuccess }
-
-    // Initialize amounts if template provided
-    LaunchedEffect(initialTemplate) {
-        if (initialTemplate != null) {
-            val total = initialTemplate.receivers.values.sum()
-            totalAmountStr = total.toString()
-            recipientAmountInputs = initialTemplate.receivers.mapValues { it.value.toString() }
-        }
-    }
-
-    fun checkForModifications() {
-        if (initialTemplate == null) return
-        val currentRecipients = recipientAmountInputs.mapValues { parseAmount(it.value).map(MoneyParser.Result::toMoney).getOrDefault(Money.zero) }
-        isTemplateModified = description != initialTemplate.description ||
-                sender != initialTemplate.sender ||
-                currentRecipients != initialTemplate.receivers
-    }
-
-    fun distribute(total: Money, recipients: Set<UserId>) {
-        if (recipients.isEmpty()) {
-            recipientAmountInputs = emptyMap()
-            return
-        }
-        val count = recipients.size
-        val base = total.amount / count
-        val remainder = total.amount % count
-
-        val newInputs = mutableMapOf<UserId, String>()
-        recipients.forEachIndexed { index, userId ->
-            val amount = base + if (index < remainder) 1 else 0
-            newInputs[userId] = amount.toMoney().toString()
-        }
-        recipientAmountInputs = newInputs
-        checkForModifications()
-    }
-
-    fun onTotalChanged(newTotalStr: String) {
-        totalAmountStr = newTotalStr
-        val total = parseAmount(newTotalStr).map(MoneyParser.Result::toMoney).getOrNull()
-        if (total != null) {
-            distribute(total, selectedRecipients)
-        }
-        checkForModifications()
-    }
-
-    fun onRecipientsChanged(newRecipients: Set<UserId>) {
-        selectedRecipients = newRecipients
-        val total = parseAmount(totalAmountStr).map(MoneyParser.Result::toMoney).getOrNull()
-        if (total != null) {
-            distribute(total, newRecipients)
-        } else {
-            // Preserve existing inputs if possible, or init to 0
-            val newInputs = newRecipients.associateWith { recipientAmountInputs[it] ?: "0.0" }
-            recipientAmountInputs = newInputs
-        }
-        checkForModifications()
-    }
-
-    fun onIndividualAmountChanged(userId: UserId, newAmountStr: String) {
-        val newInputs = recipientAmountInputs.toMutableMap()
-        newInputs[userId] = newAmountStr
-        recipientAmountInputs = newInputs
-
-        val total = newInputs.values.sumOfM { parseAmount(it).map(MoneyParser.Result::toMoney).getOrDefault(Money.zero) }
-        totalAmountStr = total.format(monetaryUnit)
-        checkForModifications()
-    }
+    val viewModel = koinViewModel<CreateTransactionViewModel> { parametersOf(roomId, initialTemplate) }
     
-    fun onDescriptionChanged(newDescription: String) {
-        description = newDescription
-        checkForModifications()
-    }
+    val state by viewModel.state.collectAsState()
+    val monetaryUnit by viewModel.monetaryUnit.collectAsState()
+    val requestFullKeyboard by viewModel.requestFullKeyboard.collectAsState()
+    val users by viewModel.users.collectAsState()
+    
+    CreateTransactionContent(
+        state = state,
+        monetaryUnit = monetaryUnit,
+        requestFullKeyboard = requestFullKeyboard,
+        users = users,
+        userIds = users.keys.toList(),
+        onDescriptionChanged = viewModel::onDescriptionChanged,
+        onSenderChanged = viewModel::onSenderChanged,
+        onTotalChanged = viewModel::onTotalChanged,
+        onTotalBlurred = viewModel::onTotalBlurred,
+        onRecipientsChanged = viewModel::onRecipientsChanged,
+        onIndividualAmountChanged = viewModel::onIndividualAmountChanged,
+        onIndividualAmountBlurred = viewModel::onIndividualAmountBlurred,
+        onSaveAsTemplate = { viewModel.saveAsTemplate(onBack) },
+        onDeleteTemplate = { viewModel.deleteTemplate(onBack) },
+        onSubmit = { viewModel.submit(onDone) },
+        onClearError = viewModel::clearError,
+        onBack = onBack,
+        openSettings = openSettings
+    )
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreateTransactionContent(
+    state: CreateTransactionViewModel.State,
+    monetaryUnit: MonetaryUnit,
+    requestFullKeyboard: Boolean,
+    users: Map<UserId, RoomUser?>,
+    userIds: List<UserId>,
+    onDescriptionChanged: (String) -> Unit,
+    onSenderChanged: (UserId) -> Unit,
+    onTotalChanged: (String) -> Unit,
+    onTotalBlurred: () -> Unit,
+    onRecipientsChanged: (Set<UserId>) -> Unit,
+    onIndividualAmountChanged: (UserId, String) -> Unit,
+    onIndividualAmountBlurred: (UserId) -> Unit,
+    onSaveAsTemplate: () -> Unit,
+    onDeleteTemplate: () -> Unit,
+    onSubmit: () -> Unit,
+    onClearError: () -> Unit,
+    onBack: () -> Unit,
+    openSettings: () -> Unit,
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -199,43 +126,21 @@ fun CreateTransactionScreen(
                 },
                 actions = {
                     MoreOptionsButton(openSettings = openSettings) { close ->
-                        if (initialTemplate != null && !isTemplateModified) {
+                        if (!state.isTemplateModified) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.delete_template)) },
                                 onClick = {
-                                    scope.launch {
-                                        database.removeTransactionTemplate(roomId, initialTemplate.id)
-                                        close()
-                                        onBack()
-                                    }
+                                    onDeleteTemplate()
+                                    close()
                                 }
                             )
                         } else {
-                            val total = parseAmount(totalAmountStr).map(MoneyParser.Result::toMoney).getOrDefault(Money.zero)
-                            val recipientAmounts = recipientAmountInputs.mapValues { parseAmount(it.value).map(MoneyParser.Result::toMoney).getOrDefault(Money.zero) }
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.save_as_template)) },
-                                enabled = recipientAmounts.isNotEmpty() && total.amount > 0,
+                                enabled = state.recipientAmountInputs.isNotEmpty() && state.totalAmountStr.isNotEmpty(),
                                 onClick = {
-                                    scope.launch {
-                                        // local copy, just to be extra sure
-                                        val total = total
-                                        val recipientAmounts = recipientAmounts
-
-                                        if (recipientAmounts.isNotEmpty() && total.amount > 0) {
-                                            val template = TransactionTemplate(
-                                                id = Uuid.random().toString(),
-                                                description = description,
-                                                sender = sender,
-                                                receivers = recipientAmounts
-                                            )
-                                            database.addTransactionTemplate(roomId, template)
-                                            close()
-                                            onBack()
-                                        } else {
-                                            close()
-                                        }
-                                    }
+                                    onSaveAsTemplate()
+                                    close()
                                 }
                             )
                         }
@@ -243,34 +148,25 @@ fun CreateTransactionScreen(
                 }
             )
         },
-
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                submitAttempted = true
-                if (!allValid) return@FloatingActionButton
-
-                val content = ZeroInterestTransactionEvent(
-                    description = description.ifBlank { ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION },
-                    sender = sender,
-                    receivers = recipientAmountInputs
-                        .mapValues { parseAmount(it.value).map(MoneyParser.Result::toMoney).getOrDefault(Money.zero) }
-                        .filter { it.value.amount > 0L }
-                )
-
-                if (content.receivers.isNotEmpty()) {
-                    launcher.tryLaunch {
-                        transactionService.sendTransaction(roomId, content)
-
-                        onDone()
-                    }
-                }
-            }) {
-                if (launcher.isRunning) LoadingIndicator()
+            FloatingActionButton(onClick = onSubmit) {
+                if (state.isRunning) LoadingIndicator()
                 else Icon(Icons.Default.Check, stringResource(Res.string.save))
             }
         }
     ) { padding ->
-        launcher.ErrorDialog()
+        if (state.errorMessage != null) {
+            AlertDialog(
+                onDismissRequest = onClearError,
+                confirmButton = {
+                    TextButton(onClick = onClearError) {
+                        Text(stringResource(Res.string.ok))
+                    }
+                },
+                title = { Text(stringResource(Res.string.transaction_failed)) },
+                text = { Text(state.errorMessage) }
+            )
+        }
 
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
@@ -278,8 +174,8 @@ fun CreateTransactionScreen(
         ) {
             item {
                 OutlinedTextField(
-                    value = description,
-                    onValueChange = { onDescriptionChanged(it) },
+                    value = state.description,
+                    onValueChange = onDescriptionChanged,
                     label = { Text(stringResource(Res.string.description)) },
                     placeholder = { Text(stringResource(Res.string.payment)) },
                     modifier = Modifier.fillMaxWidth()
@@ -297,7 +193,7 @@ fun CreateTransactionScreen(
                         OutlinedTextField(
                             modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
                             readOnly = true,
-                            value = users[sender]?.name ?: sender.full,
+                            value = users[state.sender]?.event?.content?.displayName ?: state.sender.full,
                             onValueChange = {},
                             label = { Text(stringResource(Res.string.lender)) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
@@ -310,11 +206,10 @@ fun CreateTransactionScreen(
                         for ((userId, user) in users) {
                             DropdownMenuItem(
                                 text = { Box {
-                                    Text(user?.name ?: userId.full)
+                                    Text(user?.event?.content?.displayName ?: userId.full)
                                 } },
                                 onClick = {
-                                    sender = userId
-                                    checkForModifications()
+                                    onSenderChanged(userId)
                                     expanded = false
                                 },
                             )
@@ -325,37 +220,34 @@ fun CreateTransactionScreen(
 
             item {
                 OutlinedTextField(
-                    value = totalAmountStr,
-                    onValueChange = {
-                        onTotalChanged(it)
-                        totalAmountBlurred = false
-                    },
+                    value = state.totalAmountStr,
+                    onValueChange = onTotalChanged,
                     label = { Text(stringResource(Res.string.total_amount)) },
                     keyboardOptions = KeyboardOptions(keyboardType = if (requestFullKeyboard) KeyboardType.Unspecified else KeyboardType.Decimal),
-                    isError = totalAmountError,
-                    supportingText = if (totalAmountError) { { Text(stringResource(Res.string.invalid_amount)) } } else null,
+                    isError = state.totalAmountError,
+                    supportingText = if (state.totalAmountError) { { Text(stringResource(Res.string.invalid_amount)) } } else null,
                     modifier = Modifier.fillMaxWidth().onFocusChanged { 
-                        if (!it.isFocused) totalAmountBlurred = true
+                        if (!it.isFocused) onTotalBlurred()
                     }
                 )
             }
 
             item {
-                if (hint != null) {
-                    Text(hint.format(monetaryUnit), style = MaterialTheme.typography.bodySmall)
+                if (state.totalHint != null) {
+                    Text(state.totalHint.format(monetaryUnit), style = MaterialTheme.typography.bodySmall)
                 }
             }
 
             item {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(Res.string.recipients), style = MaterialTheme.typography.titleMedium)
-                    if (selectedRecipients.isNotEmpty()) {
+                    if (state.selectedRecipients.isNotEmpty()) {
                         SimpleFilledIconButton(Icons.Default.Deselect, stringResource(Res.string.deselect), onClick = {
                             onRecipientsChanged(emptySet())
                         })
                     } else {
                         SimpleFilledIconButton(Icons.Default.SelectAll, stringResource(Res.string.select_all), onClick = {
-                            val newSet = selectedRecipients + userIds
+                            val newSet = state.selectedRecipients + userIds
                             onRecipientsChanged(newSet)
                         })
                     }
@@ -363,40 +255,39 @@ fun CreateTransactionScreen(
             }
 
             items(userIds) { userId ->
-                val isSelected = userId in selectedRecipients
+                val isSelected = userId in state.selectedRecipients
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable {
-                        val newSet = if (isSelected) selectedRecipients - userId else selectedRecipients + userId
+                        val newSet = if (isSelected) state.selectedRecipients - userId else state.selectedRecipients + userId
                         onRecipientsChanged(newSet)
                     }
                 ) {
                     Checkbox(
                         checked = isSelected,
                         onCheckedChange = { checked ->
-                            val newSet = if (checked) selectedRecipients + userId else selectedRecipients - userId
+                            val newSet = if (checked) state.selectedRecipients + userId else state.selectedRecipients - userId
                             onRecipientsChanged(newSet)
                         }
                     )
-                    Text(users[userId]?.name ?: userId.full)
+                    Text(users[userId]?.event?.content?.displayName ?: userId.full)
                 }
 
                 if (isSelected) {
-                    val amountStr = recipientAmountInputs[userId] ?: ""
-                    val isError = !parseAmount(amountStr).isSuccess && (submitAttempted || userId in recipientAmountsBlurred)
+                    val amountStr = state.recipientAmountInputs[userId] ?: ""
+                    val isBlurred = userId in state.recipientAmountsBlurred
+                    val isError = amountStr.isBlank() && (state.submitAttempted || isBlurred)
+
                     OutlinedTextField(
                         value = amountStr,
-                        onValueChange = {
-                            onIndividualAmountChanged(userId, it)
-                            recipientAmountsBlurred = recipientAmountsBlurred - userId
-                        },
+                        onValueChange = { onIndividualAmountChanged(userId, it) },
                         label = { Text(stringResource(Res.string.amount)) },
                         keyboardOptions = KeyboardOptions(keyboardType = if (requestFullKeyboard) KeyboardType.Unspecified else KeyboardType.Decimal),
                         isError = isError,
                         supportingText = if (isError) { { Text(stringResource(Res.string.invalid_amount)) } } else null,
                         modifier = Modifier.fillMaxWidth().padding(start = 48.dp).onFocusChanged {
                             if (!it.isFocused) {
-                                recipientAmountsBlurred = recipientAmountsBlurred + userId
+                                onIndividualAmountBlurred(userId)
                             }
                         }
                     )
@@ -404,4 +295,34 @@ fun CreateTransactionScreen(
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun CreateTransactionScreenPreview() {
+    CreateTransactionContent(
+        state = CreateTransactionViewModel.State(
+            description = "Pizza",
+            sender = UserId("alice", "example.com"),
+            totalAmountStr = "12.50",
+            selectedRecipients = setOf(UserId("bob", "example.com"))
+        ),
+        monetaryUnit = MonetaryUnit.default,
+        requestFullKeyboard = false,
+        users = mapOf(UserId("alice", "example.com") to null, UserId("bob", "example.com") to null),
+        userIds = listOf(UserId("alice", "example.com"), UserId("bob", "example.com")),
+        onDescriptionChanged = {},
+        onSenderChanged = {},
+        onTotalChanged = {},
+        onTotalBlurred = {},
+        onRecipientsChanged = {},
+        onIndividualAmountChanged = { _, _ -> },
+        onIndividualAmountBlurred = {},
+        onSaveAsTemplate = {},
+        onDeleteTemplate = {},
+        onSubmit = {},
+        onClearError = {},
+        onBack = {},
+        openSettings = {}
+    )
 }

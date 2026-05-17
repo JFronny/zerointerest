@@ -45,6 +45,7 @@ suspend fun TestZiServer.restoreHistory(historyJson: String, allowAppend: Boolea
     val userClients = mutableMapOf<UserId, TestZiClient>()
     for (event in json.decodeFromString<List<TestZiEvent>>(historyJson)) {
         val client = userClients.getOrPut(event.sender) { TestZiClient(this, event.sender) }
+        client.registerIfAbsent(event.roomId)
         when (event) {
             is TestZiEvent.Reaction -> client.reactToEvent(event.roomId, event.event, event.key)
             is TestZiEvent.Summary -> client.sendStateEvent(event.roomId, event.event, ZeroInterestSummaryEvent.TYPE)

@@ -20,9 +20,11 @@ import dev.jfronny.zerointerest.db.Migration2_3
 import dev.jfronny.zerointerest.db.Migration3_4
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import dev.jfronny.zerointerest.service.client.ZiClientProvider
+import dev.jfronny.zerointerest.ui.viewmodel.CreateTransactionViewModel
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.sync.Mutex
 import org.koin.compose.currentKoinScope
+import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.Qualifier
 import org.koin.core.scope.Scope
 import org.koin.dsl.bind
@@ -50,6 +52,7 @@ fun createAppModule() = module {
         ZeroInterestDatabase(get())
             .apply { get<Platform>().handleZerointerestDatabase(this@apply) }
     }
+    viewModel { params -> CreateTransactionViewModel(params.get(), params.getOrNull(), get<ZiClientProvider>().get(), get(), get(), get(), get()) }
 }
 
 fun createAppMatrixModule() = module {

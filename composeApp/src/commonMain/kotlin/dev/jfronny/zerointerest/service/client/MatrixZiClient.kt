@@ -5,9 +5,12 @@ import de.connect2x.trixnity.client.room
 import de.connect2x.trixnity.client.room.getState
 import de.connect2x.trixnity.client.room.getTimelineEventReactionAggregation
 import de.connect2x.trixnity.client.room.message.react
+import de.connect2x.trixnity.client.store.RoomUser
 import de.connect2x.trixnity.client.store.TimelineEvent
 import de.connect2x.trixnity.client.store.eventId
 import de.connect2x.trixnity.client.store.originTimestamp
+import de.connect2x.trixnity.client.user
+import de.connect2x.trixnity.clientserverapi.client.SyncState
 import de.connect2x.trixnity.clientserverapi.model.room.GetEvents
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
@@ -33,6 +36,7 @@ class MatrixZiClient(
     val client: MatrixClient,
 ) : ZiClient {
     override val userId: UserId get() = client.userId
+    override val offline: Boolean get() = client.syncState.value != SyncState.RUNNING
 
     override suspend fun getTransactionEventWithTimeout(
         roomId: RoomId,
@@ -74,6 +78,8 @@ class MatrixZiClient(
             Result.success(timed)
         }
     }
+
+    override fun getUsers(roomId: RoomId): Flow<Map<UserId, Flow<RoomUser?>>> = client.user.getAll(roomId)
 
     override suspend fun sendStateEvent(
         roomId: RoomId,

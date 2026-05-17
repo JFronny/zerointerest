@@ -1,5 +1,7 @@
 package dev.jfronny.zerointerest.service
 
+import androidx.datastore.preferences.core.MutablePreferences
+import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.room3.Room
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
@@ -13,6 +15,7 @@ import dev.jfronny.zerointerest.db.ZeroInterestRoomDatabase
 import dev.jfronny.zerointerest.inMemoryDatabaseBuilder
 import dev.jfronny.zerointerest.service.client.ZiClient
 import dev.jfronny.zerointerest.service.client.ZiClientProvider
+import dev.jfronny.zerointerest.ui.viewmodel.CreateTransactionViewModel
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.koin.KoinExtension
 import io.kotest.koin.KoinLifecycleMode
@@ -20,6 +23,7 @@ import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withTimeout
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.bind
 import org.koin.dsl.module
 import org.koin.test.KoinTest
@@ -34,6 +38,7 @@ abstract class CoreServicesTest : KoinTest, FunSpec() {
 
     init {
         extension(KoinExtension(module {
+            single { Settings(TestDataStore(mutablePreferencesOf())) }
             single { createSQLiteDriver() }
             single {
                 Room.inMemoryDatabaseBuilder<ZeroInterestRoomDatabase>()
@@ -48,6 +53,7 @@ abstract class CoreServicesTest : KoinTest, FunSpec() {
             } }
             single { TransactionService(get(), get()) }
             single { SummaryTrustService(get(), get()) }
+            viewModel { params -> CreateTransactionViewModel(params.get(), params.getOrNull(), get<ZiClientProvider>().get(), get(), get(), get(), get()) }
         }, mode = KoinLifecycleMode.Test))
     }
 
