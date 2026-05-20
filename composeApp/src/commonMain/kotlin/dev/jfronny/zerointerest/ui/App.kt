@@ -45,9 +45,8 @@ const val appName = "zerointerest"
 
 @OptIn(coil3.annotation.ExperimentalCoilApi::class)
 @Composable
-fun App() {
+fun App(navHelper: NavigationHelper = rememberNavigationHelper()) {
     remember { EmojiService.initialize() }
-    val navHelper = rememberNavigationHelper()
     val service = koinInject<MatrixClientService>()
     val settings = koinInject<Settings>()
     val database = koinInject<ZeroInterestDatabase>()

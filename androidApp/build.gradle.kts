@@ -80,9 +80,6 @@ dependencies {
         val uiTooling = libs.compose.uiTooling.get()
         exclude(group = uiTooling.module.group, module = uiTooling.module.name)
     }
-    implementation(libs.koin.compose)
-    implementation(libs.androidx.activity.compose)
-    implementation(libs.trixnity.client)
 
     debugImplementation(libs.compose.uiTooling)
 }
