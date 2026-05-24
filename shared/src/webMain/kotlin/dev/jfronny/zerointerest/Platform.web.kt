@@ -18,9 +18,19 @@ import de.connect2x.trixnity.client.RepositoriesModule
 import de.connect2x.trixnity.client.media.indexeddb.indexedDB
 import de.connect2x.trixnity.client.store.repository.indexeddb.indexedDB
 import dev.jfronny.zerointerest.db.ZeroInterestRoomDatabase
+import dev.jfronny.zerointerest.shared.generated.resources.Res
+import dev.jfronny.zerointerest.shared.generated.resources.timestamp_just_now
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.js.Js
+import js.date.Date
+import js.intl.DateTimeFormat
+import js.intl.RelativeTimeFormat
+import js.intl.RelativeTimeFormatUnit
+import js.intl.day
+import js.intl.hour
+import js.intl.minute
+import org.jetbrains.compose.resources.stringResource
 import org.koin.core.scope.Scope
 import org.w3c.dom.Worker
 import web.console.console
@@ -32,6 +42,7 @@ import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.toJsString
+import kotlin.time.Instant
 
 private val log = KotlinLogging.logger {}
 
@@ -83,3 +94,60 @@ fun launch(block: suspend () -> Unit) {
 }
 
 actual suspend fun SQLiteConnection.execSQL(sql: String) = execSQL(sql)
+
+@OptIn(ExperimentalWasmJsInterop::class)
+@JsFun("() => new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })")
+private external fun createRelativeTimeFormat(): RelativeTimeFormat
+
+@OptIn(ExperimentalWasmJsInterop::class)
+@JsFun("() => new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' })")
+private external fun createShortDateTimeFormat(): DateTimeFormat
+
+@OptIn(ExperimentalWasmJsInterop::class)
+@JsFun("() => new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' })")
+private external fun createYearDateTimeFormat(): DateTimeFormat
+
+@Composable
+actual fun Instant.formatLocalized(style: TimestampStyle): String {
+    val now = Date.now()
+    val epochMillis = toEpochMilliseconds()
+    val diffMs = now - epochMillis
+
+    val minute = 60_000
+    val hour = 60 * minute
+    val day = 24 * hour
+
+    val rtf = createRelativeTimeFormat()
+
+    return when {
+        diffMs < minute -> stringResource(Res.string.timestamp_just_now)
+
+        diffMs < hour ->
+            rtf.format(
+                -(diffMs / minute).toLong().toDouble(),
+                RelativeTimeFormatUnit.minute
+            )
+
+        diffMs < day ->
+            rtf.format(
+                -(diffMs / hour).toLong().toDouble(),
+                RelativeTimeFormatUnit.hour
+            )
+
+        diffMs < 7 * day ->
+            rtf.format(
+                -(diffMs / day).toLong().toDouble(),
+                RelativeTimeFormatUnit.day
+            )
+
+        else -> {
+            val date = Date(epochMillis.toDouble())
+
+            if (Date().getFullYear() == date.getFullYear()) {
+                createShortDateTimeFormat()
+            } else {
+                createYearDateTimeFormat()
+            }.format(date)
+        }
+    }
+}

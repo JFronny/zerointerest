@@ -1,6 +1,7 @@
 package dev.jfronny.zerointerest.ui.component
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -32,21 +33,21 @@ import org.jetbrains.compose.resources.stringResource
 
 interface UserUI {
     @Composable
-    operator fun invoke(userId: UserId) = component(userId)()
+    operator fun invoke(userId: UserId, iconSize: IconSize = IconSize.Regular) = component(userId)(iconSize = iconSize)
 
     @Composable
     fun component(userId: UserId): Component
 
     interface Component {
-        @Composable fun Icon()
+        @Composable fun Icon(size: IconSize = IconSize.Regular)
         @Composable fun Name() {
             Text(name)
         }
         val name: String
 
         @Composable
-        operator fun invoke() {
-            Icon()
+        operator fun invoke(iconSize: IconSize = IconSize.Regular) = Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(size = iconSize)
             Spacer(Modifier.width(8.dp))
             Name()
         }
@@ -62,17 +63,16 @@ interface UserUI {
     }
 }
 
-object PreviewUserUI : UserUI {
-    @Composable
-    override fun invoke(userId: UserId) {
-        Text(userId.full)
-    }
+enum class IconSize {
+    Small, Regular
+}
 
+object PreviewUserUI : UserUI {
     @Composable
     override fun component(userId: UserId): UserUI.Component = object : UserUI.Component {
         @Composable
-        override fun Icon() {
-            FallbackIcon(userId.localpart)
+        override fun Icon(size: IconSize) {
+            FallbackIcon(size, userId.localpart)
         }
 
         override val name: String get() = userId.localpart
@@ -91,13 +91,13 @@ class UserUIImpl(
         val name = remember(state) { state?.name ?: userId.full }
         return object : UserUI.Component {
             @Composable
-            override fun Icon() {
+            override fun Icon(size: IconSize) {
                 val state = state
                 if (state?.avatarUrl == null) {
-                    FallbackIcon(name)
+                    FallbackIcon(size, name)
                     return
                 }
-                IconWrapper {
+                IconWrapper(size) {
                     WebImage(state.avatarUrl, stringResource(Res.string.avatar))
                 }
             }
@@ -108,7 +108,7 @@ class UserUIImpl(
 }
 
 @Composable
-private fun FallbackIcon(name: String) {
+private fun FallbackIcon(size: IconSize, name: String) {
     val initials = name
         .split(Regex("\\s+"))
         .filter { it.isNotBlank() }
@@ -116,7 +116,7 @@ private fun FallbackIcon(name: String) {
         .take(2)
         .joinToString("")
         .ifEmpty { name.take(2).uppercase() }
-    IconWrapper {
+    IconWrapper(size) {
         Text(
             text = initials,
             color = MaterialTheme.colorScheme.onPrimary,
@@ -128,9 +128,12 @@ private fun FallbackIcon(name: String) {
 }
 
 @Composable
-private fun IconWrapper(content: @Composable () -> Unit) {
+private fun IconWrapper(size: IconSize, content: @Composable () -> Unit) {
     Surface(
-        modifier = Modifier.size(40.dp),
+        modifier = Modifier.size(when (size) {
+            IconSize.Small -> 24.dp
+            IconSize.Regular -> 40.dp
+        }),
         shape = CircleShape,
         color = MaterialTheme.colorScheme.primary
     ) {

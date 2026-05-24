@@ -116,6 +116,7 @@ kotlin {
             implementation(libs.compose.material3AdaptiveNavigationSuite)
             implementation(libs.compose.materialIconsExtended)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.datetime)
             implementation(libs.koin.core)
             api(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
@@ -159,7 +160,6 @@ kotlin {
             implementation(libs.slf4j.android)
         }
         webMain.dependencies {
-            implementation(npm("copy-webpack-plugin", libs.versions.copyWebpackPlugin.get()))
             implementation(libs.androidx.sqlite.web)
             implementation(libs.trixnity.client.repository.indexeddb)
             implementation(libs.trixnity.client.media.indexeddb)

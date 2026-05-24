@@ -13,6 +13,7 @@ import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import dev.jfronny.zerointerest.db.ZeroInterestRoomDatabase
 import io.ktor.client.engine.HttpClientEngine
 import org.koin.core.scope.Scope
+import kotlin.time.Instant
 
 interface Platform {
     val name: String
@@ -33,3 +34,11 @@ expect fun addShutdownHook(block: () -> Unit)
 expect fun createSQLiteDriver(): SQLiteDriver
 
 expect suspend fun SQLiteConnection.execSQL(sql: String)
+
+enum class TimestampStyle {
+    SHORT,
+    FULL
+}
+
+@Composable
+expect fun Instant.formatLocalized(style: TimestampStyle = TimestampStyle.SHORT): String

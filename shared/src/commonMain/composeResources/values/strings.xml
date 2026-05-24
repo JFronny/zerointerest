@@ -102,4 +102,8 @@
     <string name="request_full_keyboard">Request full keyboard</string>
     <string name="request_full_keyboard_description">Request a full text keyboard everywhere (even for numbers)</string>
     <string name="timestamp">Timestamp</string>
+    <string name="timestamp_just_now">Just now</string>
+    <string name="timestamp_minutes_ago">%1$d min ago</string>
+    <string name="timestamp_hours_ago">%1$d hours ago</string>
+    <string name="timestamp_days_ago">%1$d days ago</string>
 </resources>

@@ -13,12 +13,23 @@ import dev.jfronny.zerointerest.db.ZeroInterestRoomDatabase
 import kotlinx.cinterop.staticCFunction
 import okio.Path.Companion.toPath
 import org.koin.core.scope.Scope
+import platform.Foundation.NSCalendar
+import platform.Foundation.NSCalendarUnitYear
+import platform.Foundation.NSDate
+import platform.Foundation.NSDateFormatter
+import platform.Foundation.NSDateFormatterLongStyle
+import platform.Foundation.NSDateFormatterMediumStyle
+import platform.Foundation.NSDateFormatterNoStyle
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSRelativeDateTimeFormatter
 import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
+import platform.Foundation.dateWithTimeIntervalSince1970
+import platform.Foundation.timeIntervalSinceDate
 import platform.UIKit.UIDevice
 import platform.posix.atexit
+import kotlin.time.Instant
 
 class IOSPlatform : AbstractPlatform(documentDirectory().toPath()) {
     override val name: String = UIDevice.currentDevice.systemName()
@@ -66,4 +77,47 @@ actual fun addShutdownHook(block: () -> Unit) {
     if (shutdownHooks.size == 1) {
         atexit(staticCFunction(::onExit))
     }
+}
+
+@Composable
+actual fun Instant.formatLocalized(style: TimestampStyle): String {
+    val epochMillis = toEpochMilliseconds()
+    val now = NSDate()
+    val date = NSDate.dateWithTimeIntervalSince1970(
+        epochMillis / 1000.0
+    )
+
+    val diffSeconds =
+        kotlin.math.abs(now.timeIntervalSinceDate(date))
+
+    // < 1 week -> relative
+    if (diffSeconds < 7 * 24 * 60 * 60) {
+
+        val relativeFormatter = NSRelativeDateTimeFormatter()
+
+        return relativeFormatter.localizedStringForDate(
+            date,
+            relativeToDate = now
+        )
+    }
+
+    val formatter = NSDateFormatter()
+
+    val calendar = NSCalendar.currentCalendar
+    val currentYear =
+        calendar.component(NSCalendarUnitYear, fromDate = now)
+
+    val targetYear =
+        calendar.component(NSCalendarUnitYear, fromDate = date)
+
+    formatter.dateStyle =
+        if (currentYear == targetYear)
+            NSDateFormatterMediumStyle
+        else
+            NSDateFormatterLongStyle
+
+    formatter.timeStyle =
+        NSDateFormatterNoStyle
+
+    return formatter.stringFromDate(date)
 }

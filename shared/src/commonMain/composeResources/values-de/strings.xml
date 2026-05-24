@@ -102,4 +102,8 @@
     <string name="request_full_keyboard">Vollständige Tastatur anfordern</string>
     <string name="request_full_keyboard_description">Überall eine vollständige Texttastatur anfordern (auch für Zahlen)</string>
     <string name="timestamp">Zeitpunkt</string>
+    <string name="timestamp_just_now">Gerade eben</string>
+    <string name="timestamp_minutes_ago">Vor %1$d Minuten</string>
+    <string name="timestamp_hours_ago">Vor %1$d Stunden</string>
+    <string name="timestamp_days_ago">Vor %1$d Tagen</string>
 </resources>

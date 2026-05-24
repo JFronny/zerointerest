@@ -16,7 +16,14 @@ import web.history.history
 import web.url.URLSearchParams
 import web.window.window
 import kotlin.js.ExperimentalWasmJsInterop
+import kotlin.js.JsModule
 import kotlin.js.toJsString
+
+@OptIn(ExperimentalWasmJsInterop::class)
+@JsModule("@js-joda/timezone")
+external object JsJodaTimeZoneModule
+
+private val jsJodaTz = JsJodaTimeZoneModule
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalWasmJsInterop::class)
 fun main() {
