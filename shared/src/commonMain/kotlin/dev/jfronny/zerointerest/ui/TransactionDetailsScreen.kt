@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Payments
@@ -126,9 +127,17 @@ fun TransactionDetailsContent(
             ) {
                 LoadingIndicator(Modifier.size(128.dp))
             }
-        } else {
+        } else Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentAlignment = Alignment.TopCenter
+        ) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .widthIn(max = 800.dp)
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 if (!includedInSummary) {
@@ -208,9 +217,9 @@ fun TransactionDetailsContent(
                                     )
                                 }
                             }
-                            
+
                             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                            
+
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Default.Person,
