@@ -101,4 +101,5 @@
     <string name="deselect">Abwählen</string>
     <string name="request_full_keyboard">Vollständige Tastatur anfordern</string>
     <string name="request_full_keyboard_description">Überall eine vollständige Texttastatur anfordern (auch für Zahlen)</string>
+    <string name="timestamp">Zeitpunkt</string>
 </resources>

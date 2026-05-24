@@ -27,21 +27,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.connect2x.trixnity.client.MatrixClient
 import de.connect2x.trixnity.client.room
+import de.connect2x.trixnity.client.store.originTimestamp
 import de.connect2x.trixnity.client.store.sender
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
-import dev.jfronny.zerointerest.shared.generated.resources.*
+import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
+import dev.jfronny.zerointerest.data.money.toMoney
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
+import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.component.BackButton
+import dev.jfronny.zerointerest.ui.component.PreviewUserUI
 import dev.jfronny.zerointerest.ui.component.UserUI
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import kotlin.time.Duration.Companion.seconds
@@ -54,18 +58,12 @@ fun TransactionDetailsScreen(
     transactionId: EventId,
     onBack: () -> Unit
 ) {
-    val transactionFlow = remember(roomId, transactionId) {
+    val event by remember(roomId, transactionId) {
         client.room.getTimelineEvent(roomId, transactionId) {
             fetchTimeout = 5.seconds
             allowReplaceContent = false
         }
-    }
-    val sender by transactionFlow
-        .map { it?.sender }
-        .collectAsState(null)
-    val transaction by transactionFlow
-        .map { it?.content?.getOrNull() as? ZeroInterestTransactionEvent }
-        .collectAsState(null)
+    }.collectAsState(null)
     val trust = koinInject<SummaryTrustService>()
     val includedFlow = remember(roomId, transactionId) {
         flow {
@@ -76,7 +74,28 @@ fun TransactionDetailsScreen(
     val userUI = UserUI(client, roomId)
     val settings = koinInject<Settings>()
     val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
+    val includedInSummary = included[transactionId]?.isNotEmpty() == true
+    val eventx = event?.let {
+        TransactionDetailsEvent(
+            it.content?.getOrNull() as? ZeroInterestTransactionEvent ?: return@let null,
+            it.sender,
+            it.originTimestamp
+        )
+    }
 
+    TransactionDetailsContent(eventx, includedInSummary, userUI, monetaryUnit, onBack)
+}
+
+data class TransactionDetailsEvent(val content: ZeroInterestTransactionEvent, val sender: UserId, val timestamp: Long)
+
+@Composable
+fun TransactionDetailsContent(
+    event: TransactionDetailsEvent?,
+    includedInSummary: Boolean,
+    userUI: UserUI,
+    monetaryUnit: MonetaryUnit,
+    onBack: () -> Unit,
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -87,11 +106,7 @@ fun TransactionDetailsScreen(
             )
         }
     ) { padding ->
-        // local copy to allow smart null-safe access
-        val transaction = transaction
-        val sender = sender
-
-        if (transaction == null) {
+        if (event == null) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
@@ -103,7 +118,7 @@ fun TransactionDetailsScreen(
                 modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (included[transactionId]?.isEmpty() != false) {
+                if (!includedInSummary) {
                     item {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
@@ -125,20 +140,26 @@ fun TransactionDetailsScreen(
                 item {
                     Text(stringResource(Res.string.description), style = MaterialTheme.typography.labelMedium)
                     Text(
-                        text = if (transaction.description == ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION) stringResource(Res.string.payment) else transaction.description,
+                        text = if (event.content.description == ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION) stringResource(Res.string.payment) else event.content.description,
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
 
-                if (sender != null) {
-                    item {
-                        Text(stringResource(Res.string.entered_by), style = MaterialTheme.typography.labelMedium)
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            userUI(sender)
-                        }
+                item {
+                    Text(stringResource(Res.string.timestamp), style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        text = event.timestamp.toString(),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+
+                item {
+                    Text(stringResource(Res.string.entered_by), style = MaterialTheme.typography.labelMedium)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        userUI(event.sender)
                     }
                 }
 
@@ -148,20 +169,20 @@ fun TransactionDetailsScreen(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        userUI(transaction.sender)
+                        userUI(event.content.sender)
                     }
                 }
 
                 item {
                     Text(stringResource(Res.string.total_amount), style = MaterialTheme.typography.labelMedium)
-                    Text(transaction.total.format(monetaryUnit), style = MaterialTheme.typography.bodyLarge)
+                    Text(event.content.total.format(monetaryUnit), style = MaterialTheme.typography.bodyLarge)
                 }
 
                 item {
                     Text(stringResource(Res.string.recipients), style = MaterialTheme.typography.titleMedium)
                 }
 
-                items(transaction.receivers.entries.toList()) { (userId, amount) ->
+                items(event.content.receivers.entries.toList()) { (userId, amount) ->
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -174,4 +195,27 @@ fun TransactionDetailsScreen(
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun TransactionDetailsScreenPreview() {
+    TransactionDetailsContent(
+        event = TransactionDetailsEvent(
+            ZeroInterestTransactionEvent(
+                ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION,
+                UserId("alice", "example.com"),
+                mapOf(
+                    UserId("bob", "example.com") to 100L.toMoney(),
+                    UserId("charlie", "example.com") to 50L.toMoney()
+                )
+            ),
+            UserId("alice", "example.com"),
+            1779611380
+        ),
+        includedInSummary = false,
+        userUI = PreviewUserUI,
+        monetaryUnit = MonetaryUnit.default,
+        onBack = {}
+    )
 }

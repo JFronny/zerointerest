@@ -101,4 +101,5 @@
     <string name="deselect">Deselect</string>
     <string name="request_full_keyboard">Request full keyboard</string>
     <string name="request_full_keyboard_description">Request a full text keyboard everywhere (even for numbers)</string>
+    <string name="timestamp">Timestamp</string>
 </resources>
