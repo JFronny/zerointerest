@@ -8,7 +8,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import dev.jfronny.zerointerest.composeapp.generated.resources.*
+import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.service.client.ZiClient
 import io.github.oshai.kotlinlogging.KotlinLogging

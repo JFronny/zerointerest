@@ -35,7 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import dev.jfronny.zerointerest.SourceCodeUrl
-import dev.jfronny.zerointerest.composeapp.generated.resources.*
+import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.ui.component.BackButton

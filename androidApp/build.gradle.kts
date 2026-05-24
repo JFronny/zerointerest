@@ -9,6 +9,9 @@ plugins {
 val computedVersionName: String by rootProject.extra
 val computedVersionCode: Int by rootProject.extra
 
+group = "dev.jfronny.zerointerest"
+version = computedVersionName
+
 kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_17
@@ -43,7 +46,7 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
-                project(":composeApp").projectDir.resolve("proguard-rules.pro"),
+                project(":shared").projectDir.resolve("proguard-rules.pro"),
             )
         }
         register("unsigned") {
@@ -76,7 +79,7 @@ android {
 }
 
 dependencies {
-    implementation(projects.composeApp) {
+    implementation(projects.shared) {
         val uiTooling = libs.compose.uiTooling.get()
         exclude(group = uiTooling.module.group, module = uiTooling.module.name)
     }

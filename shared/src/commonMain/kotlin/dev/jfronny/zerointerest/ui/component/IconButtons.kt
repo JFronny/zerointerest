@@ -22,7 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
-import dev.jfronny.zerointerest.composeapp.generated.resources.*
+import dev.jfronny.zerointerest.shared.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

@@ -33,7 +33,7 @@ plugins {
 }
 
 include(
-    ":composeApp",
+    ":shared",
     ":androidApp",
     ":desktopApp",
     ":webApp",

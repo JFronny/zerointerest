@@ -33,7 +33,7 @@ import de.connect2x.trixnity.client.room
 import de.connect2x.trixnity.client.store.sender
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
-import dev.jfronny.zerointerest.composeapp.generated.resources.*
+import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
 import dev.jfronny.zerointerest.service.Settings

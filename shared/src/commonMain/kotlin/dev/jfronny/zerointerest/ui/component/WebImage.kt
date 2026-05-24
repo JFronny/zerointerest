@@ -26,8 +26,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
-import dev.jfronny.zerointerest.composeapp.generated.resources.Res
-import dev.jfronny.zerointerest.composeapp.generated.resources.ic_client_placeholder
+import dev.jfronny.zerointerest.shared.generated.resources.Res
+import dev.jfronny.zerointerest.shared.generated.resources.ic_client_placeholder
 import org.jetbrains.compose.resources.painterResource
 
 @Composable

@@ -7,15 +7,17 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
-    alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.download)
 }
 
 val computedVersionName: String by rootProject.extra
 val computedVersionCode: Int by rootProject.extra
 
+group = "dev.jfronny.zerointerest"
+version = computedVersionName
+
 dependencies {
-    implementation(projects.composeApp)
+    implementation(projects.shared)
 }
 
 kotlin {
@@ -54,7 +56,7 @@ compose.desktop {
             version = libs.versions.proguard
             configurationFiles.from(
                 "proguard-desktop-rules.pro",
-                project(":composeApp").projectDir.resolve("proguard-rules.pro"),
+                project(":shared").projectDir.resolve("proguard-rules.pro"),
             )
             optimize = false
         }

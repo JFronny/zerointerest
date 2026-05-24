@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
-import dev.jfronny.zerointerest.composeapp.generated.resources.Res
-import dev.jfronny.zerointerest.composeapp.generated.resources.device_offline
+import dev.jfronny.zerointerest.shared.generated.resources.Res
+import dev.jfronny.zerointerest.shared.generated.resources.device_offline
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.data.money.MonetaryUnit

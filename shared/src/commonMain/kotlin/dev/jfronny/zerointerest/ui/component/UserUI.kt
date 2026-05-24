@@ -25,8 +25,8 @@ import de.connect2x.trixnity.client.store.avatarUrl
 import de.connect2x.trixnity.client.user
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
-import dev.jfronny.zerointerest.composeapp.generated.resources.Res
-import dev.jfronny.zerointerest.composeapp.generated.resources.avatar
+import dev.jfronny.zerointerest.shared.generated.resources.Res
+import dev.jfronny.zerointerest.shared.generated.resources.avatar
 import kotlinx.coroutines.flow.Flow
 import org.jetbrains.compose.resources.stringResource
 
