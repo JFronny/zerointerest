@@ -8,12 +8,13 @@ import dev.jfronny.zerointerest.ui.LoadingScreenExtras
 import dev.jfronny.zerointerest.util.KoinLogWrangler
 import dev.jfronny.zerointerest.util.LognityWrangler
 import js.string.JsStrings.toKotlinString
-import kotlinx.browser.window
 import org.koin.compose.KoinApplication
 import org.koin.dsl.koinConfiguration
 import org.koin.dsl.module
 import web.console.console
+import web.history.history
 import web.url.URLSearchParams
+import web.window.window
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.toJsString
 
@@ -27,7 +28,7 @@ fun main() {
         params.forEach { value, key ->
             console.log("${key.toKotlinString()}: ${value.toKotlinString()}".toJsString())
         }
-        window.history.pushState(null, "", window.location.pathname) // Clear URL parameters after reading
+        history.pushState(null, "", window.location.pathname) // Clear URL parameters after reading
     }
 
     Backend.set(LognityWrangler)

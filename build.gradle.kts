@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.composeCompiler) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.kotlinxSerialization) apply false
+    com.github.`ben-manes`.versions
 }
 
 val versionMajor = 1
@@ -44,8 +45,8 @@ val computedVersionCode by extra {
 
 tasks {
     val pages by registering(Copy::class) {
-        from(project(":composeApp").tasks["jsBrowserDistribution"])
-        from(project(":composeApp").tasks["buildReleaseAppImage"])
+        from(project(":webApp").tasks["jsBrowserDistribution"])
+        from(project(":desktopApp").tasks["buildReleaseAppImage"])
         from(project(":androidApp").tasks["packageRelease"]) {
             rename { if (it.endsWith(".apk") && it.contains("-universal-")) "android.apk" else it }
             exclude { !it.name.endsWith(".apk") && it.name != "output-metadata.json" }

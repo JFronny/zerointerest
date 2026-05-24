@@ -5,8 +5,6 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import de.undercouch.gradle.tasks.download.Download
 import dev.jfronny.zerointerest.ConvertExchangeRatesTask
 import dev.jfronny.zerointerest.UpgradeToUnstableFilter
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.InternalKotlinGradlePluginApi
@@ -22,7 +20,6 @@ plugins {
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
-    com.github.`ben-manes`.versions
 //    alias(libs.plugins.kotest) // temporarily disabled: breaks kotlin
     alias(libs.plugins.download)
 }
@@ -148,11 +145,11 @@ kotlin {
             implementation(libs.kotlin.test)
         }
         jvmMain.dependencies {
-            implementation(compose.desktop.currentOs)
-            implementation(libs.kotlinx.coroutines.swing)
-            implementation(libs.ktor.client.java)
-            implementation(libs.slf4j.over.jpl)
-            implementation(libs.commons.logger)
+            api(compose.desktop.currentOs)
+            api(libs.kotlinx.coroutines.swing)
+            api(libs.ktor.client.java)
+            api(libs.slf4j.over.jpl)
+            api(libs.commons.logger)
         }
         androidMain.dependencies {
             api(libs.androidx.activity.compose)
@@ -165,7 +162,6 @@ kotlin {
         webMain.dependencies {
             implementation(npm("copy-webpack-plugin", libs.versions.copyWebpackPlugin.get()))
             implementation(libs.androidx.sqlite.web)
-            implementation(npm("sqlite-web-worker", layout.projectDirectory.dir("sqlite-web-worker").asFile))
             implementation(libs.trixnity.client.repository.indexeddb)
             implementation(libs.trixnity.client.media.indexeddb)
             implementation(libs.indexeddb)
@@ -193,107 +189,6 @@ dependencies {
 
 room3 {
     schemaDirectory(layout.projectDirectory.dir("schemas"))
-}
-
-compose.desktop {
-    application {
-        mainClass = "dev.jfronny.zerointerest.MainKt"
-
-        nativeDistributions {
-            packageName = "zerointerest"
-            packageVersion = computedVersionName.substringBefore('+')
-            description = "Simple money lending"
-            vendor = "JFronny"
-
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.AppImage)
-            modules("java.net.http", "jdk.unsupported")
-            jvmArgs("--enable-native-access=ALL-UNNAMED")
-
-            windows {
-                iconFile = rootProject.file("icon.ico")
-                perUserInstall = true
-                console = false
-            }
-            linux {
-                packageVersion = computedVersionName
-                iconFile = rootProject.file("icon.png")
-            }
-        }
-
-        buildTypes.release.proguard {
-            version = libs.versions.proguard
-            configurationFiles.from("proguard-rules.pro", "proguard-desktop-rules.pro")
-            optimize = false
-        }
-    }
-}
-
-val appImageTool = layout.buildDirectory.file("tmp/appimagetool-x86_64.AppImage")
-val downloadAppImageTool by tasks.registering(Download::class) {
-    notCompatibleWithConfigurationCache("Uses build script variable as target for simplicity")
-    src("https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage")
-    dest(appImageTool)
-    overwrite(true)
-    onlyIfModified(false)
-    doLast {
-        appImageTool.get().asFile.setExecutable(true)
-    }
-}
-
-afterEvaluate {
-    val packageTasks = tasks.withType(AbstractJPackageTask::class)
-    val appDirSrc = project.file("appimage")
-
-    fun configurePackageTasks(type: String) {
-        packageTasks.findByName("package${type}AppImage")?.let {
-            val files = it.outputs.files.files
-            require(files.size == 1) { "Expected exactly one file, got ${files.size}" }
-            val appName = it.packageName.get()
-            val packageOutput = files.first().resolve(appName)
-            val kind = files.first().parentFile.name
-            val appDir = layout.buildDirectory.dir("appimage/$kind/$appName.AppDir")
-            val finalOutput = layout.buildDirectory.file("appimage/$kind/$appName-x86_64.AppImage")
-
-            val prepareAppImage = tasks.register("prepare${type}AppImage", Copy::class) {
-                dependsOn(it)
-                from(appDirSrc)
-                from(packageOutput)
-                into(appDir)
-                exclude { it.path.contains("/legal/") }
-                doLast {
-                    appDir.get().asFile.let {
-                        it.resolve("lib/zerointerest.png").copyTo(it.resolve("zerointerest.png"), overwrite = true)
-                    }
-                }
-            }
-
-            val buildAppImage = tasks.register("build${type}AppImage", Exec::class) {
-                dependsOn(downloadAppImageTool, prepareAppImage)
-                workingDir = layout.buildDirectory.dir("appimage").get().asFile
-                commandLine(
-                    appImageTool.get().asFile.absolutePath,
-                    appDir.get().asFile.absolutePath,
-                    finalOutput.get().asFile.absolutePath,
-                )
-                environment("ARCH", "x86_64")
-                outputs.file(finalOutput)
-            }
-        }
-
-        packageTasks.findByName("package${type}Msi")?.let {
-            val appName = it.packageName.get()
-
-            val moveMsi = tasks.register("move${type}Msi", Copy::class) {
-                dependsOn(it)
-                from(it.outputs.files.files.first())
-                into(layout.buildDirectory.dir("msi"))
-                rename { "$appName-x86_64.msi" }
-            }
-        }
-    }
-
-    configurePackageTasks("")
-    configurePackageTasks("Release")
 }
 
 tasks.withType<DependencyUpdatesTask> {

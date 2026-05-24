@@ -22,8 +22,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.js.Js
 import org.koin.core.scope.Scope
-import org.koin.dsl.bind
-import org.koin.dsl.module
 import org.w3c.dom.Worker
 import web.console.console
 import web.events.EventHandler

@@ -43,7 +43,7 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
-                project(":composeApp").projectDir.resolve("proguard-rules.pro")
+                project(":composeApp").projectDir.resolve("proguard-rules.pro"),
             )
         }
         register("unsigned") {
