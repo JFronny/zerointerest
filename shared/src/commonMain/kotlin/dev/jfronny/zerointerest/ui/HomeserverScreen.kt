@@ -35,10 +35,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.tooling.preview.AndroidUiModes
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import dev.jfronny.zerointerest.SourceCodeUrl
 import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.service.Settings
+import dev.jfronny.zerointerest.ui.theme.AppTheme
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -62,7 +65,7 @@ fun HomeserverScreen(onContinue: (homeserver: String) -> Unit) {
         homeserver = settings.defaultHomeserver()
     }
 
-    HomeserverScreenUi(
+    HomeserverContent(
         homeserver = homeserver,
         onHomeserverChange = { homeserver = it },
         onContinue = { onContinue(homeserver) },
@@ -75,7 +78,7 @@ fun HomeserverScreen(onContinue: (homeserver: String) -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeserverScreenUi(
+private fun HomeserverContent(
     homeserver: String,
     onHomeserverChange: (String) -> Unit,
     onContinue: () -> Unit,
@@ -177,10 +180,10 @@ private fun HomeserverScreenUi(
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview
+@Preview
 @Composable
-private fun HomeserverScreenPreview() = dev.jfronny.zerointerest.ui.theme.AppTheme {
-    HomeserverScreenUi(
+private fun HomeserverScreenPreview() = AppTheme {
+    HomeserverContent(
         homeserver = "https://matrix.org",
         onHomeserverChange = {},
         onContinue = {},
@@ -188,10 +191,10 @@ private fun HomeserverScreenPreview() = dev.jfronny.zerointerest.ui.theme.AppThe
     )
 }
 
-@androidx.compose.ui.tooling.preview.Preview(uiMode = androidx.compose.ui.tooling.preview.AndroidUiModes.UI_MODE_NIGHT_YES)
+@Preview(uiMode = AndroidUiModes.UI_MODE_NIGHT_YES)
 @Composable
-private fun HomeserverScreenPreviewDark() = dev.jfronny.zerointerest.ui.theme.AppTheme {
-    HomeserverScreenUi(
+private fun HomeserverScreenPreviewDark() = AppTheme {
+    HomeserverContent(
         homeserver = "https://matrix.org",
         onHomeserverChange = {},
         onContinue = {},

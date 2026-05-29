@@ -10,9 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import de.connect2x.trixnity.client.MatrixClient
 import de.connect2x.trixnity.client.verification
-import de.connect2x.trixnity.client.verification.ActiveDeviceVerification
 import de.connect2x.trixnity.client.verification.ActiveSasVerificationMethod
 import de.connect2x.trixnity.client.verification.ActiveSasVerificationState
 import de.connect2x.trixnity.client.verification.ActiveVerificationState
@@ -38,27 +36,40 @@ fun VerificationDialog() {
             mutVer = verification
             log.info { "Verification changed to $verification" }
         }
-        mutVer?.let { VerificationDialog(client, it) { mutVer = null } }
+        mutVer?.let {
+            val state by it.state.collectAsState()
+            val coroutineScope = rememberCoroutineScope()
+            VerificationContent(
+                onClose = { mutVer = null },
+                state = state,
+                onCancel = { coroutineScope.launch { it.cancel() } },
+                onStart = { state, method -> coroutineScope.launch { state.start(method) } },
+                onReady = { state -> coroutineScope.launch { state.ready() } },
+                onMatch = { state -> coroutineScope.launch { state.match() } },
+                onMismatch = { state -> coroutineScope.launch { state.noMatch() } },
+            )
+        }
     }
 }
 
 @Composable
-fun VerificationDialog(
-    client: MatrixClient,
-    verification: ActiveDeviceVerification,
-    onClose: () -> Unit
+private fun VerificationContent(
+    onClose: () -> Unit,
+    state: ActiveVerificationState,
+    onCancel: () -> Unit,
+    onStart: (state: ActiveVerificationState.Ready, method: VerificationMethod) -> Unit,
+    onReady: (state: ActiveVerificationState.TheirRequest) -> Unit,
+    onMatch: (state: ActiveSasVerificationState.ComparisonByUser) -> Unit,
+    onMismatch: (state: ActiveSasVerificationState.ComparisonByUser) -> Unit,
 ) {
-    val rxstate by verification.state.collectAsState()
-    val state = rxstate // to allow smart cast in when
-    val coroutineScope = rememberCoroutineScope()
     when (state) {
         is ActiveVerificationState.OwnRequest -> {
             AlertDialog(
-                onDismissRequest = { coroutineScope.launch { verification.cancel() } },
+                onDismissRequest = onCancel,
                 title = { Text(stringResource(Res.string.verification_request_sent)) },
                 text = { Text(stringResource(Res.string.waiting_for_other_device_accept)) },
                 confirmButton = {
-                    Button(onClick = { coroutineScope.launch { verification.cancel() } }) {
+                    Button(onClick = onCancel) {
                         Text(stringResource(Res.string.cancel))
                     }
                 }
@@ -67,16 +78,16 @@ fun VerificationDialog(
 
         is ActiveVerificationState.TheirRequest -> {
             AlertDialog(
-                onDismissRequest = { coroutineScope.launch { verification.cancel() } },
+                onDismissRequest = onCancel,
                 title = { Text(stringResource(Res.string.verification_request)) },
                 text = { Text(stringResource(Res.string.another_device_requesting_verification)) },
                 confirmButton = {
-                    Button(onClick = { coroutineScope.launch { state.ready() } }) {
+                    Button(onClick = { onReady(state) }) {
                         Text(stringResource(Res.string.accept))
                     }
                 },
                 dismissButton = {
-                    Button(onClick = { coroutineScope.launch { verification.cancel() } }) {
+                    Button(onClick = onCancel) {
                         Text(stringResource(Res.string.decline))
                     }
                 }
@@ -86,17 +97,15 @@ fun VerificationDialog(
         is ActiveVerificationState.Ready -> {
             val sas = state.methods.firstNotNullOfOrNull { it as? VerificationMethod.Sas }
             if (sas != null) {
-                coroutineScope.launch {
-                    state.start(sas)
-                }
+                onStart(state, sas)
             } else {
                 AlertDialog(
-                    onDismissRequest = { coroutineScope.launch { verification.cancel() } },
+                    onDismissRequest = onCancel,
                     title = { Text(stringResource(Res.string.choose_verification_method)) },
                     text = {
                         Column {
                             state.methods.forEach { method ->
-                                Button(onClick = { coroutineScope.launch { state.start(method) } }) {
+                                Button(onClick = { onStart(state, method) }) {
                                     Text(method.toString())
                                 }
                             }
@@ -115,7 +124,7 @@ fun VerificationDialog(
                 when (val activeSasState = sasState) {
                     is ActiveSasVerificationState.ComparisonByUser -> {
                         AlertDialog(
-                            onDismissRequest = { coroutineScope.launch { verification.cancel() } },
+                            onDismissRequest = onCancel,
                             title = { Text(stringResource(Res.string.compare)) },
                             text = {
                                 // technically, this means that the list of emojis could be leaked to Google,
@@ -130,12 +139,12 @@ fun VerificationDialog(
                                 )
                             },
                             confirmButton = {
-                                Button(onClick = { coroutineScope.launch { activeSasState.match() } }) {
+                                Button(onClick = { onMatch(activeSasState) }) {
                                     Text(stringResource(Res.string.match))
                                 }
                             },
                             dismissButton = {
-                                Button(onClick = { coroutineScope.launch { activeSasState.noMatch() } }) {
+                                Button(onClick = { onMismatch(activeSasState) }) {
                                     Text(stringResource(Res.string.mismatch))
                                 }
                             }
@@ -144,11 +153,11 @@ fun VerificationDialog(
 
                     else -> {
                         AlertDialog(
-                            onDismissRequest = { coroutineScope.launch { verification.cancel() } },
+                            onDismissRequest = onCancel,
                             title = { Text(stringResource(Res.string.verification_in_progress)) },
                             text = { Text(stringResource(Res.string.follow_instructions_other_device)) },
                             confirmButton = {
-                                Button(onClick = { coroutineScope.launch { verification.cancel() } }) {
+                                Button(onClick = onCancel) {
                                     Text(stringResource(Res.string.cancel))
                                 }
                             }

@@ -2,6 +2,7 @@ package dev.jfronny.zerointerest.ui.component
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -22,7 +23,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.tooling.preview.Preview
 import dev.jfronny.zerointerest.shared.generated.resources.*
+import dev.jfronny.zerointerest.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -58,6 +61,15 @@ fun BackButton(onBack: () -> Unit) = SimpleIconButton(
     description = stringResource(Res.string.back),
     onClick = onBack
 )
+
+@Preview
+@Composable
+private fun IconButtonsPreview() = AppTheme {
+    Row {
+        BackButton(onBack = {})
+        MoreOptionsButton(openSettings = {})
+    }
+}
 
 @Composable
 fun SimpleIconButton(icon: ImageVector, description: String, onClick: () -> Unit) {

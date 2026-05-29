@@ -35,12 +35,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.connect2x.trixnity.clientserverapi.model.authentication.LoginType
 import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.ui.component.BackButton
+import dev.jfronny.zerointerest.ui.theme.AppTheme
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.Url
 import kotlinx.coroutines.launch
@@ -68,32 +70,15 @@ fun LoginMethodScreen(
     homeserver: String,
     onBack: () -> Unit,
     onSuccess: suspend () -> Unit
-) = Scaffold(
-    topBar = {
-        TopAppBar(
-            title = { Text(stringResource(Res.string.login)) },
-            navigationIcon = {
-                BackButton(onBack = onBack)
-            }
-        )
-    }
-) { paddingValues ->
+) {
     val scope = rememberCoroutineScope()
     val matrixClient = koinInject<MatrixClientService>()
     val settings = koinInject<Settings>()
-    
+
     var state by remember { mutableStateOf<LoginState>(LoginState.Loading) }
     var availableLoginMethods by remember { mutableStateOf<List<LoginType>>(emptyList()) }
     var ssoProviders by remember { mutableStateOf<List<LoginType.SSO.IdentityProvider>>(emptyList()) }
-    
-    // Form states
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var token by remember { mutableStateOf("") }
-    
-    // Tab state
-    var selectedTabIndex by remember { mutableStateOf(0) }
-    
+
     // Determine available login methods
     val hasPasswordLogin = remember(availableLoginMethods) {
         availableLoginMethods.any { it is LoginType.Password }
@@ -135,6 +120,79 @@ fun LoginMethodScreen(
             state = LoginState.Idle
         }
     }
+
+    LoginMethodContent(
+        onBack = onBack,
+        homeserver = homeserver,
+        state = state,
+        tabs = tabs,
+        ssoProviders = ssoProviders,
+        onUsernamePasswordLogin = { username, password ->
+            state = LoginState.Loading
+            tryAction {
+                matrixClient.loginWithPassword(
+                    homeserver = Url(homeserver),
+                    username = username,
+                    password = password
+                )
+                settings.setDefaultHomeserver(homeserver)
+                onSuccess()
+            }
+        },
+        onTokenLogin = { token ->
+            state = LoginState.Loading
+            tryAction {
+                matrixClient.loginWithToken(
+                    homeserver = Url(homeserver),
+                    token = token
+                )
+                settings.setDefaultHomeserver(homeserver)
+                onSuccess()
+            }
+        },
+        onSsoLogin = { providerId ->
+            state = LoginState.Loading
+            tryAction {
+                matrixClient.loginWithSso(
+                    homeserver = Url(homeserver),
+                    idpId = providerId
+                )
+                settings.setDefaultHomeserver(homeserver)
+                onSuccess()
+            }
+        }
+    )
+}
+
+@Composable
+private fun LoginMethodContent(
+    onBack: () -> Unit,
+    homeserver: String,
+    state: LoginState,
+    tabs: List<LoginMethod>,
+    ssoProviders: List<LoginType.SSO.IdentityProvider>,
+
+    onUsernamePasswordLogin: (username: String, password: String) -> Unit,
+    onTokenLogin: (token: String) -> Unit,
+    onSsoLogin: (providerId: String?) -> Unit,
+) = Scaffold(
+    topBar = {
+        TopAppBar(
+            title = { Text(stringResource(Res.string.login)) },
+            navigationIcon = {
+                BackButton(onBack = onBack)
+            }
+        )
+    }
+) { paddingValues ->
+
+    // Form states
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var token by remember { mutableStateOf("") }
+
+    // Tab state
+    var selectedTabIndex by remember { mutableStateOf(0) }
 
     Column(
         modifier = Modifier
@@ -216,18 +274,7 @@ fun LoginMethodScreen(
                             password = password,
                             onPasswordChange = { password = it },
                             enabled = state !is LoginState.Loading,
-                            onLogin = {
-                                state = LoginState.Loading
-                                tryAction {
-                                    matrixClient.loginWithPassword(
-                                        homeserver = Url(homeserver),
-                                        username = username,
-                                        password = password
-                                    )
-                                    settings.setDefaultHomeserver(homeserver)
-                                    onSuccess()
-                                }
-                            }
+                            onLogin = { onUsernamePasswordLogin(username, password) }
                         )
                     }
                     LoginMethod.TOKEN -> {
@@ -235,17 +282,7 @@ fun LoginMethodScreen(
                             token = token,
                             onTokenChange = { token = it },
                             enabled = state !is LoginState.Loading,
-                            onLogin = {
-                                state = LoginState.Loading
-                                tryAction {
-                                    matrixClient.loginWithToken(
-                                        homeserver = Url(homeserver),
-                                        token = token
-                                    )
-                                    settings.setDefaultHomeserver(homeserver)
-                                    onSuccess()
-                                }
-                            }
+                            onLogin = { onTokenLogin(token) }
                         )
                     }
                     LoginMethod.SSO -> {
@@ -253,15 +290,7 @@ fun LoginMethodScreen(
                             ssoProviders = ssoProviders,
                             enabled = state !is LoginState.Loading,
                             onSsoLogin = { providerId ->
-                                state = LoginState.Loading
-                                tryAction {
-                                    matrixClient.loginWithSso(
-                                        homeserver = Url(homeserver),
-                                        idpId = providerId
-                                    )
-                                    settings.setDefaultHomeserver(homeserver)
-                                    onSuccess()
-                                }
+                                onSsoLogin(providerId)
                             }
                         )
                     }
@@ -269,6 +298,21 @@ fun LoginMethodScreen(
             }
         }
     }
+}
+
+@Preview
+@Composable
+private fun LoginMethodScreenPreview() = AppTheme {
+    LoginMethodContent(
+        onBack = {},
+        homeserver = "https://matrix.org",
+        state = LoginState.Idle,
+        tabs = listOf(LoginMethod.PASSWORD, LoginMethod.TOKEN, LoginMethod.SSO),
+        ssoProviders = emptyList(),
+        onUsernamePasswordLogin = { _, _ -> },
+        onTokenLogin = {},
+        onSsoLogin = {}
+    )
 }
 
 @Composable
@@ -394,7 +438,7 @@ private fun SsoLoginForm(
 
 @androidx.compose.ui.tooling.preview.Preview
 @Composable
-private fun PasswordLoginFormPreview() = dev.jfronny.zerointerest.ui.theme.AppTheme {
+private fun PasswordLoginFormPreview() = AppTheme {
     PasswordLoginForm(
         username = "user",
         onUsernameChange = {},
@@ -407,7 +451,7 @@ private fun PasswordLoginFormPreview() = dev.jfronny.zerointerest.ui.theme.AppTh
 
 @androidx.compose.ui.tooling.preview.Preview(uiMode = androidx.compose.ui.tooling.preview.AndroidUiModes.UI_MODE_NIGHT_YES)
 @Composable
-private fun PasswordLoginFormPreviewDark() = dev.jfronny.zerointerest.ui.theme.AppTheme {
+private fun PasswordLoginFormPreviewDark() = AppTheme {
     PasswordLoginForm(
         username = "user",
         onUsernameChange = {},
@@ -420,7 +464,7 @@ private fun PasswordLoginFormPreviewDark() = dev.jfronny.zerointerest.ui.theme.A
 
 @androidx.compose.ui.tooling.preview.Preview
 @Composable
-private fun TokenLoginFormPreview() = dev.jfronny.zerointerest.ui.theme.AppTheme {
+private fun TokenLoginFormPreview() = AppTheme {
     TokenLoginForm(
         token = "syt_xyz",
         onTokenChange = {},
@@ -431,7 +475,7 @@ private fun TokenLoginFormPreview() = dev.jfronny.zerointerest.ui.theme.AppTheme
 
 @androidx.compose.ui.tooling.preview.Preview
 @Composable
-private fun SsoLoginFormPreview() = dev.jfronny.zerointerest.ui.theme.AppTheme {
+private fun SsoLoginFormPreview() = AppTheme {
     SsoLoginForm(
         ssoProviders = emptyList(),
         enabled = true,
@@ -441,7 +485,7 @@ private fun SsoLoginFormPreview() = dev.jfronny.zerointerest.ui.theme.AppTheme {
 
 @androidx.compose.ui.tooling.preview.Preview(uiMode = androidx.compose.ui.tooling.preview.AndroidUiModes.UI_MODE_NIGHT_YES)
 @Composable
-private fun SsoLoginFormPreviewDark() = dev.jfronny.zerointerest.ui.theme.AppTheme {
+private fun SsoLoginFormPreviewDark() = AppTheme {
     SsoLoginForm(
         ssoProviders = emptyList(),
         enabled = true,

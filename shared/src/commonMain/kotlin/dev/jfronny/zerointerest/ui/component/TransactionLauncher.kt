@@ -1,5 +1,7 @@
 package dev.jfronny.zerointerest.ui.component
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -8,9 +10,12 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.service.client.ZiClient
+import dev.jfronny.zerointerest.ui.theme.AppTheme
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -21,16 +26,19 @@ private val log = KotlinLogging.logger {}
 
 class TransactionLauncher(
     private val client: ZiClient,
-    private val state: MutableState<State>,
+    state: MutableState<State>,
     private val scope: CoroutineScope,
 ) {
-    var isRunning get() = state.value.isRunning
+    private val _state = state
+
+    val state get() = _state.value
+    var isRunning get() = state.isRunning
         private set(value) {
-            state.value = state.value.copy(isRunning = value)
+            _state.value = _state.value.copy(isRunning = value)
         }
-    var error: String? get() = state.value.error
+    var error: String? get() = state.error
         private set(value) {
-            state.value = state.value.copy(error = value)
+            _state.value = _state.value.copy(error = value)
         }
 
     fun tryLaunch(block: suspend () -> Unit) {
@@ -60,10 +68,7 @@ class TransactionLauncher(
     }
 
     @Composable
-    fun ErrorDialog(onDismiss: () -> Unit = { clearError() }) {
-        val errorMessage = state.value.error ?: return
-        ErrorDialog(errorMessage, onDismiss)
-    }
+    fun ErrorDialog(onDismiss: () -> Unit = { clearError() }) = ErrorDialog(state, onDismiss)
 
     data class State(
         val isRunning: Boolean,
@@ -89,6 +94,12 @@ class TransactionLauncher(
 }
 
 @Composable
+fun ErrorDialog(state: TransactionLauncher.State, onDismiss: () -> Unit) {
+    val errorMessage = state.error ?: return
+    ErrorDialog(errorMessage, onDismiss)
+}
+
+@Composable
 fun ErrorDialog(message: String, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -100,6 +111,14 @@ fun ErrorDialog(message: String, onDismiss: () -> Unit) {
         title = { Text(stringResource(Res.string.transaction_failed)) },
         text = { Text(message) }
     )
+}
+
+@Preview
+@Composable
+private fun ErrorDialogPreview() = AppTheme {
+    Box(Modifier.fillMaxSize()) {
+        ErrorDialog(message = "Error message", onDismiss = {})
+    }
 }
 
 @Composable

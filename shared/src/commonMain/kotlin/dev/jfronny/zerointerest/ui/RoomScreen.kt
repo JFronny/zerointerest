@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
@@ -296,26 +297,6 @@ fun RoomScreen(
     }
 }
 
-@Preview
-@Composable
-private fun BalancesTabPreview() = AppTheme {
-    BalancesTab(
-        summary = SummaryTrustService.Summary.Trusted(ZeroInterestSummaryEvent(
-            balances = mapOf(
-                UserId("@alice:example.org") to Money(4200),
-                UserId("@carol:example.org") to Money.zero,
-                UserId("@bob:example.org") to Money(-1550),
-            ),
-            parents = emptyMap()
-        ), isMerge = true),
-        userUI = PreviewUserUI,
-        flipBalances = true,
-        debugHints = true,
-        monetaryUnit = MonetaryUnit.default,
-        forceTrust = {},
-    )
-}
-
 @Composable
 private fun BalancesTab(
     summary: SummaryTrustService.Summary,
@@ -385,6 +366,26 @@ private fun BalancesTab(
             }
         }
     }
+}
+
+@Preview
+@Composable
+private fun BalancesTabPreview() = AppTheme {
+    BalancesTab(
+        summary = SummaryTrustService.Summary.Trusted(ZeroInterestSummaryEvent(
+            balances = mapOf(
+                UserId("@alice:example.org") to Money(4200),
+                UserId("@carol:example.org") to Money.zero,
+                UserId("@bob:example.org") to Money(-1550),
+            ),
+            parents = emptyMap()
+        ), isMerge = true),
+        userUI = PreviewUserUI,
+        flipBalances = true,
+        debugHints = true,
+        monetaryUnit = MonetaryUnit.default,
+        forceTrust = {},
+    )
 }
 
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -522,6 +523,27 @@ private fun TransactionsTab(
         }
     }
 
+    TransactionsTabContent(
+        isLoading = isLoading,
+        listState = listState,
+        userUI = userUI,
+        transactionEvents = transactionEvents,
+        includedTransactions = includedTransactions,
+        monetaryUnit = monetaryUnit,
+        onShowDetails = { navHelper.navigate(Destination.TransactionDetails(roomId, it)) }
+    )
+}
+
+@Composable
+private fun TransactionsTabContent(
+    isLoading: Boolean,
+    transactionEvents: List<Pair<EventId, ZeroInterestTransactionEvent>>,
+    listState: LazyListState,
+    includedTransactions: Map<EventId, Set<EventId>>,
+    userUI: UserUI,
+    monetaryUnit: MonetaryUnit,
+    onShowDetails: (EventId) -> Unit,
+) {
     Box(modifier = Modifier.fillMaxSize()) {
         if (isLoading && transactionEvents.isEmpty()) {
             LoadingIndicator(modifier = Modifier.align(Alignment.Center))
@@ -539,7 +561,7 @@ private fun TransactionsTab(
                         included = includedTransactions[eventId]?.isNotEmpty() ?: false,
                         userUI = userUI,
                         monetaryUnit = monetaryUnit,
-                        onClick = { navHelper.navigate(Destination.TransactionDetails(roomId, eventId)) }
+                        onClick = { onShowDetails(eventId) }
                     )
                 }
 
@@ -572,6 +594,37 @@ private fun TransactionsTab(
             }
         }
     }
+}
+
+@Preview
+@Composable
+private fun TransactionTabContentPreview() = AppTheme {
+    TransactionsTabContent(
+        isLoading = false,
+        transactionEvents = listOf(
+            EventId("1") to ZeroInterestTransactionEvent(
+                sender = UserId("@alice:example.org"),
+                description = ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION,
+                receivers = mapOf(
+                    UserId("@bob:example.org") to Money(1000),
+                    UserId("@carol:example.org") to Money(-500),
+                )
+            ),
+            EventId("2") to ZeroInterestTransactionEvent(
+                sender = UserId("@bob:example.org"),
+                description = ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION,
+                receivers = mapOf(
+                    UserId("@alice:example.org") to Money(1000),
+                    UserId("@carol:example.org") to Money(-500),
+                )
+            )
+        ),
+        listState = rememberLazyListState(),
+        includedTransactions = mapOf(EventId("2") to setOf(EventId("sum"))),
+        userUI = PreviewUserUI,
+        monetaryUnit = MonetaryUnit.default,
+        onShowDetails = {},
+    )
 }
 
 @Composable
@@ -614,4 +667,23 @@ private fun TransactionTabItem(
         Spacer(modifier = Modifier.weight(1f))
         Text(text = transaction.total.format(monetaryUnit))
     }
+}
+
+@Preview
+@Composable
+private fun TransactionTabItemPreview() = AppTheme {
+    TransactionTabItem(
+        transaction = ZeroInterestTransactionEvent(
+            sender = UserId("@alice:example.org"),
+            description = ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION,
+            receivers = mapOf(
+                UserId("@bob:example.org") to Money(1000),
+                UserId("@carol:example.org") to Money(-500),
+            )
+        ),
+        included = true,
+        userUI = PreviewUserUI,
+        monetaryUnit = MonetaryUnit.default,
+        onClick = {},
+    )
 }

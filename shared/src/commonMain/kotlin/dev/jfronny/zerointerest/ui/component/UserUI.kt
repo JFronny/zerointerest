@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import de.connect2x.trixnity.client.MatrixClient
@@ -28,6 +29,7 @@ import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.shared.generated.resources.Res
 import dev.jfronny.zerointerest.shared.generated.resources.avatar
+import dev.jfronny.zerointerest.ui.theme.AppTheme
 import kotlinx.coroutines.flow.Flow
 import org.jetbrains.compose.resources.stringResource
 
@@ -71,9 +73,7 @@ object PreviewUserUI : UserUI {
     @Composable
     override fun component(userId: UserId): UserUI.Component = object : UserUI.Component {
         @Composable
-        override fun Icon(size: IconSize) {
-            FallbackIcon(size, userId.localpart)
-        }
+        override fun Icon(size: IconSize) = FallbackIcon(size, userId.localpart)
 
         override val name: String get() = userId.localpart
     }
@@ -105,6 +105,18 @@ class UserUIImpl(
             override val name: String get() = name
         }
     }
+}
+
+@Preview
+@Composable
+private fun UserUiPreview() = AppTheme {
+    PreviewUserUI(UserId("@alice:example.org"), IconSize.Regular)
+}
+
+@Preview
+@Composable
+private fun UserUiPreviewSmall() = AppTheme {
+    PreviewUserUI(UserId("@alice:example.org"), IconSize.Small)
 }
 
 @Composable

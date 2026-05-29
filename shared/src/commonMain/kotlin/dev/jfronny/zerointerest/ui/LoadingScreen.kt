@@ -94,12 +94,12 @@ fun LoadingScreen(onSuccess: suspend () -> Unit, onError: suspend () -> Unit) {
         }
     }
 
-    LoadingScreenUi()
+    LoadingContent()
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun LoadingScreenUi() = Scaffold(
+private fun LoadingContent() = Scaffold(
     topBar = {
         TopAppBar(
             title = { Text(stringResource(Res.string.login)) },
@@ -134,11 +134,11 @@ private fun LoadingScreenUi() = Scaffold(
 @Preview
 @Composable
 private fun LoadingScreenPreview() = AppTheme {
-    LoadingScreenUi()
+    LoadingContent()
 }
 
 @Preview(uiMode = AndroidUiModes.UI_MODE_NIGHT_YES)
 @Composable
 private fun LoadingScreenPreviewDark() = AppTheme {
-    LoadingScreenUi()
+    LoadingContent()
 }

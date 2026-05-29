@@ -30,21 +30,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.connect2x.trixnity.core.model.RoomId
+import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
 import dev.jfronny.zerointerest.data.money.sum
+import dev.jfronny.zerointerest.data.money.toMoney
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.service.calculateSettlementTransactions
 import dev.jfronny.zerointerest.service.client.MatrixZiClient
 import dev.jfronny.zerointerest.ui.component.BackButton
+import dev.jfronny.zerointerest.ui.component.ErrorDialog
+import dev.jfronny.zerointerest.ui.component.PreviewUserUI
 import dev.jfronny.zerointerest.ui.component.SimpleFilledIconButton
+import dev.jfronny.zerointerest.ui.component.TransactionLauncher
 import dev.jfronny.zerointerest.ui.component.UserUI
 import dev.jfronny.zerointerest.ui.component.rememberTransactionLauncher
+import dev.jfronny.zerointerest.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
@@ -53,7 +60,7 @@ import org.koin.compose.koinInject
 fun SettleScreen(
     client: MatrixZiClient,
     roomId: RoomId,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val trustService = koinInject<SummaryTrustService>()
     val transactionService = koinInject<TransactionService>()
@@ -61,8 +68,7 @@ fun SettleScreen(
     val userUI = UserUI(client.client, roomId)
 
     val summaryState by trustService.getSummary(roomId).collectAsState(null)
-    
-    var showConfirmDialog by remember { mutableStateOf(false) }
+
     val launcher = rememberTransactionLauncher(client)
     
     val suggestedTransactions = remember(summaryState) {
@@ -92,13 +98,40 @@ fun SettleScreen(
         }
     }
 
+    val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
+
+    SettleContent(
+        acceptAll = ::acceptAll,
+        accept = ::accept,
+        onBack = onBack,
+        remainingTransactions = remainingTransactions,
+        monetaryUnit = monetaryUnit,
+        userUI = userUI,
+        launcherState = launcher.state,
+        onDismissError = launcher::clearError,
+    )
+}
+
+@Composable
+private fun SettleContent(
+    onBack: () -> Unit,
+    acceptAll: () -> Unit,
+    accept: (ZeroInterestTransactionEvent) -> Unit,
+    remainingTransactions: List<ZeroInterestTransactionEvent>,
+    monetaryUnit: MonetaryUnit,
+    userUI: UserUI,
+    launcherState: TransactionLauncher.State,
+    onDismissError: () -> Unit,
+) {
+    var showConfirmDialog by remember { mutableStateOf(false) }
+
     if (showConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
             title = { Text(stringResource(Res.string.settle_up)) },
             text = { Text(stringResource(Res.string.confirm_settle_all)) },
             confirmButton = {
-                TextButton(onClick = ::acceptAll) {
+                TextButton(onClick = acceptAll) {
                     Text(stringResource(Res.string.confirm))
                 }
             },
@@ -133,7 +166,7 @@ fun SettleScreen(
             }
         }
     ) { padding ->
-        launcher.ErrorDialog()
+        ErrorDialog(launcherState, onDismiss = onDismissError)
 
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (remainingTransactions.isEmpty()) {
@@ -142,7 +175,6 @@ fun SettleScreen(
                     modifier = Modifier.align(Alignment.Center)
                 )
             } else {
-                val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(remainingTransactions, key = { it.hashCode() }) { transaction ->
                         val senderUI = userUI.component(transaction.sender)
@@ -168,12 +200,54 @@ fun SettleScreen(
                     }
                 }
             }
-            
-            if (launcher.isRunning) {
+
+            if (launcherState.isRunning) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }
         }
     }
+}
+
+@Preview
+@Composable
+private fun SettleScreenPreview() = AppTheme {
+    SettleContent(
+        onBack = {},
+        acceptAll = {},
+        accept = {},
+        remainingTransactions = listOf(
+            ZeroInterestTransactionEvent(
+                ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION,
+                sender = UserId("alice", "example.com"),
+                receivers = mapOf(UserId("bob", "example.com") to 100L.toMoney())
+            )
+        ),
+        monetaryUnit = MonetaryUnit.default,
+        userUI = PreviewUserUI,
+        launcherState = TransactionLauncher.State(true, null),
+        onDismissError = {},
+    )
+}
+
+@Preview
+@Composable
+private fun SettleScreenPreviewError() = AppTheme {
+    SettleContent(
+        onBack = {},
+        acceptAll = {},
+        accept = {},
+        remainingTransactions = listOf(
+            ZeroInterestTransactionEvent(
+                ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION,
+                sender = UserId("alice", "example.com"),
+                receivers = mapOf(UserId("bob", "example.com") to 100L.toMoney())
+            )
+        ),
+        monetaryUnit = MonetaryUnit.default,
+        userUI = PreviewUserUI,
+        launcherState = TransactionLauncher.State(true, "hello"),
+        onDismissError = {},
+    )
 }

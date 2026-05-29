@@ -18,14 +18,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import de.connect2x.trixnity.client.flattenValues
 import de.connect2x.trixnity.client.room
 import de.connect2x.trixnity.client.store.Room
+import de.connect2x.trixnity.client.store.RoomDisplayName
 import de.connect2x.trixnity.client.store.hasBeenReplaced
 import de.connect2x.trixnity.core.model.RoomId
 import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
+import dev.jfronny.zerointerest.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
@@ -34,7 +37,7 @@ fun PickRoomScreen(onPick: (RoomId) -> Unit, openSettings: () -> Unit) {
     val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
     val client = rxclient ?: return
     val rooms by remember(client) { client.room.getAll().flattenValues() }.collectAsState(initial = setOf())
-    PickRoomScreen(
+    PickRoomContent(
         rooms = rooms,
         onPick = onPick,
         openSettings = openSettings,
@@ -43,7 +46,7 @@ fun PickRoomScreen(onPick: (RoomId) -> Unit, openSettings: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PickRoomScreen(
+private fun PickRoomContent(
     rooms: Set<Room>,
     onPick: (RoomId) -> Unit,
     openSettings: () -> Unit,
@@ -85,8 +88,31 @@ fun PickRoomScreen(
     }
 }
 
+@Preview
 @Composable
-fun RoomListItem(
+private fun PickRoomScreenPreview() = AppTheme {
+    PickRoomContent(
+        rooms = setOf(
+            Room(
+                roomId = RoomId("!room1:example.com"),
+                name = RoomDisplayName(explicitName = "Room 1", summary = null),
+            ),
+            Room(
+                roomId = RoomId("!room2:example.com"),
+                name = RoomDisplayName(explicitName = "Room 2", summary = null),
+            ),
+            Room(
+                roomId = RoomId("!room3:example.com"),
+                name = RoomDisplayName(explicitName = "Room 3", summary = null),
+            ),
+        ),
+        onPick = {},
+        openSettings = {}
+    )
+}
+
+@Composable
+private fun RoomListItem(
     room: Room,
     onClick: () -> Unit
 ) {
@@ -94,5 +120,17 @@ fun RoomListItem(
     ListItem(
         headlineContent = { Text(name) },
         modifier = Modifier.clickable { onClick() }
+    )
+}
+
+@Preview
+@Composable
+private fun RoomListItemPreview() = AppTheme {
+    RoomListItem(
+        room = Room(
+            roomId = RoomId("!room1:example.com"),
+            name = RoomDisplayName(explicitName = "Room 1", summary = null),
+        ),
+        onClick = {}
     )
 }
