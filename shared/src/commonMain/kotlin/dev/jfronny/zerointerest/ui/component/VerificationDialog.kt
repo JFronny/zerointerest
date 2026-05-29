@@ -5,18 +5,19 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import de.connect2x.trixnity.client.verification
 import de.connect2x.trixnity.client.verification.ActiveSasVerificationMethod
 import de.connect2x.trixnity.client.verification.ActiveSasVerificationState
 import de.connect2x.trixnity.client.verification.ActiveVerificationState
 import de.connect2x.trixnity.core.model.events.m.key.verification.VerificationMethod
-import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.service.client.MatrixClientService
+import dev.jfronny.zerointerest.shared.generated.resources.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -31,11 +32,7 @@ fun VerificationDialog() {
 
     if (client != null) {
         val verification by remember(client) { client.verification.activeDeviceVerification }.collectAsState()
-        var mutVer = verification
-        LaunchedEffect(verification) {
-            mutVer = verification
-            log.info { "Verification changed to $verification" }
-        }
+        var mutVer by remember(verification) { mutableStateOf(verification) }
         mutVer?.let {
             val state by it.state.collectAsState()
             val coroutineScope = rememberCoroutineScope()
