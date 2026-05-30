@@ -107,7 +107,10 @@ class SummaryTrustService(
         }
         val transactions = mutableMapOf<EventId, Timed<ZeroInterestTransactionEvent>>()
         for (eventId in content.parents.values.flatten()) {
-            val event = client.getTransactionEventWithTimeout(roomId, eventId)?.getOrNull() ?: continue
+            val event = client.getTransactionEventWithTimeout(roomId, eventId)?.getOrNull() ?: run {
+                log.error { "Could not fetch event $eventId in room $roomId (in a timely manner). Aborting trust check" }
+                return@checkTrusted TrustState.UNTRUSTED
+            }
             transactions[eventId] = event
         }
 
@@ -128,10 +131,9 @@ class SummaryTrustService(
         log.info { "4. Otherwise, if the sum of transactions from a parent does not result in the balances, the event is rejected." }
         for ((parentId, transactionIds) in content.parents) {
             val balances = summaries[parentId]?.value?.balances ?: continue
-            val transactions = transactionIds.mapNotNull { transactions[it]?.value }
-            if (transactions.size < transactionIds.size) return reject(roomId, messageId, "not enough transactions after summary $parentId")
             val computedBalances = balances.toMutableMap()
-            for (event in transactions) {
+            for (transactionId in transactionIds) {
+                val event = transactions[transactionId]?.value ?: throw IllegalStateException("Event $transactionId should have gotten resolved in prefetch but somehow didn't")
                 event.apply(computedBalances)
             }
             if (computedBalances != content.balances) return reject(roomId, messageId, "balances do not match after summary $parentId: ${computedBalances.toList()} != ${balances.toList()}")

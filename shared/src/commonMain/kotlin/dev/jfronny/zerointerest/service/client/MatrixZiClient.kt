@@ -42,9 +42,9 @@ class MatrixZiClient(
         roomId: RoomId,
         eventId: EventId
     ): Result<Timed<ZeroInterestTransactionEvent>>? {
-        return withTimeoutOrNull(6.seconds) {
+        return withTimeoutOrNull(11.seconds) {
             val event = client.room.getTimelineEvent(roomId, eventId) {
-                fetchTimeout = 5.seconds
+                fetchTimeout = 10.seconds
                 allowReplaceContent = false
             }.filterNotNull().firstOrNull() ?: return@withTimeoutOrNull null
             val content = event.content ?: return@withTimeoutOrNull null
