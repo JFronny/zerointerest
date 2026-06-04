@@ -21,6 +21,7 @@ import de.connect2x.trixnity.core.model.events.StateEventContent
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.util.Timed
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.util.collections.ConcurrentMap
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.any
@@ -29,8 +30,11 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.seconds
+
+private val log = KotlinLogging.logger {}
 
 class MatrixZiClient(
     val client: MatrixClient,
@@ -43,14 +47,18 @@ class MatrixZiClient(
         eventId: EventId
     ): Result<Timed<ZeroInterestTransactionEvent>>? {
         return withTimeoutOrNull(11.seconds) {
-            val event = client.room.getTimelineEvent(roomId, eventId) {
+            client.room.getTimelineEvent(roomId, eventId) {
                 fetchTimeout = 10.seconds
                 allowReplaceContent = false
-            }.filterNotNull().firstOrNull() ?: return@withTimeoutOrNull null
-            val content = event.content ?: return@withTimeoutOrNull null
-            content.map { content ->
-                Timed(event.originTimestamp, content as ZeroInterestTransactionEvent)
-            }
+            }.filterNotNull().mapNotNull { event ->
+                event.content?.map {
+                    val content = it as? ZeroInterestTransactionEvent ?: run {
+                        log.warn { "Event content is not a transaction event for $eventId: $it" }
+                        return@mapNotNull null
+                    }
+                    Timed(event.originTimestamp, content)
+                }
+            }.firstOrNull()
         }
     }
 

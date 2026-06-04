@@ -11,6 +11,7 @@ import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import dev.jfronny.zerointerest.service.client.ZiClientProvider
 import dev.jfronny.zerointerest.service.client.computeMergedSummary
 import dev.jfronny.zerointerest.util.Timed
+import dev.jfronny.zerointerest.util.fold
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
@@ -100,17 +101,34 @@ class SummaryTrustService(
 
         log.info { "Prefetch events as the next steps need them" }
         val summaries = mutableMapOf<EventId, Timed<ZeroInterestSummaryEvent>>()
-        for (eventId in content.parents.keys) {
+        loop@ for (eventId in content.parents.keys) {
             if (eventId == messageId) throw IllegalStateException("Summary event cannot reference itself as a parent. You have passed the wrong arguments to this function!")
-            val event = client.getSummaryEventWithTimeout(roomId, eventId)?.getOrNull() ?: continue
-            summaries[eventId] = Timed(event.ts, event.value)
+            val event = client.getSummaryEventWithTimeout(roomId, eventId).fold(
+                onSuccess = { Timed(it.ts, it.value) },
+                onFailure = { e ->
+                    log.error(e) { "Could not fetch event $eventId in room $roomId. Continuing with other parents." }
+                    continue@loop
+                },
+                onNull = {
+                    log.error { "Could not fetch event $eventId in room $roomId (in a timely manner). Continuing with other parents." }
+                    continue@loop
+                }
+            )
+            summaries[eventId] = event
         }
         val transactions = mutableMapOf<EventId, Timed<ZeroInterestTransactionEvent>>()
         for (eventId in content.parents.values.flatten()) {
-            val event = client.getTransactionEventWithTimeout(roomId, eventId)?.getOrNull() ?: run {
-                log.error { "Could not fetch event $eventId in room $roomId (in a timely manner). Aborting trust check" }
-                return@checkTrusted TrustState.UNTRUSTED
-            }
+            val event = client.getTransactionEventWithTimeout(roomId, eventId).fold(
+                onSuccess = { it },
+                onFailure = { e ->
+                    log.error(e) { "Could not fetch event $eventId in room $roomId. Aborting trust check" }
+                    return@checkTrusted TrustState.UNTRUSTED
+                },
+                onNull = {
+                    log.error { "Could not fetch event $eventId in room $roomId (in a timely manner). Aborting trust check" }
+                    return@checkTrusted TrustState.UNTRUSTED
+                }
+            )
             transactions[eventId] = event
         }
 
