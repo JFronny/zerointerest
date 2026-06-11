@@ -35,6 +35,10 @@ repositories {
 }
 
 kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-Xcontext-parameters")
+    }
+
     android {
         namespace = "dev.jfronny.zerointerest.shared"
         compileSdk = libs.versions.android.compileSdk.get().toInt()

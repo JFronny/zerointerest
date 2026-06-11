@@ -1,15 +1,16 @@
 package dev.jfronny.zerointerest.util
 
-import de.connect2x.lognity.api.ansi.AnsiScope
+import de.connect2x.lognity.api.ExperimentalLoggingApi
 import de.connect2x.lognity.api.appender.Appender
 import de.connect2x.lognity.api.backend.Backend
+import de.connect2x.lognity.api.backend.ConsoleColorScheme
 import de.connect2x.lognity.api.config.Config
 import de.connect2x.lognity.api.config.ConfigSpec
 import de.connect2x.lognity.api.context.Context
 import de.connect2x.lognity.api.context.ContextSpec
 import de.connect2x.lognity.api.format.Formatter
-import de.connect2x.lognity.api.logger.Level as OLevel
-import de.connect2x.lognity.api.logger.Logger as LLogger
+import de.connect2x.lognity.api.logger.MessageProvider
+import de.connect2x.lognity.api.logger.MessageScope
 import de.connect2x.lognity.api.marker.Marker
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KMarkerFactory
@@ -23,6 +24,8 @@ import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Clock
+import de.connect2x.lognity.api.logger.Level as OLevel
+import de.connect2x.lognity.api.logger.Logger as LLogger
 
 private val xlogger = KotlinLogging.logger {}
 
@@ -30,10 +33,12 @@ private val xlogger = KotlinLogging.logger {}
 object LognityWrangler : Backend {
     override val name: String get() = "ktor"
     override val defaultLevel: OLevel = if (xlogger.isDebugEnabled()) OLevel.DEBUG
-    else if (xlogger.isInfoEnabled()) OLevel.INFO
-    else if (xlogger.isWarnEnabled()) OLevel.WARN
-    else if (xlogger.isErrorEnabled()) OLevel.ERROR
-    else OLevel.TRACE
+        else if (xlogger.isInfoEnabled()) OLevel.INFO
+        else if (xlogger.isWarnEnabled()) OLevel.WARN
+        else if (xlogger.isErrorEnabled()) OLevel.ERROR
+        else OLevel.TRACE
+    override val overrideLevel: OLevel? get() = null
+    override val consoleColorScheme: ConsoleColorScheme get() = ConsoleColorScheme.DARK
 
     override val defaultFormatter: Formatter get() = Formatter.identity
     private val _configSpec: AtomicReference<ConfigSpec> = AtomicReference {
@@ -97,16 +102,16 @@ object LognityWrangler : Backend {
                   override var level: OLevel,
                   override var isEnabled: Boolean
     ) : LLogger {
-        override fun log(level: OLevel, message: AnsiScope.() -> Any?) = log(null, level, message)
+        override fun log(level: OLevel, message: MessageProvider) = log(null, level, message)
         override fun log(
             marker: Marker?,
             level: OLevel,
-            message: AnsiScope.() -> Any?
+            message: MessageProvider
         ) {
             if (level < this.level) return
             val actualMarker = marker ?: context[LLogger.DefaultMarker]?.marker
             if (actualMarker?.isEnabled == false) return
-            val messageContent = message(AnsiScope) ?: return
+            val messageContent = message(MessageScope) ?: return
             val timestamp = Clock.System.now()
             for (appender in config.appenders) {
                 appender.append(
@@ -151,5 +156,13 @@ object LognityWrangler : Backend {
                 this.message = message
             }
         }
+
+        @ExperimentalLoggingApi
+        override suspend fun appendSuspend(
+            logger: LLogger,
+            level: OLevel,
+            message: String,
+            marker: Marker?
+        ) = append(logger, level, message, marker)
     }
 }
