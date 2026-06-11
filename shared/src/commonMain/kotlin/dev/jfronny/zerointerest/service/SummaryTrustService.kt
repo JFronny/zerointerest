@@ -89,7 +89,13 @@ class SummaryTrustService(
 
         log.info { "1. If a rejection for the summary exists, the summary is always rejected." }
         val reactions = client.getTimelineEventReactionAggregation(roomId, messageId).first()[rejectionKey]
-        if (reactions?.isNotEmpty() ?: false) return reject(roomId, messageId, "rejection in timeline: ${reactions.first().eventId} by ${reactions.first().sender}", send = false)
+        if (reactions?.isNotEmpty() ?: false) {
+            return reject(roomId, messageId, when {
+                reactions.size == 1 -> "rejection in timeline: ${reactions.first().eventId} by ${reactions.first().sender}"
+                reactions.size <= 10 -> "rejections in timeline: ${reactions.joinToString { "${it.eventId} by ${it.sender}" }}"
+                else -> "rejections in timeline: ${reactions.take(10).joinToString { "${it.eventId} by ${it.sender}" }} and ${reactions.size - 10} more"
+            }, send = false)
+        }
 
         log.info { "2. Otherwise, if the summary event is the first summary event ever encountered in a room, it is trusted." }
         if (content.parents.isEmpty()) {
