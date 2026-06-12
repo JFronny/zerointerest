@@ -67,6 +67,16 @@ import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.Destination
+import dev.jfronny.zerointerest.data.TransactionTemplate
+import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
+import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.money.MonetaryUnit
+import dev.jfronny.zerointerest.data.money.Money
+import dev.jfronny.zerointerest.db.ZeroInterestDatabase
+import dev.jfronny.zerointerest.service.Settings
+import dev.jfronny.zerointerest.service.SummaryTrustService
+import dev.jfronny.zerointerest.service.TransactionService
+import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.shared.generated.resources.Res
 import dev.jfronny.zerointerest.shared.generated.resources.add_transaction
 import dev.jfronny.zerointerest.shared.generated.resources.balances
@@ -83,16 +93,6 @@ import dev.jfronny.zerointerest.shared.generated.resources.room
 import dev.jfronny.zerointerest.shared.generated.resources.settle_up
 import dev.jfronny.zerointerest.shared.generated.resources.summary_is_merge
 import dev.jfronny.zerointerest.shared.generated.resources.transactions
-import dev.jfronny.zerointerest.data.TransactionTemplate
-import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
-import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
-import dev.jfronny.zerointerest.data.money.MonetaryUnit
-import dev.jfronny.zerointerest.data.money.Money
-import dev.jfronny.zerointerest.db.ZeroInterestDatabase
-import dev.jfronny.zerointerest.service.Settings
-import dev.jfronny.zerointerest.service.SummaryTrustService
-import dev.jfronny.zerointerest.service.TransactionService
-import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.component.PreviewUserUI
@@ -101,6 +101,7 @@ import dev.jfronny.zerointerest.ui.theme.AppTheme
 import dev.jfronny.zerointerest.util.NavigationHelper
 import dev.jfronny.zerointerest.util.room
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -109,12 +110,13 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
-import kotlin.time.Duration.Companion.seconds
 
 private val log = KotlinLogging.logger {}
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class,
-    ExperimentalMaterial3ExpressiveApi::class
+@OptIn(
+    ExperimentalComposeUiApi::class,
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class,
 )
 @Composable
 fun RoomScreen(
@@ -122,7 +124,7 @@ fun RoomScreen(
     onBack: () -> Unit,
     onAddTransaction: (TransactionTemplate?) -> Unit,
     openSettings: () -> Unit,
-    navHelper: NavigationHelper
+    navHelper: NavigationHelper,
 ) {
     val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
     val client = rxclient ?: return
@@ -138,13 +140,13 @@ fun RoomScreen(
             selected = roomIs(Destination.Room.RoomDestination.Balance),
             onClick = { roomNavHelper.navigateTab(Destination.Room.RoomDestination.Balance) },
             icon = { Icon(Icons.Default.Paid, stringResource(Res.string.balances)) },
-            label = { Text(stringResource(Res.string.balances)) }
+            label = { Text(stringResource(Res.string.balances)) },
         )
         NavigationSuiteItem(
             selected = roomIs(Destination.Room.RoomDestination.Transactions),
             onClick = { roomNavHelper.navigateTab(Destination.Room.RoomDestination.Transactions) },
             icon = { Icon(Icons.AutoMirrored.Filled.CompareArrows, stringResource(Res.string.transactions)) },
-            label = { Text(stringResource(Res.string.transactions)) }
+            label = { Text(stringResource(Res.string.transactions)) },
         )
     }) {
         val settings = koinInject<Settings>()
@@ -173,7 +175,7 @@ fun RoomScreen(
                                     onClick = {
                                         close()
                                         navHelper.navigate(Destination.SettleScreen(roomId))
-                                    }
+                                    },
                                 )
 
                                 if (debugHints) {
@@ -185,7 +187,7 @@ fun RoomScreen(
                                                 val preparedSummary = transactions.prepareSummaryCreation(roomId, emptyList())
                                                 transactions.createSummary(preparedSummary, emptyList())
                                             }
-                                        }
+                                        },
                                     )
 
                                     DropdownMenuItem(
@@ -195,12 +197,12 @@ fun RoomScreen(
                                             scope.launch {
                                                 database.resetTrust(roomId)
                                             }
-                                        }
+                                        },
                                     )
                                 }
                             }
                         }
-                    }
+                    },
                 )
             },
             floatingActionButton = fab@{
@@ -224,7 +226,7 @@ fun RoomScreen(
                                         if (expanded) TooltipAnchorPosition.Start else TooltipAnchorPosition.Above,
                                     ),
                                     tooltip = { PlainTooltip { Text(stringResource(Res.string.new_transaction)) } },
-                                    state = rememberTooltipState()
+                                    state = rememberTooltipState(),
                                 ) {
                                     ToggleFloatingActionButton(
                                         checked = expanded,
@@ -233,7 +235,7 @@ fun RoomScreen(
                                         Icon(Icons.Default.Add, stringResource(Res.string.add_transaction))
                                     }
                                 }
-                            }
+                            },
                         ) {
                             FloatingActionButtonMenuItem(
                                 text = { Text(stringResource(Res.string.new_transaction)) },
@@ -241,7 +243,7 @@ fun RoomScreen(
                                 onClick = {
                                     expanded = false
                                     onAddTransaction(null)
-                                }
+                                },
                             )
                             templates.forEach { template ->
                                 FloatingActionButtonMenuItem(
@@ -250,20 +252,20 @@ fun RoomScreen(
                                     onClick = {
                                         expanded = false
                                         onAddTransaction(template)
-                                    }
+                                    },
                                 )
                             }
                         }
                     }
                 }
-            }
+            },
         ) { padding ->
             val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
             NavHost(
                 navController = roomNavHelper.room,
                 startDestination = Destination.Room.RoomDestination.Balance,
                 typeMap = mapOf(),
-                modifier = Modifier.padding(padding)
+                modifier = Modifier.padding(padding),
             ) {
                 composable<Destination.Room.RoomDestination.Balance> {
                     event?.let {
@@ -278,12 +280,12 @@ fun RoomScreen(
                                     trust.forceAccept(it)
                                     forceReload++
                                 }
-                            }
+                            },
                         )
                     } ?: run {
                         Box(
                             modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center,
                         ) {
                             LoadingIndicator(Modifier.size(128.dp))
                         }
@@ -304,7 +306,7 @@ private fun BalancesTab(
     flipBalances: Boolean,
     debugHints: Boolean,
     monetaryUnit: MonetaryUnit,
-    forceTrust: (SummaryTrustService.Summary.Untrusted) -> Unit
+    forceTrust: (SummaryTrustService.Summary.Untrusted) -> Unit,
 ) {
     when (summary) {
         SummaryTrustService.Summary.Empty -> {
@@ -312,6 +314,7 @@ private fun BalancesTab(
                 Text(stringResource(Res.string.no_balances_yet), Modifier.align(Alignment.Center), style = MaterialTheme.typography.bodyLarge)
             }
         }
+
         is SummaryTrustService.Summary.Untrusted -> {
             Box(Modifier.fillMaxSize()) {
                 Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -322,9 +325,10 @@ private fun BalancesTab(
                 }
             }
         }
+
         is SummaryTrustService.Summary.Trusted -> {
             val balances = summary.event.balances
-            //TODO this might not perform well with many users
+            // TODO this might not perform well with many users
             //     consider that after it becomes a problem.
             val uiBalances = balances.entries
                 .map { (k, v) -> v to userUI.component(k) }
@@ -336,7 +340,7 @@ private fun BalancesTab(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                             Spacer(Modifier.width(8.dp))
@@ -353,13 +357,13 @@ private fun BalancesTab(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         ui()
                         Spacer(modifier = Modifier.weight(1f))
                         Text(
                             text = (if (flipBalances) -balance else balance).format(monetaryUnit),
-                            color = color
+                            color = color,
                         )
                     }
                 }
@@ -372,14 +376,17 @@ private fun BalancesTab(
 @Composable
 private fun BalancesTabPreview() = AppTheme {
     BalancesTab(
-        summary = SummaryTrustService.Summary.Trusted(ZeroInterestSummaryEvent(
-            balances = mapOf(
-                UserId("@alice:example.org") to Money(4200),
-                UserId("@carol:example.org") to Money.zero,
-                UserId("@bob:example.org") to Money(-1550),
+        summary = SummaryTrustService.Summary.Trusted(
+            ZeroInterestSummaryEvent(
+                balances = mapOf(
+                    UserId("@alice:example.org") to Money(4200),
+                    UserId("@carol:example.org") to Money.zero,
+                    UserId("@bob:example.org") to Money(-1550),
+                ),
+                parents = emptyMap(),
             ),
-            parents = emptyMap()
-        ), isMerge = true),
+            isMerge = true,
+        ),
         userUI = PreviewUserUI,
         flipBalances = true,
         debugHints = true,
@@ -441,7 +448,7 @@ private fun TransactionsTab(
                     maxSize = pageSize.toLong()
                     fetchTimeout = 5.seconds
                     allowReplaceContent = false
-                }
+                },
             ).mapNotNull { timelineEventFlow ->
                 emittedCount++
                 val firstEvent = timelineEventFlow.first()
@@ -449,8 +456,11 @@ private fun TransactionsTab(
 
                 // Get the first emission with a usable content for this timeline event
                 val content = firstEvent.content?.getOrNull()
-                if (content is ZeroInterestTransactionEvent && loadedIds.add(firstEvent.eventId)) (firstEvent.eventId to content)
-                else null
+                if (content is ZeroInterestTransactionEvent && loadedIds.add(firstEvent.eventId)) {
+                    (firstEvent.eventId to content)
+                } else {
+                    null
+                }
             }.toList()
 
             if (newItems.isNotEmpty()) {
@@ -530,7 +540,7 @@ private fun TransactionsTab(
         transactionEvents = transactionEvents,
         includedTransactions = includedTransactions,
         monetaryUnit = monetaryUnit,
-        onShowDetails = { navHelper.navigate(Destination.TransactionDetails(roomId, it)) }
+        onShowDetails = { navHelper.navigate(Destination.TransactionDetails(roomId, it)) },
     )
 }
 
@@ -550,18 +560,18 @@ private fun TransactionsTabContent(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
-                state = listState
+                state = listState,
             ) {
                 items(
                     items = transactionEvents,
-                    key = { it.first.full }
+                    key = { it.first.full },
                 ) { (eventId, transaction) ->
                     TransactionTabItem(
                         transaction = transaction,
                         included = includedTransactions[eventId]?.isNotEmpty() ?: false,
                         userUI = userUI,
                         monetaryUnit = monetaryUnit,
-                        onClick = { onShowDetails(eventId) }
+                        onClick = { onShowDetails(eventId) },
                     )
                 }
 
@@ -572,7 +582,7 @@ private fun TransactionsTabContent(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center,
                         ) {
                             LoadingIndicator()
                         }
@@ -585,7 +595,7 @@ private fun TransactionsTabContent(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center,
                         ) {
                             Text(stringResource(Res.string.no_transactions_yet))
                         }
@@ -608,7 +618,7 @@ private fun TransactionTabContentPreview() = AppTheme {
                 receivers = mapOf(
                     UserId("@bob:example.org") to Money(1000),
                     UserId("@carol:example.org") to Money(-500),
-                )
+                ),
             ),
             EventId("2") to ZeroInterestTransactionEvent(
                 sender = UserId("@bob:example.org"),
@@ -616,8 +626,8 @@ private fun TransactionTabContentPreview() = AppTheme {
                 receivers = mapOf(
                     UserId("@alice:example.org") to Money(1000),
                     UserId("@carol:example.org") to Money(-500),
-                )
-            )
+                ),
+            ),
         ),
         listState = rememberLazyListState(),
         includedTransactions = mapOf(EventId("2") to setOf(EventId("sum"))),
@@ -640,7 +650,7 @@ private fun TransactionTabItem(
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         val component = userUI.component(transaction.sender)
         component.Icon()
@@ -658,7 +668,7 @@ private fun TransactionTabItem(
                         Icons.Default.Warning,
                         contentDescription = stringResource(Res.string.not_included_in_summary),
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(16.dp),
                     )
                 }
             }
@@ -679,7 +689,7 @@ private fun TransactionTabItemPreview() = AppTheme {
             receivers = mapOf(
                 UserId("@bob:example.org") to Money(1000),
                 UserId("@carol:example.org") to Money(-500),
-            )
+            ),
         ),
         included = true,
         userUI = PreviewUserUI,

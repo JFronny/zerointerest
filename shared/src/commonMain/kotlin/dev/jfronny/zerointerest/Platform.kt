@@ -12,8 +12,8 @@ import de.connect2x.trixnity.client.RepositoriesModule
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import dev.jfronny.zerointerest.db.ZeroInterestRoomDatabase
 import io.ktor.client.engine.HttpClientEngine
-import org.koin.core.scope.Scope
 import kotlin.time.Instant
+import org.koin.core.scope.Scope
 
 interface Platform {
     val name: String
@@ -28,6 +28,7 @@ interface Platform {
 }
 
 expect fun Scope.getPlatform(): Platform
+
 @Composable
 expect fun getPlatformTheme(darkTheme: Boolean): ColorScheme?
 expect fun addShutdownHook(block: () -> Unit)
@@ -37,7 +38,7 @@ expect suspend fun SQLiteConnection.execSQL(sql: String)
 
 enum class TimestampStyle {
     SHORT,
-    FULL
+    FULL,
 }
 
 @Composable

@@ -69,7 +69,7 @@ private fun VerificationContent(
                     Button(onClick = onCancel) {
                         Text(stringResource(Res.string.cancel))
                     }
-                }
+                },
             )
         }
 
@@ -87,7 +87,7 @@ private fun VerificationContent(
                     Button(onClick = onCancel) {
                         Text(stringResource(Res.string.decline))
                     }
-                }
+                },
             )
         }
 
@@ -108,7 +108,7 @@ private fun VerificationContent(
                             }
                         }
                     },
-                    confirmButton = {}
+                    confirmButton = {},
                 )
             }
         }
@@ -131,8 +131,8 @@ private fun VerificationContent(
                                 TextWithEmoji(
                                     stringResource(
                                         Res.string.compare_emoji_sequence,
-                                        activeSasState.emojis.joinToString(" ") { it.second }
-                                    )
+                                        activeSasState.emojis.joinToString(" ") { it.second },
+                                    ),
                                 )
                             },
                             confirmButton = {
@@ -144,7 +144,7 @@ private fun VerificationContent(
                                 Button(onClick = { onMismatch(activeSasState) }) {
                                     Text(stringResource(Res.string.mismatch))
                                 }
-                            }
+                            },
                         )
                     }
 
@@ -157,7 +157,7 @@ private fun VerificationContent(
                                 Button(onClick = onCancel) {
                                     Text(stringResource(Res.string.cancel))
                                 }
-                            }
+                            },
                         )
                     }
                 }
@@ -169,7 +169,7 @@ private fun VerificationContent(
                 onDismissRequest = { },
                 title = { Text(stringResource(Res.string.waiting_for_other_device)) },
                 text = { Text(stringResource(Res.string.waiting_for_other_device_finish)) },
-                confirmButton = {}
+                confirmButton = {},
             )
         }
 
@@ -182,7 +182,7 @@ private fun VerificationContent(
                     Button(onClick = onClose) {
                         Text(stringResource(Res.string.ok))
                     }
-                }
+                },
             )
         }
 
@@ -198,7 +198,7 @@ private fun VerificationContent(
                     Button(onClick = onClose) {
                         Text(stringResource(Res.string.ok))
                     }
-                }
+                },
             )
         }
 
@@ -211,7 +211,7 @@ private fun VerificationContent(
                     Button(onClick = onClose) {
                         Text(stringResource(Res.string.ok))
                     }
-                }
+                },
             )
         }
 
@@ -224,7 +224,7 @@ private fun VerificationContent(
                     Button(onClick = onClose) {
                         Text(stringResource(Res.string.ok))
                     }
-                }
+                },
             )
         }
     }

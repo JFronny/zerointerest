@@ -23,8 +23,8 @@ fun calculateSettlementTransactions(balances: Map<UserId, Money>): List<ZeroInte
             ZeroInterestTransactionEvent(
                 description = ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION,
                 sender = debtor.first,
-                receivers = mapOf(creditor.first to amount)
-            )
+                receivers = mapOf(creditor.first to amount),
+            ),
         )
 
         debtors[i] = debtor.copy(second = debtor.second - amount)

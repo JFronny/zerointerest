@@ -6,13 +6,10 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.room3.Room as Room3
-import io.ktor.client.engine.java.Java
 import de.connect2x.trixnity.client.store.repository.room.TrixnityRoomDatabase
 import dev.jfronny.zerointerest.db.ZeroInterestRoomDatabase
 import dev.jfronny.zerointerest.shared.generated.resources.*
-import okio.Path.Companion.toOkioPath
-import org.jetbrains.compose.resources.stringResource
-import org.koin.core.scope.Scope
+import io.ktor.client.engine.java.Java
 import java.time.Duration
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -22,6 +19,9 @@ import java.util.Locale
 import kotlin.io.path.absolutePathString
 import kotlin.time.Instant
 import kotlin.time.toJavaInstant
+import okio.Path.Companion.toOkioPath
+import org.jetbrains.compose.resources.stringResource
+import org.koin.core.scope.Scope
 
 class JVMPlatform : AbstractPlatform(OS.stateDir.toOkioPath()) {
     override val name: String = "Desktop (${OS.type.displayName})"
@@ -34,13 +34,13 @@ class JVMPlatform : AbstractPlatform(OS.stateDir.toOkioPath()) {
 }
 
 actual fun Scope.getPlatform(): Platform = JVMPlatform()
+
 @Composable
 actual fun getPlatformTheme(darkTheme: Boolean): ColorScheme? = null
 actual fun addShutdownHook(block: () -> Unit) = Runtime.getRuntime().addShutdownHook(Thread(block))
 
 @Composable
 actual fun Instant.formatLocalized(style: TimestampStyle): String {
-
     val locale = Locale.getDefault()
 
     val now = ZonedDateTime.now()
@@ -50,8 +50,11 @@ actual fun Instant.formatLocalized(style: TimestampStyle): String {
 
     return when {
         diff < Duration.ofMinutes(1) -> stringResource(Res.string.timestamp_just_now)
+
         diff < Duration.ofHours(1) -> stringResource(Res.string.timestamp_minutes_ago, diff.toMinutes())
+
         diff < Duration.ofDays(1) -> stringResource(Res.string.timestamp_hours_ago, diff.toHours())
+
         diff < Duration.ofDays(7) -> stringResource(Res.string.timestamp_days_ago, diff.toDays())
 
         time.year == now.year -> {

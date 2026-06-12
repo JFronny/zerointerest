@@ -57,11 +57,11 @@ import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.IconSize
 import dev.jfronny.zerointerest.ui.component.PreviewUserUI
 import dev.jfronny.zerointerest.ui.component.UserUI
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 import kotlinx.coroutines.flow.flow
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -69,7 +69,7 @@ fun TransactionDetailsScreen(
     client: MatrixClient,
     roomId: RoomId,
     transactionId: EventId,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val event by remember(roomId, transactionId) {
         client.room.getTimelineEvent(roomId, transactionId) {
@@ -92,7 +92,7 @@ fun TransactionDetailsScreen(
         TransactionDetailsEvent(
             it.content?.getOrNull() as? ZeroInterestTransactionEvent ?: return@let null,
             it.sender,
-            it.originTimestamp
+            it.originTimestamp,
         )
     }
 
@@ -116,186 +116,188 @@ fun TransactionDetailsContent(
                 title = { Text(stringResource(Res.string.transaction_details)) },
                 navigationIcon = {
                     BackButton(onBack = onBack)
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         if (event == null) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 LoadingIndicator(Modifier.size(128.dp))
             }
-        } else Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            LazyColumn(
+        } else {
+            Box(
                 modifier = Modifier
-                    .widthIn(max = 800.dp)
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(padding),
+                contentAlignment = Alignment.TopCenter,
             ) {
-                if (!includedInSummary) {
-                    item {
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
-                            ),
-                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                LazyColumn(
+                    modifier = Modifier
+                        .widthIn(max = 800.dp)
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    if (!includedInSummary) {
+                        item {
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                ),
+                                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                             ) {
-                                Icon(
-                                    Icons.Default.Warning,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Spacer(Modifier.width(16.dp))
-                                Text(
-                                    stringResource(Res.string.not_included_in_summary),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Medium
-                                )
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(
+                                        Icons.Default.Warning,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(24.dp),
+                                    )
+                                    Spacer(Modifier.width(16.dp))
+                                    Text(
+                                        stringResource(Res.string.not_included_in_summary),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                item {
-                    val descText = if (event.content.description == ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION) stringResource(Res.string.payment) else event.content.description
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = event.content.total.format(monetaryUnit),
-                            style = MaterialTheme.typography.displayMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
+                    item {
+                        val descText = if (event.content.description == ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION) stringResource(Res.string.payment) else event.content.description
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                text = event.content.total.format(monetaryUnit),
+                                style = MaterialTheme.typography.displayMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = descText,
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+
+                    item {
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        Icons.Default.Schedule,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Spacer(Modifier.width(12.dp))
+                                    Column {
+                                        Text(
+                                            stringResource(Res.string.timestamp),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        Text(
+                                            text = Instant.fromEpochMilliseconds(event.timestamp).formatLocalized(),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                        )
+                                    }
+                                }
+
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        Icons.Default.Person,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            stringResource(Res.string.entered_by),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        Spacer(Modifier.height(4.dp))
+                                        userUI(event.sender, iconSize = IconSize.Small)
+                                    }
+                                }
+
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        Icons.Default.Payments,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            stringResource(Res.string.lender),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        Spacer(Modifier.height(4.dp))
+                                        userUI(event.content.sender, iconSize = IconSize.Small)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    item {
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = descText,
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            stringResource(Res.string.recipients),
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.padding(horizontal = 8.dp),
                         )
                     }
-                }
 
-                item {
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Default.Schedule,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        stringResource(Res.string.timestamp),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = Instant.fromEpochMilliseconds(event.timestamp).formatLocalized(),
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                }
-                            }
-
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Default.Person,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        stringResource(Res.string.entered_by),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(Modifier.height(4.dp))
-                                    userUI(event.sender, iconSize = IconSize.Small)
-                                }
-                            }
-
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Default.Payments,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        stringResource(Res.string.lender),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(Modifier.height(4.dp))
-                                    userUI(event.content.sender, iconSize = IconSize.Small)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                item {
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        stringResource(Res.string.recipients),
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
-                }
-
-                item {
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
-                    ) {
-                        Column {
-                            val recipientsList = event.content.receivers.entries.toList()
-                            recipientsList.forEachIndexed { index, (userId, amount) ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        userUI(userId)
+                    item {
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                        ) {
+                            Column {
+                                val recipientsList = event.content.receivers.entries.toList()
+                                recipientsList.forEachIndexed { index, (userId, amount) ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            userUI(userId)
+                                        }
+                                        Text(
+                                            text = amount.format(monetaryUnit),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Medium,
+                                        )
                                     }
-                                    Text(
-                                        text = amount.format(monetaryUnit),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                                if (index < recipientsList.size - 1) {
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                    if (index < recipientsList.size - 1) {
+                                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                    }
                                 }
                             }
                         }
@@ -316,15 +318,15 @@ fun TransactionDetailsScreenPreview() {
                 UserId("alice", "example.com"),
                 mapOf(
                     UserId("bob", "example.com") to 100L.toMoney(),
-                    UserId("charlie", "example.com") to 50L.toMoney()
-                )
+                    UserId("charlie", "example.com") to 50L.toMoney(),
+                ),
             ),
             UserId("alice", "example.com"),
-            1779611380000L
+            1779611380000L,
         ),
         includedInSummary = false,
         userUI = PreviewUserUI,
         monetaryUnit = MonetaryUnit.default,
-        onBack = {}
+        onBack = {},
     )
 }

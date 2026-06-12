@@ -2,11 +2,13 @@
 
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    ktlint
 }
 
 val computedVersionName: String by rootProject.extra
@@ -37,4 +39,8 @@ kotlin {
             implementation(npm("sqlite-web-worker", layout.projectDirectory.dir("sqlite-web-worker").asFile))
         }
     }
+}
+
+tasks {
+    withType<AbstractKotlinCompile<*>> { dependsOn(ktlintFormat) }
 }

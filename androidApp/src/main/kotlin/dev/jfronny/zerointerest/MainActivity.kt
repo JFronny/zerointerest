@@ -32,24 +32,27 @@ class MainActivity : ComponentActivity() {
 
         Backend.set(LognityWrangler)
         setContent {
-            KoinApplication(configuration = koinConfiguration(declaration = {
-                androidLogger(Level.ERROR)
-                androidContext(this@MainActivity)
-                modules(listOf(createAppModule(), createExtraModule()))
-            }), content = {
-                val navHelper = rememberNavigationHelper()
-                LaunchedEffect(Unit) {
-                    callbackFlow {
-                        val consumer = Consumer<Intent> { trySend(it) }
-                        consumer.accept(intent)
-                        addOnNewIntentListener(consumer)
-                        awaitClose { removeOnNewIntentListener(consumer) }
-                    }.collectLatest {
-                        handleIntent(it, navHelper::navigate)
+            KoinApplication(
+                configuration = koinConfiguration(declaration = {
+                    androidLogger(Level.ERROR)
+                    androidContext(this@MainActivity)
+                    modules(listOf(createAppModule(), createExtraModule()))
+                }),
+                content = {
+                    val navHelper = rememberNavigationHelper()
+                    LaunchedEffect(Unit) {
+                        callbackFlow {
+                            val consumer = Consumer<Intent> { trySend(it) }
+                            consumer.accept(intent)
+                            addOnNewIntentListener(consumer)
+                            awaitClose { removeOnNewIntentListener(consumer) }
+                        }.collectLatest {
+                            handleIntent(it, navHelper::navigate)
+                        }
                     }
-                }
-                App(navHelper = navHelper)
-            })
+                    App(navHelper = navHelper)
+                },
+            )
         }
     }
 
@@ -66,10 +69,13 @@ class MainActivity : ComponentActivity() {
                     log.warn { "Unknown intent data: $data" }
                 }
             }
+
             Intent.ACTION_APPLICATION_PREFERENCES -> {
                 onNavigate(Destination.SettingsScreen)
             }
+
             Intent.ACTION_MAIN -> {}
+
             else -> log.warn { "Unknown intent action: ${intent.action}" }
         }
     }

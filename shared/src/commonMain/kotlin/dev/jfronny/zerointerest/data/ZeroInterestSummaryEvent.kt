@@ -12,7 +12,8 @@ data class ZeroInterestSummaryEvent(
     val balances: Map<UserId, Money>,
     val parents: Map<EventId, Set<EventId>>, // previous summary -> transactions between them
 ) : StateEventContent {
-    @SerialName("external_url") override val externalUrl: String? = null
+    @SerialName("external_url")
+    override val externalUrl: String? = null
 
     companion object {
         const val TYPE = "dev.jfronny.zerointerest.summary"

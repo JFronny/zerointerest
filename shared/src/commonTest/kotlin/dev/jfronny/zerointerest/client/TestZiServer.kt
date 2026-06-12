@@ -34,13 +34,20 @@ class TestZiServer(
             .update {
                 val current = it[userId]
                 if (current == null) {
-                    val roomUser = RoomUser(roomId, userId, extra.displayName ?: userId.full, ClientEvent.StrippedStateEvent(
-                        content = extra,
-                        sender = userId,
-                        stateKey = "m.room.member"
-                    ))
+                    val roomUser = RoomUser(
+                        roomId,
+                        userId,
+                        extra.displayName ?: userId.full,
+                        ClientEvent.StrippedStateEvent(
+                            content = extra,
+                            sender = userId,
+                            stateKey = "m.room.member",
+                        ),
+                    )
                     it + (userId to MutableStateFlow(roomUser))
-                } else it
+                } else {
+                    it
+                }
             }
     }
 
@@ -48,11 +55,16 @@ class TestZiServer(
         users.getOrPut(roomId) { MutableStateFlow(mapOf()) }
             .update {
                 val current = it[userId]
-                val roomUser = RoomUser(roomId, userId, extra.displayName ?: userId.full, ClientEvent.StrippedStateEvent(
-                    content = extra,
-                    sender = userId,
-                    stateKey = "m.room.member"
-                ))
+                val roomUser = RoomUser(
+                    roomId,
+                    userId,
+                    extra.displayName ?: userId.full,
+                    ClientEvent.StrippedStateEvent(
+                        content = extra,
+                        sender = userId,
+                        stateKey = "m.room.member",
+                    ),
+                )
                 if (current == null) {
                     it + (userId to MutableStateFlow(roomUser))
                 } else {

@@ -38,9 +38,9 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import dev.jfronny.zerointerest.SourceCodeUrl
-import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
 import dev.jfronny.zerointerest.service.Settings
+import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import kotlinx.coroutines.launch
@@ -80,7 +80,6 @@ private fun SettingsContent(
     onBack: () -> Unit,
     onLogout: () -> Unit,
     onViewSourceCode: () -> Unit,
-
     flipBalances: Boolean,
     setFlipBalances: (Boolean) -> Unit,
     debugHints: Boolean,
@@ -90,16 +89,15 @@ private fun SettingsContent(
     monetaryUnit: MonetaryUnit,
     setMonetaryUnit: (MonetaryUnit) -> Unit,
 ) {
-
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.settings)) },
                 navigationIcon = {
                     BackButton(onBack = onBack)
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
             ListItem(
@@ -108,10 +106,10 @@ private fun SettingsContent(
                 trailingContent = {
                     Switch(
                         checked = flipBalances,
-                        onCheckedChange = setFlipBalances
+                        onCheckedChange = setFlipBalances,
                     )
                 },
-                modifier = Modifier.clickable { setFlipBalances(!flipBalances) }
+                modifier = Modifier.clickable { setFlipBalances(!flipBalances) },
             )
 
             ListItem(
@@ -120,10 +118,10 @@ private fun SettingsContent(
                 trailingContent = {
                     Switch(
                         checked = debugHints,
-                        onCheckedChange = setDebugHints
+                        onCheckedChange = setDebugHints,
                     )
                 },
-                modifier = Modifier.clickable { setDebugHints(!debugHints) }
+                modifier = Modifier.clickable { setDebugHints(!debugHints) },
             )
 
             ListItem(
@@ -132,10 +130,10 @@ private fun SettingsContent(
                 trailingContent = {
                     Switch(
                         checked = requestFullKeyboard,
-                        onCheckedChange = setRequestFullKeyboard
+                        onCheckedChange = setRequestFullKeyboard,
                     )
                 },
-                modifier = Modifier.clickable { setRequestFullKeyboard(!requestFullKeyboard) }
+                modifier = Modifier.clickable { setRequestFullKeyboard(!requestFullKeyboard) },
             )
 
             var showMonetaryUnitDialog by remember { mutableStateOf(false) }
@@ -143,14 +141,14 @@ private fun SettingsContent(
                 headlineContent = { Text(stringResource(Res.string.monetary_unit)) },
                 supportingContent = { Text(stringResource(Res.string.monetary_unit_description)) },
                 trailingContent = { Text(monetaryUnit.code, style = MaterialTheme.typography.labelMedium) },
-                modifier = Modifier.clickable { showMonetaryUnitDialog = true }
+                modifier = Modifier.clickable { showMonetaryUnitDialog = true },
             )
 
             if (showMonetaryUnitDialog) {
                 MonetaryUnitDialog(
                     monetaryUnit = monetaryUnit,
                     setMonetaryUnit = setMonetaryUnit,
-                    onClose = { showMonetaryUnitDialog = false }
+                    onClose = { showMonetaryUnitDialog = false },
                 )
             }
 
@@ -158,13 +156,13 @@ private fun SettingsContent(
                 headlineContent = { Text(stringResource(Res.string.source_code)) },
                 supportingContent = { Text(SourceCodeUrl) },
                 leadingContent = { Icon(Icons.Default.ForkRight, null) },
-                modifier = Modifier.clickable { onViewSourceCode() }
+                modifier = Modifier.clickable { onViewSourceCode() },
             )
 
             ListItem(
                 headlineContent = { Text(stringResource(Res.string.logout)) },
                 leadingContent = { Icon(Icons.AutoMirrored.Filled.Logout, null) },
-                modifier = Modifier.clickable { onLogout() }
+                modifier = Modifier.clickable { onLogout() },
             )
         }
     }
@@ -206,7 +204,7 @@ private fun MonetaryUnitDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.width(8.dp))
@@ -220,7 +218,7 @@ private fun MonetaryUnitDialog(
                         error = false
                     },
                     isError = error,
-                    singleLine = true
+                    singleLine = true,
                 )
             }
         },
@@ -234,7 +232,7 @@ private fun MonetaryUnitDialog(
                     } catch (e: IllegalArgumentException) {
                         error = true
                     }
-                }
+                },
             ) {
                 Text(stringResource(Res.string.save))
             }
@@ -243,7 +241,7 @@ private fun MonetaryUnitDialog(
             TextButton(onClick = onClose) {
                 Text(stringResource(Res.string.cancel))
             }
-        }
+        },
     )
 }
 
@@ -254,7 +252,7 @@ private fun MonetaryUnitDialogPreview() = AppTheme {
         MonetaryUnitDialog(
             monetaryUnit = MonetaryUnit.default,
             setMonetaryUnit = {},
-            onClose = {}
+            onClose = {},
         )
     }
 }

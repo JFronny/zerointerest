@@ -31,25 +31,25 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun MoreOptionsButton(
     openSettings: () -> Unit,
-    extraOptions: @Composable (ColumnScope.(close: () -> Unit) -> Unit) = {}
+    extraOptions: @Composable (ColumnScope.(close: () -> Unit) -> Unit) = {},
 ) = Box {
     var expanded by remember { mutableStateOf(false) }
 
     SimpleIconButton(
         icon = Icons.Default.MoreVert,
         description = stringResource(Res.string.more_options),
-        onClick = { expanded = true }
+        onClick = { expanded = true },
     )
     DropdownMenu(
         expanded = expanded,
-        onDismissRequest = { expanded = false }
+        onDismissRequest = { expanded = false },
     ) {
         DropdownMenuItem(
             text = { Text(stringResource(Res.string.settings)) },
             onClick = {
                 expanded = false
                 openSettings()
-            }
+            },
         )
         extraOptions({ expanded = false })
     }
@@ -59,7 +59,7 @@ fun MoreOptionsButton(
 fun BackButton(onBack: () -> Unit) = SimpleIconButton(
     icon = Icons.AutoMirrored.Default.ArrowBack,
     description = stringResource(Res.string.back),
-    onClick = onBack
+    onClick = onBack,
 )
 
 @Preview

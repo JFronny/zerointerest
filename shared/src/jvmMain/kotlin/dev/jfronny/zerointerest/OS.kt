@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package dev.jfronny.zerointerest
 
 import dev.jfronny.zerointerest.ui.appName
@@ -21,9 +23,11 @@ object OS {
     val stateDir by lazy {
         when (OS.type) {
             Type.WINDOWS -> Path(getDir("{3EB685DB-65F9-4CF6-A03A-E3EF65729F3D}"))
-            Type.MAC_OS -> OS.userDir/"Library/Application Support/${appName}"
-            Type.LINUX -> System.getenv("XDG_DATA_HOME")?.let { Path(it)/ appName }
-                ?: (OS.userDir/".local/share/zerointerest")
+
+            Type.MAC_OS -> OS.userDir / "Library/Application Support/$appName"
+
+            Type.LINUX -> System.getenv("XDG_DATA_HOME")?.let { Path(it) / appName }
+                ?: (OS.userDir / ".local/share/zerointerest")
         }
     }
     val userDir by lazy { Path(System.getProperty("user.home")).absolute().normalize() }
@@ -31,7 +35,7 @@ object OS {
     enum class Type(val displayName: String) {
         WINDOWS("Windows"),
         MAC_OS("OSX"),
-        LINUX("Linux");
+        LINUX("Linux"),
     }
 }
 
@@ -98,7 +102,7 @@ private val GUID_LAYOUT: GroupLayout? = MemoryLayout.structLayout(
     C_LONG.withName("Data1"),
     C_SHORT.withName("Data2"),
     C_SHORT.withName("Data3"),
-    MemoryLayout.sequenceLayout(8, C_CHAR).withName("Data4")
+    MemoryLayout.sequenceLayout(8, C_CHAR).withName("Data4"),
 ).withName("_GUID")
 private fun createSegmentFromString(str: String, arena: Arena): MemorySegment {
     // allocate segment (including space for terminating null)

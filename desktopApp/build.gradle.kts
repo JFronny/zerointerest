@@ -1,6 +1,7 @@
 import de.undercouch.gradle.tasks.download.Download
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
+import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 
 plugins {
     kotlin("jvm")
@@ -8,6 +9,7 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
     alias(libs.plugins.download)
+    ktlint
 }
 
 val computedVersionName: String by rootProject.extra
@@ -129,4 +131,8 @@ afterEvaluate {
 
     configurePackageTasks("")
     configurePackageTasks("Release")
+}
+
+tasks {
+    withType<AbstractKotlinCompile<*>> { dependsOn(ktlintFormat) }
 }

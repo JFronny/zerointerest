@@ -34,7 +34,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
-import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
 import dev.jfronny.zerointerest.data.money.sum
@@ -44,6 +43,7 @@ import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.service.calculateSettlementTransactions
 import dev.jfronny.zerointerest.service.client.MatrixZiClient
+import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.ErrorDialog
 import dev.jfronny.zerointerest.ui.component.PreviewUserUI
@@ -70,7 +70,7 @@ fun SettleScreen(
     val summaryState by trustService.getSummary(roomId).collectAsState(null)
 
     val launcher = rememberTransactionLauncher(client)
-    
+
     val suggestedTransactions = remember(summaryState) {
         val balances = when (val s = summaryState) {
             is SummaryTrustService.Summary.Trusted -> s.event.balances
@@ -80,9 +80,9 @@ fun SettleScreen(
         }
         calculateSettlementTransactions(balances)
     }
-    
-    var remainingTransactions by remember(suggestedTransactions) { 
-        mutableStateOf(suggestedTransactions) 
+
+    var remainingTransactions by remember(suggestedTransactions) {
+        mutableStateOf(suggestedTransactions)
     }
 
     fun acceptAll() = launcher.tryLaunch {
@@ -139,7 +139,7 @@ private fun SettleContent(
                 TextButton(onClick = { showConfirmDialog = false }) {
                     Text(stringResource(Res.string.cancel))
                 }
-            }
+            },
         )
     }
 
@@ -147,7 +147,7 @@ private fun SettleContent(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(Res.string.settle_up)) },
-                navigationIcon = { BackButton(onBack = onBack) }
+                navigationIcon = { BackButton(onBack = onBack) },
             )
         },
         floatingActionButton = {
@@ -161,10 +161,10 @@ private fun SettleContent(
                         }
                     },
                     icon = { Icon(Icons.Default.Check, null) },
-                    text = { Text(stringResource(Res.string.accept_all)) }
+                    text = { Text(stringResource(Res.string.accept_all)) },
                 )
             }
-        }
+        },
     ) { padding ->
         ErrorDialog(launcherState, onDismiss = onDismissError)
 
@@ -172,7 +172,7 @@ private fun SettleContent(
             if (remainingTransactions.isEmpty()) {
                 Text(
                     text = stringResource(Res.string.no_debts),
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier.align(Alignment.Center),
                 )
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -186,7 +186,7 @@ private fun SettleContent(
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text("${senderUI.name} → ${receiverUI?.name ?: "Unknown"}")
@@ -221,8 +221,8 @@ private fun SettleScreenPreview() = AppTheme {
             ZeroInterestTransactionEvent(
                 ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION,
                 sender = UserId("alice", "example.com"),
-                receivers = mapOf(UserId("bob", "example.com") to 100L.toMoney())
-            )
+                receivers = mapOf(UserId("bob", "example.com") to 100L.toMoney()),
+            ),
         ),
         monetaryUnit = MonetaryUnit.default,
         userUI = PreviewUserUI,
@@ -242,8 +242,8 @@ private fun SettleScreenPreviewError() = AppTheme {
             ZeroInterestTransactionEvent(
                 ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION,
                 sender = UserId("alice", "example.com"),
-                receivers = mapOf(UserId("bob", "example.com") to 100L.toMoney())
-            )
+                receivers = mapOf(UserId("bob", "example.com") to 100L.toMoney()),
+            ),
         ),
         monetaryUnit = MonetaryUnit.default,
         userUI = PreviewUserUI,

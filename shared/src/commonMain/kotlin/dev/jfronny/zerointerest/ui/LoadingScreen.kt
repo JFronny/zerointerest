@@ -9,9 +9,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -22,10 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.AndroidUiModes
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.koinInjectOrNull
-import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
+import dev.jfronny.zerointerest.service.client.MatrixClientService
+import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.Url
@@ -58,7 +58,7 @@ fun LoadingScreen(onSuccess: suspend () -> Unit, onError: suspend () -> Unit) {
                 matrixClient.loginWithSso(
                     homeserver = Url(extras.homeserver),
                     idpId = extras.idpId,
-                    loginToken = extras.loginToken
+                    loginToken = extras.loginToken,
                 )
                 if (matrixClient.loggedIn) {
                     settings.setDefaultHomeserver(extras.homeserver)
@@ -104,7 +104,7 @@ private fun LoadingContent() = Scaffold(
         TopAppBar(
             title = { Text(stringResource(Res.string.login)) },
         )
-    }
+    },
 ) { paddingValues ->
     Column(
         modifier = Modifier
@@ -112,19 +112,19 @@ private fun LoadingContent() = Scaffold(
             .padding(paddingValues)
             .safeContentPadding()
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Image(
             painter = painterResource(Res.drawable.app_icon),
             contentDescription = null,
-            modifier = Modifier.size(64.dp)
+            modifier = Modifier.size(64.dp),
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             LoadingIndicator(Modifier.size(128.dp))
         }

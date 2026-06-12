@@ -25,8 +25,8 @@ import de.connect2x.trixnity.client.store.Room
 import de.connect2x.trixnity.client.store.RoomDisplayName
 import de.connect2x.trixnity.client.store.hasBeenReplaced
 import de.connect2x.trixnity.core.model.RoomId
-import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.service.client.MatrixClientService
+import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
@@ -56,9 +56,9 @@ private fun PickRoomContent(
             title = { Text(stringResource(Res.string.pick_a_room)) },
             actions = {
                 MoreOptionsButton(openSettings = openSettings)
-            }
+            },
         )
-    }
+    },
 ) { paddingValues ->
     val sorted = remember(rooms) {
         rooms.asSequence()
@@ -77,12 +77,12 @@ private fun PickRoomContent(
         return@Scaffold
     }
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(paddingValues)
+        modifier = Modifier.fillMaxSize().padding(paddingValues),
     ) {
         items(sorted) {
             RoomListItem(
                 room = it,
-                onClick = { onPick(it.roomId) }
+                onClick = { onPick(it.roomId) },
             )
         }
     }
@@ -107,19 +107,19 @@ private fun PickRoomScreenPreview() = AppTheme {
             ),
         ),
         onPick = {},
-        openSettings = {}
+        openSettings = {},
     )
 }
 
 @Composable
 private fun RoomListItem(
     room: Room,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val name = room.name?.explicitName ?: room.roomId.full
     ListItem(
         headlineContent = { Text(name) },
-        modifier = Modifier.clickable { onClick() }
+        modifier = Modifier.clickable { onClick() },
     )
 }
 
@@ -131,6 +131,6 @@ private fun RoomListItemPreview() = AppTheme {
             roomId = RoomId("!room1:example.com"),
             name = RoomDisplayName(explicitName = "Room 1", summary = null),
         ),
-        onClick = {}
+        onClick = {},
     )
 }

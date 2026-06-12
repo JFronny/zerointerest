@@ -1,10 +1,10 @@
 package dev.jfronny.zerointerest.db
 
 import androidx.room3.withWriteTransaction
-import dev.jfronny.zerointerest.data.TransactionTemplate
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
+import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.TrustState
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.money.Money
@@ -45,15 +45,21 @@ class ZeroInterestDatabase(val db: ZeroInterestRoomDatabase) {
             event.parents.keys.forEach {
                 db.summaryHeadDao().removeHead(room.full, it.full)
             }
-        } else require(!isRoot) { "Root summaries must not be added without updating heads" }
+        } else {
+            require(!isRoot) { "Root summaries must not be added without updating heads" }
+        }
         db.summaryTrustDao().insert(SummaryTrustEntity(room.full, eventId.full, TrustState.TRUSTED))
-        db.summaryDao().insertSummary(event.parents.keys.map {
-            SummaryEntity(room.full, eventId.full, it.full)
-        })
+        db.summaryDao().insertSummary(
+            event.parents.keys.map {
+                SummaryEntity(room.full, eventId.full, it.full)
+            },
+        )
         event.parents.values.firstOrNull()?.let { transactions ->
-            db.summaryDao().insertTransactions(transactions.map {
-                SummaryTransactionEntity(room.full, eventId.full, it.full)
-            })
+            db.summaryDao().insertTransactions(
+                transactions.map {
+                    SummaryTransactionEntity(room.full, eventId.full, it.full)
+                },
+            )
         }
     }
 
@@ -83,7 +89,7 @@ class ZeroInterestDatabase(val db: ZeroInterestRoomDatabase) {
                     id = entity.id,
                     description = entity.description,
                     sender = UserId(entity.sender),
-                    receivers = entity.receivers.mapValues { Money(it.value) }
+                    receivers = entity.receivers.mapValues { Money(it.value) },
                 )
             }
         }
@@ -96,8 +102,8 @@ class ZeroInterestDatabase(val db: ZeroInterestRoomDatabase) {
                 id = template.id,
                 description = template.description,
                 sender = template.sender.full,
-                receivers = template.receivers.mapValues { it.value.amount }
-            )
+                receivers = template.receivers.mapValues { it.value.amount },
+            ),
         )
     }
 

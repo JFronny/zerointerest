@@ -5,7 +5,7 @@ import dev.jfronny.zerointerest.util.multiplyExact
 class MoneyParser(
     val input: String,
     val targetUnit: MonetaryUnit,
-    val exchangeRates: Map<MonetaryUnit, Double>
+    val exchangeRates: Map<MonetaryUnit, Double>,
 ) {
     init {
         require(exchangeRates[targetUnit] == 1.0) { "Target unit must be the base unit" }
@@ -60,10 +60,12 @@ class MoneyParser(
                     val right = factor()
                     Result(expr.amount + right.amount, usedMath = true, consumedUnit = expr.consumedUnit || right.consumedUnit)
                 }
+
                 match('-') -> {
                     val right = factor()
                     Result(expr.amount - right.amount, usedMath = true, consumedUnit = expr.consumedUnit || right.consumedUnit)
                 }
+
                 else -> return expr
             }
         }
@@ -83,6 +85,7 @@ class MoneyParser(
                     }
                     Result(value, usedMath = true, consumedUnit = term.consumedUnit || right.consumedUnit)
                 }
+
                 match('/') -> {
                     val right = primary()
                     if (right.consumedUnit) throw error("Cannot divide by monetary amount")
@@ -93,12 +96,17 @@ class MoneyParser(
                     }
                     Result(value, usedMath = true, consumedUnit = term.consumedUnit || right.consumedUnit)
                 }
+
                 maybeConsumeUnit() -> {
                     if (term.consumedUnit) throw error("Cannot multiply by monetary amount")
-                    val amount = if (consumedUnit!!.key == targetUnit) term.amount
-                    else (term.amount * consumedUnit!!.value).toLong()
+                    val amount = if (consumedUnit!!.key == targetUnit) {
+                        term.amount
+                    } else {
+                        (term.amount * consumedUnit!!.value).toLong()
+                    }
                     term.copy(amount = amount, consumedUnit = true, usedMath = term.usedMath || consumedUnit!!.key != targetUnit)
                 }
+
                 else -> return term
             }
         }
@@ -109,13 +117,16 @@ class MoneyParser(
         if (current >= input.length) throw error("Unexpected end of input")
         return when (input[current]) {
             in '0'..'9' -> number()
+
             '-' -> number()
+
             '(' -> {
                 current++
                 val result = expression()
                 consume(')')
                 result
             }
+
             else -> throw error("Expected number")
         }
     }
@@ -133,9 +144,11 @@ class MoneyParser(
             val left = input.substring(start, current)
             current++
             start = current
-            if (current + 2 > input.length || !input[current++].isDigit()
-                || !input[current++].isDigit())
+            if (current + 2 > input.length || !input[current++].isDigit() ||
+                !input[current++].isDigit()
+            ) {
                 throw error("Expected two digits after decimal point")
+            }
             val right = input.substring(start, current)
             try {
                 sign * (left + right).toLong()
@@ -181,8 +194,7 @@ class MoneyParser(
     companion object {
         val symbols = setOf('+', '*', '/', '(', ')') // See also ConvertExchangeRatesTask.bannedSymbols
         fun parse(input: String, unit: MonetaryUnit) = MoneyParser(input, unit).parse()
-        fun parse(input: String, targetUnit: MonetaryUnit, exchangeRates: Map<MonetaryUnit, Double>) =
-            MoneyParser(input, targetUnit, exchangeRates).parse()
+        fun parse(input: String, targetUnit: MonetaryUnit, exchangeRates: Map<MonetaryUnit, Double>) = MoneyParser(input, targetUnit, exchangeRates).parse()
     }
 
     class ParseException(message: String) : Exception(message)

@@ -10,16 +10,16 @@ import de.connect2x.trixnity.core.serialization.events.messageOf
 import de.connect2x.trixnity.core.serialization.events.stateOf
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
-import dev.jfronny.zerointerest.service.client.MatrixClientService
-import dev.jfronny.zerointerest.service.Settings
-import dev.jfronny.zerointerest.service.SummaryTrustService
-import dev.jfronny.zerointerest.service.TransactionService
-import dev.jfronny.zerointerest.service.createSsoLoginHandler
 import dev.jfronny.zerointerest.db.Migration1_2
 import dev.jfronny.zerointerest.db.Migration2_3
 import dev.jfronny.zerointerest.db.Migration3_4
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
+import dev.jfronny.zerointerest.service.Settings
+import dev.jfronny.zerointerest.service.SummaryTrustService
+import dev.jfronny.zerointerest.service.TransactionService
+import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.service.client.ZiClientProvider
+import dev.jfronny.zerointerest.service.createSsoLoginHandler
 import dev.jfronny.zerointerest.ui.viewmodel.CreateTransactionViewModel
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.sync.Mutex
@@ -57,10 +57,12 @@ fun createAppModule() = module {
 
 fun createAppMatrixModule() = module {
     single<EventContentSerializerMappings> {
-        EventContentSerializerMappings.default(EventContentSerializerMappings {
-            stateOf<ZeroInterestSummaryEvent>(ZeroInterestSummaryEvent.TYPE)
-            messageOf<ZeroInterestTransactionEvent>(ZeroInterestTransactionEvent.TYPE)
-        })
+        EventContentSerializerMappings.default(
+            EventContentSerializerMappings {
+                stateOf<ZeroInterestSummaryEvent>(ZeroInterestSummaryEvent.TYPE)
+                messageOf<ZeroInterestTransactionEvent>(ZeroInterestTransactionEvent.TYPE)
+            },
+        )
     }
 }
 
@@ -86,7 +88,7 @@ class SuspendLazy<T>(private val block: suspend () -> T) {
 @Composable
 inline fun <reified T> koinInjectOrNull(
     qualifier: Qualifier? = null,
-    scope: Scope = currentKoinScope()
+    scope: Scope = currentKoinScope(),
 ): T? = remember(qualifier, scope) {
     scope.getOrNull(qualifier)
 }

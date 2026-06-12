@@ -23,10 +23,10 @@ class CoilMxcFetcher(
         return SourceFetchResult(
             source = ImageSource(
                 source = Buffer().apply { write(result) },
-                fileSystem = options.fileSystem
+                fileSystem = options.fileSystem,
             ),
             mimeType = null,
-            dataSource = DataSource.NETWORK
+            dataSource = DataSource.NETWORK,
         )
     }
 
@@ -34,7 +34,7 @@ class CoilMxcFetcher(
         override fun create(
             data: Uri,
             options: Options,
-            imageLoader: ImageLoader
+            imageLoader: ImageLoader,
         ): Fetcher? {
             if (!data.scheme.equals("mxc", ignoreCase = true)) return null
             val client = service.ziClient.value ?: return null

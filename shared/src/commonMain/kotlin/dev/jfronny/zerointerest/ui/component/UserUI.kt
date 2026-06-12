@@ -42,6 +42,7 @@ interface UserUI {
 
     interface Component {
         @Composable fun Icon(size: IconSize = IconSize.Regular)
+
         @Composable fun Name() {
             Text(name)
         }
@@ -66,7 +67,8 @@ interface UserUI {
 }
 
 enum class IconSize {
-    Small, Regular
+    Small,
+    Regular,
 }
 
 object PreviewUserUI : UserUI {
@@ -134,7 +136,7 @@ private fun FallbackIcon(size: IconSize, name: String) {
             color = MaterialTheme.colorScheme.onPrimary,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -142,16 +144,18 @@ private fun FallbackIcon(size: IconSize, name: String) {
 @Composable
 private fun IconWrapper(size: IconSize, content: @Composable () -> Unit) {
     Surface(
-        modifier = Modifier.size(when (size) {
-            IconSize.Small -> 24.dp
-            IconSize.Regular -> 40.dp
-        }),
+        modifier = Modifier.size(
+            when (size) {
+                IconSize.Small -> 24.dp
+                IconSize.Regular -> 40.dp
+            },
+        ),
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.primary
+        color = MaterialTheme.colorScheme.primary,
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             content()
         }

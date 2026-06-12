@@ -1,11 +1,11 @@
 package dev.jfronny.zerointerest.data.money
 
+import kotlin.jvm.JvmInline
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlin.jvm.JvmInline
 
 @JvmInline
 @Serializable(with = MonetaryUnit.Serializer::class)

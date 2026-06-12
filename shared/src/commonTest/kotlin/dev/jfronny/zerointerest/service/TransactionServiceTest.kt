@@ -25,7 +25,7 @@ class TransactionServiceTest : CoreServicesTest() {
             val content = ZeroInterestTransactionEvent(
                 description = "Dinner",
                 sender = UserId("@alice:example.com"),
-                receivers = mapOf(UserId("@bob:example.com") to 100L.toMoney())
+                receivers = mapOf(UserId("@bob:example.com") to 100L.toMoney()),
             )
 
             transactionService.sendTransaction(roomId, content)
@@ -58,7 +58,7 @@ class TransactionServiceTest : CoreServicesTest() {
 
             val updatedSummary = summaryFlow.first {
                 it is SummaryTrustService.Summary.Trusted &&
-                        it.event.parents.keys.first().full == $$"$4" // Should refer to the last summary from starter history
+                    it.event.parents.keys.first().full == $$"$4" // Should refer to the last summary from starter history
             } as SummaryTrustService.Summary.Trusted
 
             updatedSummary.event.balances[alice] shouldBe (-10L).toMoney()

@@ -12,7 +12,7 @@ class DebtSettlementTest : FunSpec({
     test("calculates simple exact match settlement") {
         val balances = mapOf(
             UserId("@alice:example.com") to 100L.toMoney(),
-            UserId("@bob:example.com") to (-100L).toMoney()
+            UserId("@bob:example.com") to (-100L).toMoney(),
         )
 
         val transactions = calculateSettlementTransactions(balances)
@@ -27,7 +27,7 @@ class DebtSettlementTest : FunSpec({
         val balances = mapOf(
             UserId("@alice:example.com") to 50L.toMoney(),
             UserId("@charlie:example.com") to 50L.toMoney(),
-            UserId("@bob:example.com") to (-100L).toMoney()
+            UserId("@bob:example.com") to (-100L).toMoney(),
         )
 
         val transactions = calculateSettlementTransactions(balances)
@@ -43,7 +43,7 @@ class DebtSettlementTest : FunSpec({
             UserId("@a:example.com") to 150L.toMoney(),
             UserId("@b:example.com") to 50L.toMoney(),
             UserId("@c:example.com") to (-100L).toMoney(),
-            UserId("@d:example.com") to (-100L).toMoney()
+            UserId("@d:example.com") to (-100L).toMoney(),
         )
 
         val transactions = calculateSettlementTransactions(balances)

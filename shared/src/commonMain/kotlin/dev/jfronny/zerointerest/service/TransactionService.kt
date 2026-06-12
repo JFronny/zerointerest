@@ -59,7 +59,7 @@ class TransactionService(
 
             val initialEvent = ZeroInterestSummaryEvent(
                 balances = emptyMap(),
-                parents = emptyMap()
+                parents = emptyMap(),
             )
             val initialResponse = client.sendStateEvent(roomId, initialEvent, ZeroInterestSummaryEvent.TYPE).getOrThrow()
             database.addTrustedSummary(roomId, initialResponse, initialEvent, isRoot = true)
@@ -69,15 +69,15 @@ class TransactionService(
             contents.forEach { it.apply(balances) }
             val event = ZeroInterestSummaryEvent(
                 balances = balances,
-                parents = mapOf(initialResponse to newTransactionIds.toSet())
+                parents = mapOf(initialResponse to newTransactionIds.toSet()),
             )
             val response = client.sendStateEvent(roomId, event, ZeroInterestSummaryEvent.TYPE).getOrThrow()
             database.addTrustedSummary(roomId, response, event)
         } else {
             log.info { "Merging ${heads.size} heads for new transactions $newTransactionIds in room $roomId" }
-            
+
             val event = client.computeMergedSummary(roomId, heads, newTransactionIds, contents)
-            
+
             log.info { "Creating merged summary for new transactions $newTransactionIds in room $roomId" }
             val response = client.sendStateEvent(roomId, event, ZeroInterestSummaryEvent.TYPE).getOrThrow()
             database.addTrustedSummary(roomId, response, event)
@@ -99,9 +99,11 @@ class TransactionService(
             } catch (e: Exception) {
                 throw FailedSendMessageException(cause = e)
             }
-        }.map { txId -> async {
-            client.awaitScheduledMessageEvent(roomId, txId).getOrThrow()
-        } }.awaitAll()
+        }.map { txId ->
+            async {
+                client.awaitScheduledMessageEvent(roomId, txId).getOrThrow()
+            }
+        }.awaitAll()
 
         createSummary(preparedSummary, txIds)
     }

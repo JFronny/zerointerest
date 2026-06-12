@@ -11,8 +11,11 @@ fun getExchangeRates(toUnit: MonetaryUnit): Map<MonetaryUnit, Double> {
     if (candidates.isEmpty()) return mapOf(toUnit to 1.0)
 //    require(candidates.size == 1) { "Ambiguous exchange rate: $candidates" }
     val pickedCandidate = candidates.first()
-    val toOrigin = if (pickedCandidate == importedExchangeRateOrigin) 1.0
-    else importedExchangeRates[pickedCandidate]!!
+    val toOrigin = if (pickedCandidate == importedExchangeRateOrigin) {
+        1.0
+    } else {
+        importedExchangeRates[pickedCandidate]!!
+    }
     return buildMap {
         for ((unit, rate) in importedExchangeRates) {
             if (toOrigin == 0.0 || rate == 0.0) continue

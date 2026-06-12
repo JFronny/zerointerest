@@ -9,6 +9,8 @@ import de.connect2x.lognity.api.config.ConfigSpec
 import de.connect2x.lognity.api.context.Context
 import de.connect2x.lognity.api.context.ContextSpec
 import de.connect2x.lognity.api.format.Formatter
+import de.connect2x.lognity.api.logger.Level as OLevel
+import de.connect2x.lognity.api.logger.Logger as LLogger
 import de.connect2x.lognity.api.logger.MessageProvider
 import de.connect2x.lognity.api.logger.MessageScope
 import de.connect2x.lognity.api.marker.Marker
@@ -16,27 +18,31 @@ import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KMarkerFactory
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.oshai.kotlinlogging.Level
-import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Clock
-import de.connect2x.lognity.api.logger.Level as OLevel
-import de.connect2x.lognity.api.logger.Logger as LLogger
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 private val xlogger = KotlinLogging.logger {}
 
 @OptIn(ExperimentalAtomicApi::class)
 object LognityWrangler : Backend {
     override val name: String get() = "ktor"
-    override val defaultLevel: OLevel = if (xlogger.isDebugEnabled()) OLevel.DEBUG
-        else if (xlogger.isInfoEnabled()) OLevel.INFO
-        else if (xlogger.isWarnEnabled()) OLevel.WARN
-        else if (xlogger.isErrorEnabled()) OLevel.ERROR
-        else OLevel.TRACE
+    override val defaultLevel: OLevel = if (xlogger.isDebugEnabled()) {
+        OLevel.DEBUG
+    } else if (xlogger.isInfoEnabled()) {
+        OLevel.INFO
+    } else if (xlogger.isWarnEnabled()) {
+        OLevel.WARN
+    } else if (xlogger.isErrorEnabled()) {
+        OLevel.ERROR
+    } else {
+        OLevel.TRACE
+    }
     override val overrideLevel: OLevel? get() = null
     override val consoleColorScheme: ConsoleColorScheme get() = ConsoleColorScheme.DARK
 
@@ -77,36 +83,38 @@ object LognityWrangler : Backend {
     override fun createMarker(
         key: String,
         name: String,
-        isEnabled: Boolean
+        isEnabled: Boolean,
     ): Marker = OMarker(isEnabled, key, name)
 
     override fun createLogger(
         name: String?,
-        contextSpec: ContextSpec
-    ): LLogger = OLogger(KotlinLogging.logger(name ?: ""),
+        contextSpec: ContextSpec,
+    ): LLogger = OLogger(
+        KotlinLogging.logger(name ?: ""),
         Config(configSpec),
         Context(contextSpec),
         defaultLevel,
-        true
+        true,
     )
 
     class OMarker(
         override var isEnabled: Boolean,
         override val key: String,
-        override val name: String
+        override val name: String,
     ) : Marker
 
-    class OLogger(val logger: KLogger,
-                  override val config: Config,
-                  override val context: Context,
-                  override var level: OLevel,
-                  override var isEnabled: Boolean
+    class OLogger(
+        val logger: KLogger,
+        override val config: Config,
+        override val context: Context,
+        override var level: OLevel,
+        override var isEnabled: Boolean,
     ) : LLogger {
         override fun log(level: OLevel, message: MessageProvider) = log(null, level, message)
         override fun log(
             marker: Marker?,
             level: OLevel,
-            message: MessageProvider
+            message: MessageProvider,
         ) {
             if (level < this.level) return
             val actualMarker = marker ?: context[LLogger.DefaultMarker]?.marker
@@ -118,10 +126,9 @@ object LognityWrangler : Backend {
                     this,
                     level,
                     appender.formatter(this, level, messageContent, marker, timestamp, appender.pattern),
-                    marker
+                    marker,
                 )
             }
-
         }
     }
 
@@ -134,7 +141,7 @@ object LognityWrangler : Backend {
             logger: LLogger,
             level: OLevel,
             message: String,
-            marker: Marker?
+            marker: Marker?,
         ) {
             val level = when (level) {
                 OLevel.TRACE -> Level.TRACE
@@ -162,7 +169,7 @@ object LognityWrangler : Backend {
             logger: LLogger,
             level: OLevel,
             message: String,
-            marker: Marker?
+            marker: Marker?,
         ) = append(logger, level, message, marker)
     }
 }

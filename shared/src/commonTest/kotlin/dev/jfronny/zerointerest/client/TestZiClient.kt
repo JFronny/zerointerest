@@ -38,8 +38,7 @@ class TestZiClient(
 
     private fun nextTransactionId() = "tx_${nextTransactionId++}"
 
-    fun registerIfAbsent(roomId: RoomId, extra: MemberEventContent = MemberEventContent(membership = Membership.JOIN)) =
-        server.registerIfAbsent(roomId, userId, extra)
+    fun registerIfAbsent(roomId: RoomId, extra: MemberEventContent = MemberEventContent(membership = Membership.JOIN)) = server.registerIfAbsent(roomId, userId, extra)
 
     fun sync() {
         // Pull events from server
@@ -61,7 +60,7 @@ class TestZiClient(
                 id = eventId,
                 sender = userId,
                 roomId = localEventHistory.lastOrNull()?.first ?: RoomId("!test:example.com"),
-                originTimestamp = server.nextTimestamp()
+                originTimestamp = server.nextTimestamp(),
             )
             server.eventHistory.add(event.roomId to event)
         }
@@ -78,7 +77,7 @@ class TestZiClient(
                 sender = userId,
                 roomId = roomId,
                 originTimestamp = server.nextTimestamp(),
-                stateKey = stateKey
+                stateKey = stateKey,
             )
             server.eventHistory.add(roomId to event)
             server.stateEvents[roomId to stateKey] = event
@@ -102,8 +101,8 @@ class TestZiClient(
         return Result.success(
             Timed(
                 event.originTimestamp,
-                event.content as ZeroInterestTransactionEvent
-            )
+                event.content as ZeroInterestTransactionEvent,
+            ),
         )
     }
 
@@ -113,8 +112,8 @@ class TestZiClient(
         return Result.success(
             Timed(
                 event.originTimestamp,
-                event.content as ZeroInterestSummaryEvent
-            )
+                event.content as ZeroInterestSummaryEvent,
+            ),
         )
     }
 
@@ -129,7 +128,7 @@ class TestZiClient(
             sender = userId,
             roomId = roomId,
             originTimestamp = server.nextTimestamp(),
-            stateKey = stateKey
+            stateKey = stateKey,
         )
         server.eventHistory.add(roomId to clientEvent)
         server.stateEvents[roomId to stateKey] = clientEvent
@@ -160,18 +159,20 @@ class TestZiClient(
         }.map { reactionId ->
             val map = server.reactions.getOrPut(roomId to eventId) { mutableMapOf() }
             val set = map.getOrPut(key) { mutableSetOf() }
-            set.add(TimelineEvent(
-                event = ClientEvent.RoomEvent.MessageEvent(
-                    content = content,
-                    id = reactionId,
-                    sender = userId,
-                    roomId = roomId,
-                    originTimestamp = server.nextTimestamp()
+            set.add(
+                TimelineEvent(
+                    event = ClientEvent.RoomEvent.MessageEvent(
+                        content = content,
+                        id = reactionId,
+                        sender = userId,
+                        roomId = roomId,
+                        originTimestamp = server.nextTimestamp(),
+                    ),
+                    previousEventId = null,
+                    nextEventId = null,
+                    gap = null,
                 ),
-                previousEventId = null,
-                nextEventId = null,
-                gap = null
-            ))
+            )
             Unit
         }
     }

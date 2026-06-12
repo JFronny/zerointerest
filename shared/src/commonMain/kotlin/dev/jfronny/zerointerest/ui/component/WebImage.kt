@@ -40,7 +40,7 @@ fun WebImage(url: String?, contentDescription: String? = null, modifier: Modifie
             contentDescription = contentDescription,
             contentScale = contentScale,
             modifier = modifier,
-            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onBackground)
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onBackground),
         )
     } else {
         if (state is AsyncImagePainter.State.Loading) {
@@ -52,7 +52,7 @@ fun WebImage(url: String?, contentDescription: String? = null, modifier: Modifie
             painter = painter,
             contentDescription = contentDescription,
             contentScale = contentScale,
-            modifier = modifier.alpha(transition)
+            modifier = modifier.alpha(transition),
         )
     }
 }
@@ -66,7 +66,7 @@ fun LoadingAnimation(color: Color) {
         animationSpec = infiniteRepeatable(
             animation = tween(1000),
             repeatMode = RepeatMode.Restart,
-        )
+        ),
     )
 
     Box(
@@ -77,7 +77,7 @@ fun LoadingAnimation(color: Color) {
             .border(
                 5.dp,
                 color = color,
-                shape = CircleShape
-            )
+                shape = CircleShape,
+            ),
     )
 }

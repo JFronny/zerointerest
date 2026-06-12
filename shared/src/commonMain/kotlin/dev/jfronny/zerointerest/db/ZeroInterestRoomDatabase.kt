@@ -16,13 +16,16 @@ import dev.jfronny.zerointerest.data.TrustState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
 
-@Database(entities = [
-    SummaryTrustEntity::class,
-    SummaryHeadEntity::class,
-    SummaryEntity::class,
-    SummaryTransactionEntity::class,
-    TransactionTemplateEntity::class,
-], version = 4)
+@Database(
+    entities = [
+        SummaryTrustEntity::class,
+        SummaryHeadEntity::class,
+        SummaryEntity::class,
+        SummaryTransactionEntity::class,
+        TransactionTemplateEntity::class,
+    ],
+    version = 4,
+)
 @ConstructedBy(ZeroInterestRoomDatabaseConstructor::class)
 @TypeConverters(ZeroInterestTypeConverters::class)
 abstract class ZeroInterestRoomDatabase : RoomDatabase() {
@@ -44,7 +47,7 @@ data class TransactionTemplateEntity(
     val id: String,
     val description: String,
     val sender: String,
-    val receivers: Map<UserId, Long>
+    val receivers: Map<UserId, Long>,
 )
 
 @Dao
@@ -63,14 +66,14 @@ interface TransactionTemplateDao {
 data class SummaryEntity(
     val roomId: String,
     val summaryId: String,
-    val parentId: String
+    val parentId: String,
 )
 
 @Entity(primaryKeys = ["roomId", "summaryId", "transactionId"])
 data class SummaryTransactionEntity(
     val roomId: String,
     val summaryId: String,
-    val transactionId: String
+    val transactionId: String,
 )
 
 @Dao
@@ -97,12 +100,11 @@ interface SummaryDao {
     suspend fun clearSummaryTransactions(roomId: String)
 }
 
-
 @Entity(primaryKeys = ["roomId", "eventId"])
 data class SummaryTrustEntity(
     val roomId: String,
     val eventId: String,
-    val state: TrustState
+    val state: TrustState,
 )
 
 @Dao
@@ -134,7 +136,7 @@ class ZeroInterestTypeConverters {
 @Entity(primaryKeys = ["roomId", "eventId"])
 data class SummaryHeadEntity(
     val roomId: String,
-    val eventId: String
+    val eventId: String,
 )
 
 @Dao

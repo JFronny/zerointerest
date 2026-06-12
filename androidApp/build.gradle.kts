@@ -1,9 +1,11 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    ktlint
 }
 
 val computedVersionName: String by rootProject.extra
@@ -85,4 +87,8 @@ dependencies {
     }
 
     debugImplementation(libs.compose.uiTooling)
+}
+
+tasks {
+    withType<AbstractKotlinCompile<*>> { dependsOn(ktlintFormat) }
 }

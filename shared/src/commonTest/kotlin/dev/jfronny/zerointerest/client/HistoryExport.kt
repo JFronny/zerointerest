@@ -16,26 +16,30 @@ private val json = Json {
     prettyPrint = true
 }
 
-suspend fun TestZiServer.exportHistory(): String = json.encodeToString(buildList {
-    eventHistory.forEach { (roomId, event) ->
-        when (event) {
-            is ClientEvent.RoomEvent.StateEvent -> {
-                add(TestZiEvent.Summary(event.sender, roomId, event.content as ZeroInterestSummaryEvent))
-            }
-            is ClientEvent.RoomEvent.MessageEvent -> {
-                when (val content = event.content) {
-                    is ZeroInterestTransactionEvent -> {
-                        add(TestZiEvent.Transaction(event.sender, roomId, content))
-                    }
-                    is ReactionEventContent -> {
-                        val relatesTo = content.relatesTo!!
-                        add(TestZiEvent.Reaction(event.sender, roomId, relatesTo.eventId, relatesTo.key!!))
+suspend fun TestZiServer.exportHistory(): String = json.encodeToString(
+    buildList {
+        eventHistory.forEach { (roomId, event) ->
+            when (event) {
+                is ClientEvent.RoomEvent.StateEvent -> {
+                    add(TestZiEvent.Summary(event.sender, roomId, event.content as ZeroInterestSummaryEvent))
+                }
+
+                is ClientEvent.RoomEvent.MessageEvent -> {
+                    when (val content = event.content) {
+                        is ZeroInterestTransactionEvent -> {
+                            add(TestZiEvent.Transaction(event.sender, roomId, content))
+                        }
+
+                        is ReactionEventContent -> {
+                            val relatesTo = content.relatesTo!!
+                            add(TestZiEvent.Reaction(event.sender, roomId, relatesTo.eventId, relatesTo.key!!))
+                        }
                     }
                 }
             }
         }
-    }
-})
+    },
+)
 
 suspend fun TestZiServer.restoreHistory(historyJson: String, allowAppend: Boolean = false) {
     if (!allowAppend) {
@@ -48,7 +52,9 @@ suspend fun TestZiServer.restoreHistory(historyJson: String, allowAppend: Boolea
         client.registerIfAbsent(event.roomId)
         when (event) {
             is TestZiEvent.Reaction -> client.reactToEvent(event.roomId, event.event, event.key)
+
             is TestZiEvent.Summary -> client.sendStateEvent(event.roomId, event.event, ZeroInterestSummaryEvent.TYPE)
+
             is TestZiEvent.Transaction -> {
                 val txId = client.scheduleMessageEvent(event.roomId, event.event).getOrThrow()
                 client.awaitScheduledMessageEvent(event.roomId, txId).getOrThrow()
@@ -61,20 +67,29 @@ suspend fun TestZiServer.restoreHistory(historyJson: String, allowAppend: Boolea
 private sealed interface TestZiEvent {
     val sender: UserId
     val roomId: RoomId
-    @Serializable @SerialName("transaction") data class Transaction(
+
+    @Serializable
+    @SerialName("transaction")
+    data class Transaction(
         override val sender: UserId,
         override val roomId: RoomId,
         val event: ZeroInterestTransactionEvent,
     ) : TestZiEvent
-    @Serializable @SerialName("summary") data class Summary(
+
+    @Serializable
+    @SerialName("summary")
+    data class Summary(
         override val sender: UserId,
         override val roomId: RoomId,
         val event: ZeroInterestSummaryEvent,
-    ): TestZiEvent
-    @Serializable @SerialName("reaction") data class Reaction(
+    ) : TestZiEvent
+
+    @Serializable
+    @SerialName("reaction")
+    data class Reaction(
         override val sender: UserId,
         override val roomId: RoomId,
         val event: EventId,
         val key: String,
-    ): TestZiEvent
+    ) : TestZiEvent
 }

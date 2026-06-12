@@ -3,7 +3,7 @@ package dev.jfronny.zerointerest
 import com.github.benmanes.gradle.versions.updates.resolutionstrategy.ComponentFilter
 import com.github.benmanes.gradle.versions.updates.resolutionstrategy.ComponentSelectionWithCurrent
 
-class UpgradeToUnstableFilter : ComponentFilter {
+open class UpgradeToUnstableFilter : ComponentFilter {
     override fun reject(candidate: ComponentSelectionWithCurrent) = reject(candidate.currentVersion, candidate.candidate.version)
 
     open fun reject(old: String, new: String): Boolean {

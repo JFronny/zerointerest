@@ -8,7 +8,7 @@ import org.koin.core.scope.Scope
  * Contains the login token returned by the Matrix server.
  */
 data class SsoCallbackResult(
-    val loginToken: String
+    val loginToken: String,
 )
 
 /**
@@ -24,11 +24,11 @@ interface SsoLoginHandler {
      * - Mobile: A custom scheme URL or local server
      */
     fun getCallbackUrl(homeserver: Url, idpId: String?): String
-    
+
     /**
      * Perform SSO login flow.
      * Opens the SSO URL and waits for the callback with the login token.
-     * 
+     *
      * @param ssoUrl The URL to open for SSO authentication
      * @return The login token received from the SSO callback
      * @throws Exception if the SSO flow fails or is cancelled

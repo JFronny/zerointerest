@@ -16,23 +16,23 @@ import kotlinx.coroutines.flow.Flow
 interface ZiClient {
     val userId: UserId
     val offline: Boolean
-    
+
     suspend fun getTransactionEventWithTimeout(roomId: RoomId, eventId: EventId): Result<Timed<ZeroInterestTransactionEvent>>?
     suspend fun getSummaryEventWithTimeout(roomId: RoomId, eventId: EventId): Result<Timed<ZeroInterestSummaryEvent>>?
 
     fun getUsers(roomId: RoomId): Flow<Map<UserId, Flow<RoomUser?>>>
-    
+
     suspend fun sendStateEvent(roomId: RoomId, event: StateEventContent, stateKey: String): Result<EventId>
     suspend fun scheduleMessageEvent(roomId: RoomId, event: MessageEventContent): Result<String>
     suspend fun awaitScheduledMessageEvent(roomId: RoomId, transactionId: String): Result<EventId>
-    
+
     suspend fun reactToEvent(roomId: RoomId, eventId: EventId, key: String): Result<Unit>
     suspend fun redactEvent(roomId: RoomId, eventId: EventId, reason: String? = null): Result<Unit>
-    
+
     fun getSummaryStateFlow(roomId: RoomId): Flow<ClientEvent.RoomEvent.StateEvent<ZeroInterestSummaryEvent>?>
-    
+
     fun getTimelineEventReactionAggregation(roomId: RoomId, eventId: EventId): Flow<Map<String, Set<TimelineEvent>>>
-    
+
     suspend fun hasPreviousSummary(roomId: RoomId, messageId: EventId): Boolean
 }
 

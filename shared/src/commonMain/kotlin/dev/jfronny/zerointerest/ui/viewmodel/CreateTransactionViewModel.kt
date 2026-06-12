@@ -4,8 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
-import dev.jfronny.zerointerest.shared.generated.resources.Res
-import dev.jfronny.zerointerest.shared.generated.resources.device_offline
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
@@ -21,7 +19,13 @@ import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.service.client.ZiClient
 import dev.jfronny.zerointerest.service.getActive
 import dev.jfronny.zerointerest.service.getExchangeRates
+import dev.jfronny.zerointerest.shared.generated.resources.Res
+import dev.jfronny.zerointerest.shared.generated.resources.device_offline
 import dev.jfronny.zerointerest.ui.component.TransactionLauncher
+import kotlin.random.Random
+import kotlin.time.Clock
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,10 +34,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
-import kotlin.random.Random
-import kotlin.time.Clock
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 class CreateTransactionViewModel(
     val roomId: RoomId,
@@ -51,8 +51,8 @@ class CreateTransactionViewModel(
             description = initialTemplate?.description ?: "",
             sender = initialTemplate?.sender ?: client.userId,
             total = initialTemplate?.receivers?.values?.sum()?.let(::MoneyState) ?: MoneyState.zero,
-            recipients = initialTemplate?.receivers?.mapValues { MoneyState(it.value) } ?: emptyMap()
-        )
+            recipients = initialTemplate?.receivers?.mapValues { MoneyState(it.value) } ?: emptyMap(),
+        ),
     )
     val state = _state.asStateFlow()
 
@@ -65,7 +65,7 @@ class CreateTransactionViewModel(
         val submitAttempted: Boolean = false,
 
         val isRunning: Boolean = false,
-        val errorMessage: String? = null
+        val errorMessage: String? = null,
     ) {
         val allValid: Boolean get() = total.isValid && recipients.values.all { it.isValid }
     }
@@ -87,7 +87,7 @@ class CreateTransactionViewModel(
             operator fun invoke(amountStr: String, unit: MonetaryUnit): MoneyState {
                 val (amount, hint) = parseAmount(amountStr, unit).fold(
                     onSuccess = { it.toMoney() to it.usedMath },
-                    onFailure = { null to false }
+                    onFailure = { null to false },
                 )
                 return MoneyState(amount, hint, amountStr, false)
             }
@@ -97,17 +97,17 @@ class CreateTransactionViewModel(
     val monetaryUnit: StateFlow<MonetaryUnit> = settings.monetaryUnit.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = MonetaryUnit.default
+        initialValue = MonetaryUnit.default,
     )
     val requestFullKeyboard = settings.requestFullKeyboard.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = false
+        initialValue = false,
     )
     val users = client.getActive(roomId, trustService).stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyMap()
+        initialValue = emptyMap(),
     )
 
     companion object {
@@ -123,9 +123,9 @@ class CreateTransactionViewModel(
         val currentState = _state.value
         val currentRecipients = currentState.recipients.mapValues { it.value.amount ?: Money.zero }
         val modified = currentState.description != initialTemplate.description ||
-                currentState.sender != initialTemplate.sender ||
-                currentRecipients != initialTemplate.receivers
-                
+            currentState.sender != initialTemplate.sender ||
+            currentRecipients != initialTemplate.receivers
+
         _state.update { it.copy(isTemplateModified = modified) }
     }
 
@@ -149,15 +149,17 @@ class CreateTransactionViewModel(
 
     fun onTotalChanged(newTotalStr: String) {
         val newState = MoneyState(newTotalStr, monetaryUnit.value)
-        _state.update { it.copy(
-            total = newState
-        ) }
+        _state.update {
+            it.copy(
+                total = newState,
+            )
+        }
         if (newState.amount != null) {
             distribute(newState.amount, _state.value.recipients.keys)
         }
         checkForModifications()
     }
-    
+
     fun onTotalBlurred() {
         _state.update { it.copy(total = it.total.copy(isBlurred = true)) }
     }
@@ -180,12 +182,12 @@ class CreateTransactionViewModel(
             val total = newInputs.values.sumOfM { it.amount ?: Money.zero }
             it.copy(
                 recipients = newInputs,
-                total = MoneyState(total)
+                total = MoneyState(total),
             )
         }
         checkForModifications()
     }
-    
+
     fun onIndividualAmountBlurred(userId: UserId) {
         _state.update {
             val newInputs = it.recipients.toMutableMap()
@@ -198,7 +200,7 @@ class CreateTransactionViewModel(
         _state.update { it.copy(description = newDescription) }
         checkForModifications()
     }
-    
+
     fun onSenderChanged(newSender: UserId) {
         _state.update { it.copy(sender = newSender) }
         checkForModifications()
@@ -216,7 +218,7 @@ class CreateTransactionViewModel(
                     id = Uuid.random().toString(),
                     description = currentState.description,
                     sender = currentState.sender,
-                    receivers = recipientAmounts
+                    receivers = recipientAmounts,
                 )
                 database.addTransactionTemplate(roomId, template)
                 onDone()
@@ -225,7 +227,7 @@ class CreateTransactionViewModel(
             }
         }
     }
-    
+
     fun deleteTemplate(onDone: () -> Unit) {
         viewModelScope.launch {
             if (initialTemplate != null) {
@@ -244,7 +246,7 @@ class CreateTransactionViewModel(
             sender = currentState.sender,
             receivers = currentState.recipients
                 .mapValues { it.value.amount ?: Money.zero }
-                .filter { it.value.amount > 0L }
+                .filter { it.value.amount > 0L },
         )
 
         viewModelScope.launch {
@@ -263,7 +265,7 @@ class CreateTransactionViewModel(
             }
         }
     }
-    
+
     fun clearError() {
         _state.update { it.copy(errorMessage = null) }
     }

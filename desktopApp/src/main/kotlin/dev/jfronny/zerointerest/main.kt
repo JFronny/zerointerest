@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename")
+
 package dev.jfronny.zerointerest
 
 import androidx.compose.ui.window.Window
@@ -12,16 +14,19 @@ import org.koin.dsl.koinConfiguration
 fun main() {
     Backend.set(LognityWrangler)
     application {
-        KoinApplication(configuration = koinConfiguration(declaration = {
-            logger(KoinLogWrangler)
-            modules(listOf(createAppModule(), createExtraModule()))
-        }), content = {
-            Window(
-                onCloseRequest = ::exitApplication,
-                title = "zerointerest",
-            ) {
-                App()
-            }
-        })
+        KoinApplication(
+            configuration = koinConfiguration(declaration = {
+                logger(KoinLogWrangler)
+                modules(listOf(createAppModule(), createExtraModule()))
+            }),
+            content = {
+                Window(
+                    onCloseRequest = ::exitApplication,
+                    title = "zerointerest",
+                ) {
+                    App()
+                }
+            },
+        )
     }
 }

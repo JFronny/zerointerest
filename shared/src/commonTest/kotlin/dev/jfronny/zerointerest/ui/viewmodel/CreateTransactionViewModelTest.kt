@@ -3,6 +3,8 @@ package dev.jfronny.zerointerest.ui.viewmodel
 import dev.jfronny.zerointerest.service.CoreServicesTest
 import io.kotest.matchers.maps.shouldContainExactly
 import io.kotest.matchers.shouldBe
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.first
 import org.koin.core.parameter.parametersOf
 import org.koin.test.inject
@@ -43,7 +45,7 @@ class CreateTransactionViewModelTest : CoreServicesTest() {
             state.total.amountStr shouldBe "10.00"
             state.recipients.mapValues { it.value.amountStr } shouldContainExactly mapOf(
                 alice to "5.00",
-                bob to "5.00"
+                bob to "5.00",
             )
         }
 
@@ -59,7 +61,7 @@ class CreateTransactionViewModelTest : CoreServicesTest() {
             state.total.amountStr shouldBe "10.01"
             state.recipients.mapValues { it.value.amountStr } shouldContainExactly mapOf(
                 alice to "5.00",
-                bob to "5.01"
+                bob to "5.01",
             )
         }
 
@@ -75,7 +77,7 @@ class CreateTransactionViewModelTest : CoreServicesTest() {
             state.total.amountStr shouldBe "7.50"
             state.recipients.mapValues { it.value.amountStr } shouldContainExactly mapOf(
                 alice to "3.00",
-                bob to "4.50"
+                bob to "4.50",
             )
         }
 
@@ -86,7 +88,7 @@ class CreateTransactionViewModelTest : CoreServicesTest() {
             viewModel.onTotalChanged("invalid")
             val state = viewModel.state.first { it.total.amountStr == "invalid" }
             state.total.isValid shouldBe false
-            
+
             viewModel.onTotalChanged("12.34")
             val stateValid = viewModel.state.first { it.total.amountStr == "12.34" && it.total.isValid }
             stateValid.total.isValid shouldBe true
@@ -97,19 +99,19 @@ class CreateTransactionViewModelTest : CoreServicesTest() {
                 parametersOf(roomId, null)
             }
             var doneCalled = false
-            
+
             viewModel.onDescriptionChanged("Lunch")
             viewModel.onRecipientsChanged(setOf(alice))
             viewModel.onTotalChanged("15.00")
-            
+
             // Wait for all updates to settle
             viewModel.state.first { it.total.amountStr == "15.00" && it.allValid }
-            
+
             viewModel.submit { doneCalled = true }
 
-            kotlinx.coroutines.withTimeout(2000) {
-                while(!doneCalled) {
-                    kotlinx.coroutines.delay(10)
+            kotlinx.coroutines.withTimeout(2.seconds) {
+                while (!doneCalled) {
+                    kotlinx.coroutines.delay(10.milliseconds)
                 }
             }
             doneCalled shouldBe true

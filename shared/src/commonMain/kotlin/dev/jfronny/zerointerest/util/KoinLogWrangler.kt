@@ -2,18 +2,24 @@ package dev.jfronny.zerointerest.util
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.oshai.kotlinlogging.Level
-import org.koin.core.logger.MESSAGE
 import org.koin.core.logger.Level as OLevel
 import org.koin.core.logger.Logger as OLogger
+import org.koin.core.logger.MESSAGE
 
 private val logger = KotlinLogging.logger {}
 
 private val level by lazy {
-    if (logger.isDebugEnabled()) OLevel.DEBUG
-    else if (logger.isInfoEnabled()) OLevel.INFO
-    else if (logger.isWarnEnabled()) OLevel.WARNING
-    else if (logger.isErrorEnabled()) OLevel.ERROR
-    else OLevel.NONE
+    if (logger.isDebugEnabled()) {
+        OLevel.DEBUG
+    } else if (logger.isInfoEnabled()) {
+        OLevel.INFO
+    } else if (logger.isWarnEnabled()) {
+        OLevel.WARNING
+    } else if (logger.isErrorEnabled()) {
+        OLevel.ERROR
+    } else {
+        OLevel.NONE
+    }
 }
 
 object KoinLogWrangler : OLogger(level) {

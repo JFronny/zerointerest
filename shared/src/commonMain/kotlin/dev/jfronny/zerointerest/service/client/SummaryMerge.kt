@@ -12,7 +12,7 @@ suspend fun ZiClient.computeMergedSummary(
     roomId: RoomId,
     heads: Map<EventId, ZeroInterestSummaryEvent>,
     newTransactionIds: List<EventId> = emptyList(),
-    newTransactions: List<ZeroInterestTransactionEvent> = emptyList()
+    newTransactions: List<ZeroInterestTransactionEvent> = emptyList(),
 ): ZeroInterestSummaryEvent {
     require(newTransactionIds.size == newTransactions.size) { "newTransactionIds and newTransactions must have the same size" }
 
@@ -30,7 +30,9 @@ suspend fun ZiClient.computeMergedSummary(
         if (currentId in allVisitedSummaries) continue
         allVisitedSummaries.add(currentId)
 
-        val event = if (currentId in heads) heads[currentId]!! else {
+        val event = if (currentId in heads) {
+            heads[currentId]!!
+        } else {
             this.getSummaryEventWithTimeout(roomId, currentId)?.getOrNull()?.value
         } ?: continue
 
@@ -48,7 +50,7 @@ suspend fun ZiClient.computeMergedSummary(
 
     fun getHistory(id: EventId): Set<EventId> {
         if (id in memoizedHistory) return memoizedHistory[id]!!
-        val event = summaryGraph[id] ?: return emptySet()  // Should be in graph if we visited it
+        val event = summaryGraph[id] ?: return emptySet() // Should be in graph if we visited it
 
         val myHistory = mutableSetOf<EventId>()
         for ((parentId, txs) in event.parents) {
@@ -97,6 +99,6 @@ suspend fun ZiClient.computeMergedSummary(
 
     return ZeroInterestSummaryEvent(
         balances = baseBalances,
-        parents = newParents
+        parents = newParents,
     )
 }

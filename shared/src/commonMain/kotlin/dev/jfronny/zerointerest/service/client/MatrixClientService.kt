@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.map
 
 class MatrixClientService(
     private val platform: Platform,
-    private val ssoLoginHandler: SsoLoginHandler
+    private val ssoLoginHandler: SsoLoginHandler,
 ) : ZiClientProvider {
     private val flow: MutableStateFlow<MatrixZiClient?> = MutableStateFlow(null)
     val ziClient: StateFlow<MatrixZiClient?> = flow.asStateFlow()
@@ -50,7 +50,7 @@ class MatrixClientService(
     suspend fun getLoginTypes(homeserver: Url): List<LoginType> {
         val apiClient = (object : MatrixClientServerApiClientFactory {}).create(
             baseUrl = homeserver,
-            httpClientEngine = platform.getHttpClientEngine()
+            httpClientEngine = platform.getHttpClientEngine(),
         )
         return apiClient.use { api ->
             api.authentication.getLoginTypes().getOrThrow().toList()
@@ -127,7 +127,7 @@ class MatrixClientService(
                     // Get SSO URL with redirect
                     val ssoUrl = api.authentication.getSsoUrl(
                         redirectUrl = ssoLoginHandler.getCallbackUrl(homeserver, idpId),
-                        idpId = idpId
+                        idpId = idpId,
                     )
 
                     // Perform SSO login flow and get the login token
@@ -140,7 +140,7 @@ class MatrixClientService(
                 api.authentication.login(
                     token = loginToken,
                     type = LoginType.Token(),
-                    initialDeviceDisplayName = "ZeroInterest ${platform.name}"
+                    initialDeviceDisplayName = "ZeroInterest ${platform.name}",
                 ).getOrThrow().let { login ->
                     ClassicMatrixClientAuthProviderData(
                         baseUrl = homeserver,

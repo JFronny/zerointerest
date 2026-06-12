@@ -12,9 +12,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.service.client.ZiClient
+import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
@@ -72,7 +72,7 @@ class TransactionLauncher(
 
     data class State(
         val isRunning: Boolean,
-        val error: String?
+        val error: String?,
     )
 
     companion object {
@@ -81,10 +81,12 @@ class TransactionLauncher(
                 log.error(e) { "Could not prepare summary creation" }
                 Res.string.failed_prepare_trust_summary
             }
+
             is TransactionService.FailedSendMessageException -> {
                 log.error(e) { "Could not send transactions" }
                 Res.string.failed_send_message_with_error
             }
+
             else -> {
                 log.error(e) { "Could not submit summary" }
                 Res.string.failed_create_trust_summary
@@ -109,7 +111,7 @@ fun ErrorDialog(message: String, onDismiss: () -> Unit) {
             }
         },
         title = { Text(stringResource(Res.string.transaction_failed)) },
-        text = { Text(message) }
+        text = { Text(message) },
     )
 }
 

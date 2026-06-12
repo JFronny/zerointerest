@@ -242,13 +242,13 @@ data class ColorFamily(
     val color: Color,
     val onColor: Color,
     val colorContainer: Color,
-    val onColorContainer: Color
+    val onColorContainer: Color,
 )
 
 @Composable
 fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val platformTheme = getPlatformTheme(darkTheme)
     MaterialTheme(
@@ -257,7 +257,7 @@ fun AppTheme(
             darkTheme -> darkScheme
             else -> lightScheme
         },
-        typography = AppTypography
+        typography = AppTypography,
     ) {
         Surface {
             content()

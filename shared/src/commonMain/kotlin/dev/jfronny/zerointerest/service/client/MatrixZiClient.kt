@@ -23,6 +23,7 @@ import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.util.Timed
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.util.collections.ConcurrentMap
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.any
 import kotlinx.coroutines.flow.filter
@@ -32,7 +33,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.time.Duration.Companion.seconds
 
 private val log = KotlinLogging.logger {}
 
@@ -44,7 +44,7 @@ class MatrixZiClient(
 
     override suspend fun getTransactionEventWithTimeout(
         roomId: RoomId,
-        eventId: EventId
+        eventId: EventId,
     ): Result<Timed<ZeroInterestTransactionEvent>>? {
         return withTimeoutOrNull(11.seconds) {
             client.room.getTimelineEvent(roomId, eventId) {
@@ -70,7 +70,7 @@ class MatrixZiClient(
 
     override suspend fun getSummaryEventWithTimeout(
         roomId: RoomId,
-        eventId: EventId
+        eventId: EventId,
     ): Result<Timed<ZeroInterestSummaryEvent>>? {
         summaryEventCache[roomId to eventId]?.let { return Result.success(it) }
         return withTimeoutOrNull(6.seconds) {
@@ -92,7 +92,7 @@ class MatrixZiClient(
     override suspend fun sendStateEvent(
         roomId: RoomId,
         event: StateEventContent,
-        stateKey: String
+        stateKey: String,
     ): Result<EventId> {
         return try {
             client.api.room.sendStateEvent(roomId, event, stateKey)
@@ -159,7 +159,7 @@ class MatrixZiClient(
 
     override fun getTimelineEventReactionAggregation(
         roomId: RoomId,
-        eventId: EventId
+        eventId: EventId,
     ): Flow<Map<String, Set<TimelineEvent>>> {
         return client.room.getTimelineEventReactionAggregation(roomId, eventId).map { it.reactions }
     }

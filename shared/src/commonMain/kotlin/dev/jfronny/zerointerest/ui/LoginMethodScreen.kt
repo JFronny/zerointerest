@@ -38,9 +38,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.connect2x.trixnity.clientserverapi.model.authentication.LoginType
-import dev.jfronny.zerointerest.shared.generated.resources.*
-import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
+import dev.jfronny.zerointerest.service.client.MatrixClientService
+import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -61,7 +61,9 @@ private sealed class LoginState {
 }
 
 private enum class LoginMethod {
-    PASSWORD, TOKEN, SSO
+    PASSWORD,
+    TOKEN,
+    SSO,
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -69,7 +71,7 @@ private enum class LoginMethod {
 fun LoginMethodScreen(
     homeserver: String,
     onBack: () -> Unit,
-    onSuccess: suspend () -> Unit
+    onSuccess: suspend () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val matrixClient = koinInject<MatrixClientService>()
@@ -133,7 +135,7 @@ fun LoginMethodScreen(
                 matrixClient.loginWithPassword(
                     homeserver = Url(homeserver),
                     username = username,
-                    password = password
+                    password = password,
                 )
                 settings.setDefaultHomeserver(homeserver)
                 onSuccess()
@@ -144,7 +146,7 @@ fun LoginMethodScreen(
             tryAction {
                 matrixClient.loginWithToken(
                     homeserver = Url(homeserver),
-                    token = token
+                    token = token,
                 )
                 settings.setDefaultHomeserver(homeserver)
                 onSuccess()
@@ -155,12 +157,12 @@ fun LoginMethodScreen(
             tryAction {
                 matrixClient.loginWithSso(
                     homeserver = Url(homeserver),
-                    idpId = providerId
+                    idpId = providerId,
                 )
                 settings.setDefaultHomeserver(homeserver)
                 onSuccess()
             }
-        }
+        },
     )
 }
 
@@ -171,7 +173,6 @@ private fun LoginMethodContent(
     state: LoginState,
     tabs: List<LoginMethod>,
     ssoProviders: List<LoginType.SSO.IdentityProvider>,
-
     onUsernamePasswordLogin: (username: String, password: String) -> Unit,
     onTokenLogin: (token: String) -> Unit,
     onSsoLogin: (providerId: String?) -> Unit,
@@ -181,9 +182,9 @@ private fun LoginMethodContent(
             title = { Text(stringResource(Res.string.login)) },
             navigationIcon = {
                 BackButton(onBack = onBack)
-            }
+            },
         )
-    }
+    },
 ) { paddingValues ->
 
     // Form states
@@ -200,12 +201,12 @@ private fun LoginMethodContent(
             .padding(paddingValues)
             .safeContentPadding()
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Image(
             painter = painterResource(Res.drawable.app_icon),
             contentDescription = null,
-            modifier = Modifier.size(64.dp)
+            modifier = Modifier.size(64.dp),
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -213,7 +214,7 @@ private fun LoginMethodContent(
         Text(
             text = homeserver,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -222,11 +223,12 @@ private fun LoginMethodContent(
             is LoginState.Restoring, is LoginState.Loading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     LoadingIndicator(Modifier.size(128.dp))
                 }
             }
+
             else -> {
                 // Show error if any
                 AnimatedVisibility(visible = state is LoginState.Error) {
@@ -235,14 +237,14 @@ private fun LoginMethodContent(
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp)
+                            .padding(bottom = 8.dp),
                     )
                 }
 
                 if (tabs.size > 1) {
                     SecondaryTabRow(
                         selectedTabIndex = selectedTabIndex,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         tabs.forEachIndexed { index, method ->
                             Tab(
@@ -254,9 +256,9 @@ private fun LoginMethodContent(
                                             LoginMethod.PASSWORD -> stringResource(Res.string.password_login)
                                             LoginMethod.TOKEN -> stringResource(Res.string.token_login)
                                             LoginMethod.SSO -> stringResource(Res.string.sso_login)
-                                        }
+                                        },
                                     )
-                                }
+                                },
                             )
                         }
                     }
@@ -274,24 +276,26 @@ private fun LoginMethodContent(
                             password = password,
                             onPasswordChange = { password = it },
                             enabled = state !is LoginState.Loading,
-                            onLogin = { onUsernamePasswordLogin(username, password) }
+                            onLogin = { onUsernamePasswordLogin(username, password) },
                         )
                     }
+
                     LoginMethod.TOKEN -> {
                         TokenLoginForm(
                             token = token,
                             onTokenChange = { token = it },
                             enabled = state !is LoginState.Loading,
-                            onLogin = { onTokenLogin(token) }
+                            onLogin = { onTokenLogin(token) },
                         )
                     }
+
                     LoginMethod.SSO -> {
                         SsoLoginForm(
                             ssoProviders = ssoProviders,
                             enabled = state !is LoginState.Loading,
                             onSsoLogin = { providerId ->
                                 onSsoLogin(providerId)
-                            }
+                            },
                         )
                     }
                 }
@@ -311,7 +315,7 @@ private fun LoginMethodScreenPreview() = AppTheme {
         ssoProviders = emptyList(),
         onUsernamePasswordLogin = { _, _ -> },
         onTokenLogin = {},
-        onSsoLogin = {}
+        onSsoLogin = {},
     )
 }
 
@@ -322,11 +326,11 @@ private fun PasswordLoginForm(
     password: String,
     onPasswordChange: (String) -> Unit,
     enabled: Boolean,
-    onLogin: () -> Unit
+    onLogin: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         OutlinedTextField(
             value = username,
@@ -334,7 +338,7 @@ private fun PasswordLoginForm(
             label = { Text(stringResource(Res.string.username)) },
             enabled = enabled,
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            singleLine = true,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -346,7 +350,7 @@ private fun PasswordLoginForm(
             visualTransformation = PasswordVisualTransformation(),
             enabled = enabled,
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            singleLine = true,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -354,7 +358,7 @@ private fun PasswordLoginForm(
         Button(
             onClick = onLogin,
             modifier = Modifier.fillMaxWidth(),
-            enabled = enabled
+            enabled = enabled,
         ) {
             Text(stringResource(Res.string.login))
         }
@@ -366,11 +370,11 @@ private fun TokenLoginForm(
     token: String,
     onTokenChange: (String) -> Unit,
     enabled: Boolean,
-    onLogin: () -> Unit
+    onLogin: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         OutlinedTextField(
             value = token,
@@ -378,7 +382,7 @@ private fun TokenLoginForm(
             label = { Text(stringResource(Res.string.access_token)) },
             enabled = enabled,
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            singleLine = true,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -386,7 +390,7 @@ private fun TokenLoginForm(
         Button(
             onClick = onLogin,
             modifier = Modifier.fillMaxWidth(),
-            enabled = enabled
+            enabled = enabled,
         ) {
             Text(stringResource(Res.string.login))
         }
@@ -397,18 +401,18 @@ private fun TokenLoginForm(
 private fun SsoLoginForm(
     ssoProviders: List<LoginType.SSO.IdentityProvider>,
     enabled: Boolean,
-    onSsoLogin: (providerId: String?) -> Unit
+    onSsoLogin: (providerId: String?) -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (ssoProviders.isEmpty()) {
             // No specific providers, show a generic SSO button
             Button(
                 onClick = { onSsoLogin(null) },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = enabled
+                enabled = enabled,
             ) {
                 Text(stringResource(Res.string.login_with_sso))
             }
@@ -416,7 +420,7 @@ private fun SsoLoginForm(
             Text(
                 text = stringResource(Res.string.choose_sso_provider),
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 8.dp),
             )
 
             LazyColumn {
@@ -426,7 +430,7 @@ private fun SsoLoginForm(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
-                        enabled = enabled
+                        enabled = enabled,
                     ) {
                         Text(provider.name)
                     }
@@ -445,7 +449,7 @@ private fun PasswordLoginFormPreview() = AppTheme {
         password = "password",
         onPasswordChange = {},
         enabled = true,
-        onLogin = {}
+        onLogin = {},
     )
 }
 
@@ -458,7 +462,7 @@ private fun PasswordLoginFormPreviewDark() = AppTheme {
         password = "password",
         onPasswordChange = {},
         enabled = true,
-        onLogin = {}
+        onLogin = {},
     )
 }
 
@@ -469,7 +473,7 @@ private fun TokenLoginFormPreview() = AppTheme {
         token = "syt_xyz",
         onTokenChange = {},
         enabled = true,
-        onLogin = {}
+        onLogin = {},
     )
 }
 
@@ -479,7 +483,7 @@ private fun SsoLoginFormPreview() = AppTheme {
     SsoLoginForm(
         ssoProviders = emptyList(),
         enabled = true,
-        onSsoLogin = {}
+        onSsoLogin = {},
     )
 }
 
@@ -489,6 +493,6 @@ private fun SsoLoginFormPreviewDark() = AppTheme {
     SsoLoginForm(
         ssoProviders = emptyList(),
         enabled = true,
-        onSsoLogin = {}
+        onSsoLogin = {},
     )
 }

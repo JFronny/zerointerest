@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename")
+
 package dev.jfronny.zerointerest
 
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -8,6 +10,9 @@ import dev.jfronny.zerointerest.ui.LoadingScreenExtras
 import dev.jfronny.zerointerest.util.KoinLogWrangler
 import dev.jfronny.zerointerest.util.LognityWrangler
 import js.string.JsStrings.toKotlinString
+import kotlin.js.ExperimentalWasmJsInterop
+import kotlin.js.JsModule
+import kotlin.js.toJsString
 import org.koin.compose.KoinApplication
 import org.koin.dsl.koinConfiguration
 import org.koin.dsl.module
@@ -15,9 +20,6 @@ import web.console.console
 import web.history.history
 import web.url.URLSearchParams
 import web.window.window
-import kotlin.js.ExperimentalWasmJsInterop
-import kotlin.js.JsModule
-import kotlin.js.toJsString
 
 @OptIn(ExperimentalWasmJsInterop::class)
 @JsModule("@js-joda/timezone")
@@ -40,17 +42,25 @@ fun main() {
 
     Backend.set(LognityWrangler)
     ComposeViewport {
-        KoinApplication(configuration = koinConfiguration(declaration = {
-            logger(KoinLogWrangler)
-            modules(createAppModule(), module {
-                single { LoadingScreenExtras(
-                    homeserver = params["homeserver"],
-                    idpId = params["idpId"],
-                    loginToken = params["loginToken"]
-                ) }
-            })
-        }), content = {
-            App()
-        })
+        KoinApplication(
+            configuration = koinConfiguration(declaration = {
+                logger(KoinLogWrangler)
+                modules(
+                    createAppModule(),
+                    module {
+                        single {
+                            LoadingScreenExtras(
+                                homeserver = params["homeserver"],
+                                idpId = params["idpId"],
+                                loginToken = params["loginToken"],
+                            )
+                        }
+                    },
+                )
+            }),
+            content = {
+                App()
+            },
+        )
     }
 }

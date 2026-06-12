@@ -9,5 +9,5 @@ data class TransactionTemplate(
     val id: String,
     val description: String,
     val sender: UserId,
-    val receivers: Map<UserId, Money>
+    val receivers: Map<UserId, Money>,
 )

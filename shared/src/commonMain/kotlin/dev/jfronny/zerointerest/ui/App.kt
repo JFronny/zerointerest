@@ -25,8 +25,8 @@ import de.connect2x.trixnity.core.model.RoomId
 import dev.jfronny.zerointerest.Destination
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
-import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.service.Settings
+import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.ui.component.EmojiService
 import dev.jfronny.zerointerest.ui.component.VerificationDialog
 import dev.jfronny.zerointerest.ui.theme.AppTheme
@@ -36,10 +36,10 @@ import dev.jfronny.zerointerest.util.NavigationHelper
 import dev.jfronny.zerointerest.util.RoomIdNavType
 import dev.jfronny.zerointerest.util.rememberNavigationHelper
 import io.ktor.client.HttpClient
+import kotlin.reflect.typeOf
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
-import kotlin.reflect.typeOf
 
 const val appName = "zerointerest"
 
@@ -86,21 +86,21 @@ private fun AppNavigation(
 ) = NavHost(
     navController = navHelper.main,
     startDestination = Destination.LoadingScreen,
-    typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)
+    typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType),
 ) {
     composable<Destination.LoadingScreen> {
         LoadingScreen(
-            onSuccess =  { onLoginSuccess() },
+            onSuccess = { onLoginSuccess() },
             onError = {
                 navHelper.navigate(Destination.SelectHomeserver)
-            }
+            },
         )
     }
     composable<Destination.SelectHomeserver> {
         HomeserverScreen(
             onContinue = { homeserver ->
                 navHelper.navigate(Destination.SelectLoginMethod(homeserver))
-            }
+            },
         )
     }
     composable<Destination.SelectLoginMethod> {
@@ -108,7 +108,7 @@ private fun AppNavigation(
         LoginMethodScreen(
             homeserver = route.homeserver,
             onBack = { navHelper.popMainBackStack() },
-            onSuccess = { onLoginSuccess() }
+            onSuccess = { onLoginSuccess() },
         )
     }
     composable<Destination.PickRoom> {
@@ -120,7 +120,7 @@ private fun AppNavigation(
                     navHelper.navigate(Destination.Room(it))
                 }
             },
-            openSettings = { navHelper.navigate(Destination.SettingsScreen) }
+            openSettings = { navHelper.navigate(Destination.SettingsScreen) },
         )
     }
     composable<Destination.Room>(typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)) {
@@ -161,22 +161,22 @@ private fun AppNavigation(
                 initialTemplate = initialTemplate,
                 onDone = { navHelper.popMainBackStack() },
                 onBack = { navHelper.popMainBackStack() },
-                openSettings = { navHelper.navigate(Destination.SettingsScreen) }
+                openSettings = { navHelper.navigate(Destination.SettingsScreen) },
             )
         }
     }
     composable<Destination.TransactionDetails>(
         typeMap = mapOf(
             typeOf<RoomId>() to RoomIdNavType,
-            typeOf<EventId>() to EventIdNavType
-        )
+            typeOf<EventId>() to EventIdNavType,
+        ),
     ) {
         val route = it.toRoute<Destination.TransactionDetails>()
         TransactionDetailsScreen(
             client = service.getMatrixClient(),
             roomId = route.roomId,
             transactionId = route.transactionId,
-            onBack = { navHelper.popMainBackStack() }
+            onBack = { navHelper.popMainBackStack() },
         )
     }
     composable<Destination.SettleScreen>(typeMap = mapOf(typeOf<RoomId>() to RoomIdNavType)) {
@@ -184,7 +184,7 @@ private fun AppNavigation(
         SettleScreen(
             client = service.get(),
             roomId = route.roomId,
-            onBack = { navHelper.popMainBackStack() }
+            onBack = { navHelper.popMainBackStack() },
         )
     }
     composable<Destination.SettingsScreen> {
@@ -197,7 +197,7 @@ private fun AppNavigation(
                     settings.clearRememberedRoom()
                     navHelper.navigate(Destination.SelectHomeserver)
                 }
-            }
+            },
         )
     }
 }

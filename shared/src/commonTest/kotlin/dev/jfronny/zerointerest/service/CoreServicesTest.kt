@@ -19,6 +19,8 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.koin.KoinExtension
 import io.kotest.koin.KoinLifecycleMode
 import io.kotest.matchers.shouldBe
+import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withTimeout
@@ -27,8 +29,6 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.test.inject
-import kotlin.random.Random
-import kotlin.time.Duration.Companion.milliseconds
 
 abstract class CoreServicesTest : KoinTest, FunSpec() {
     val roomId = RoomId("!test:example.com")
@@ -37,24 +37,31 @@ abstract class CoreServicesTest : KoinTest, FunSpec() {
     val bob = UserId("@bob:example.com")
 
     init {
-        extension(KoinExtension(module {
-            single { Settings(TestDataStore(mutablePreferencesOf())) }
-            single { createSQLiteDriver() }
-            single {
-                Room.inMemoryDatabaseBuilder<ZeroInterestRoomDatabase>()
-                    .setDriver(get())
-                    .build()
-            }
-            single { ZeroInterestDatabase(get()) }
-            single { TestZiServer() }
-            single { TestZiClient(get(), userId = testUser) } bind ZiClient::class
-            single<ZiClientProvider> { object : ZiClientProvider {
-                override fun get(): ZiClient = get<ZiClient>()
-            } }
-            single { TransactionService(get(), get()) }
-            single { SummaryTrustService(get(), get()) }
-            viewModel { params -> CreateTransactionViewModel(params.get(), params.getOrNull(), get<ZiClientProvider>().get(), get(), get(), get(), get(), distributeRandom = Random(0)) }
-        }, mode = KoinLifecycleMode.Test))
+        extension(
+            KoinExtension(
+                module {
+                    single { Settings(TestDataStore(mutablePreferencesOf())) }
+                    single { createSQLiteDriver() }
+                    single {
+                        Room.inMemoryDatabaseBuilder<ZeroInterestRoomDatabase>()
+                            .setDriver(get())
+                            .build()
+                    }
+                    single { ZeroInterestDatabase(get()) }
+                    single { TestZiServer() }
+                    single { TestZiClient(get(), userId = testUser) } bind ZiClient::class
+                    single<ZiClientProvider> {
+                        object : ZiClientProvider {
+                            override fun get(): ZiClient = get<ZiClient>()
+                        }
+                    }
+                    single { TransactionService(get(), get()) }
+                    single { SummaryTrustService(get(), get()) }
+                    viewModel { params -> CreateTransactionViewModel(params.get(), params.getOrNull(), get<ZiClientProvider>().get(), get(), get(), get(), get(), distributeRandom = Random(0)) }
+                },
+                mode = KoinLifecycleMode.Test,
+            ),
+        )
     }
 
     suspend fun SummaryTrustService.checkTrusted(

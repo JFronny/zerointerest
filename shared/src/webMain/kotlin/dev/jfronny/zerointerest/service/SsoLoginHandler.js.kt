@@ -3,10 +3,10 @@ package dev.jfronny.zerointerest.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url
+import kotlin.js.ExperimentalWasmJsInterop
 import kotlinx.browser.window
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.koin.core.scope.Scope
-import kotlin.js.ExperimentalWasmJsInterop
 
 private val log = KotlinLogging.logger {}
 
@@ -25,7 +25,7 @@ class JsSsoLoginHandler(private val settings: Settings) : SsoLoginHandler {
             }
         }.buildString()
     }
-    
+
     @OptIn(ExperimentalWasmJsInterop::class, ExperimentalWasmJsInterop::class)
     override suspend fun performSsoLogin(homeserver: Url, idpId: String?, ssoUrl: String): SsoCallbackResult {
         return suspendCancellableCoroutine { continuation ->

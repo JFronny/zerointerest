@@ -43,10 +43,10 @@ import androidx.compose.ui.unit.dp
 import de.connect2x.trixnity.client.store.RoomUser
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
-import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
 import dev.jfronny.zerointerest.data.money.toMoney
+import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.ErrorDialog
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
@@ -66,12 +66,12 @@ fun CreateTransactionScreen(
     openSettings: () -> Unit,
 ) {
     val viewModel = koinViewModel<CreateTransactionViewModel> { parametersOf(roomId, initialTemplate) }
-    
+
     val state by viewModel.state.collectAsState()
     val monetaryUnit by viewModel.monetaryUnit.collectAsState()
     val requestFullKeyboard by viewModel.requestFullKeyboard.collectAsState()
     val users by viewModel.users.collectAsState()
-    
+
     CreateTransactionContent(
         state = state,
         monetaryUnit = monetaryUnit,
@@ -90,7 +90,7 @@ fun CreateTransactionScreen(
         onSubmit = { viewModel.submit(onDone) },
         onClearError = viewModel::clearError,
         onBack = onBack,
-        openSettings = openSettings
+        openSettings = openSettings,
     )
 }
 
@@ -131,7 +131,7 @@ fun CreateTransactionContent(
                                 onClick = {
                                     onDeleteTemplate()
                                     close()
-                                }
+                                },
                             )
                         } else {
                             DropdownMenuItem(
@@ -140,25 +140,28 @@ fun CreateTransactionContent(
                                 onClick = {
                                     onSaveAsTemplate()
                                     close()
-                                }
+                                },
                             )
                         }
                     }
-                }
+                },
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onSubmit) {
-                if (state.isRunning) LoadingIndicator()
-                else Icon(Icons.Default.Check, stringResource(Res.string.save))
+                if (state.isRunning) {
+                    LoadingIndicator()
+                } else {
+                    Icon(Icons.Default.Check, stringResource(Res.string.save))
+                }
             }
-        }
+        },
     ) { padding ->
         if (state.errorMessage != null) ErrorDialog(state.errorMessage, onDismiss = { onClearError() })
 
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
                 OutlinedTextField(
@@ -166,7 +169,7 @@ fun CreateTransactionContent(
                     onValueChange = onDescriptionChanged,
                     label = { Text(stringResource(Res.string.description)) },
                     placeholder = { Text(stringResource(Res.string.payment)) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
 
@@ -193,9 +196,11 @@ fun CreateTransactionContent(
                     ) {
                         for ((userId, user) in users) {
                             DropdownMenuItem(
-                                text = { Box {
-                                    Text(user?.event?.content?.displayName ?: userId.full)
-                                } },
+                                text = {
+                                    Box {
+                                        Text(user?.event?.content?.displayName ?: userId.full)
+                                    }
+                                },
                                 onClick = {
                                     onSenderChanged(userId)
                                     expanded = false
@@ -213,10 +218,14 @@ fun CreateTransactionContent(
                 label = { Text(stringResource(Res.string.amount)) },
                 keyboardOptions = KeyboardOptions(keyboardType = if (requestFullKeyboard) KeyboardType.Unspecified else KeyboardType.Decimal),
                 isError = state.showError,
-                supportingText = if (state.showError) { { Text(stringResource(Res.string.invalid_amount)) } } else null,
+                supportingText = if (state.showError) {
+                    { Text(stringResource(Res.string.invalid_amount)) }
+                } else {
+                    null
+                },
                 modifier = Modifier.fillMaxWidth().onFocusChanged {
                     if (!it.isFocused) onBlurred()
-                }
+                },
             )
 
             item {
@@ -254,14 +263,14 @@ fun CreateTransactionContent(
                     modifier = Modifier.fillMaxWidth().clickable {
                         val newSet = if (isSelected) state.recipients.keys - userId else state.recipients.keys + userId
                         onRecipientsChanged(newSet)
-                    }
+                    },
                 ) {
                     Checkbox(
                         checked = isSelected,
                         onCheckedChange = { checked ->
                             val newSet = if (checked) state.recipients.keys + userId else state.recipients.keys - userId
                             onRecipientsChanged(newSet)
-                        }
+                        },
                     )
                     Text(users[userId]?.event?.content?.displayName ?: userId.full)
                 }
@@ -300,6 +309,6 @@ fun CreateTransactionScreenPreview() {
         onSubmit = {},
         onClearError = {},
         onBack = {},
-        openSettings = {}
+        openSettings = {},
     )
 }

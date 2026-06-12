@@ -19,8 +19,7 @@ abstract class AbstractPlatform(val stateDir: Path) : Platform {
 
     abstract fun trixnityDatabaseBuilder(): RoomDatabase.Builder<TrixnityRoomDatabase>
 
-    protected fun createDataStore(producePath: () -> Path): DataStore<Preferences> =
-        PreferenceDataStoreFactory.createWithPath(produceFile = { producePath() })
+    protected fun createDataStore(producePath: () -> Path): DataStore<Preferences> = PreferenceDataStoreFactory.createWithPath(produceFile = { producePath() })
 
     companion object {
         const val TRIXNITY_NAME = "trixnity.db"

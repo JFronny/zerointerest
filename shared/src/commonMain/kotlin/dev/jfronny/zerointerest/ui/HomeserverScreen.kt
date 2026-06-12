@@ -39,8 +39,8 @@ import androidx.compose.ui.tooling.preview.AndroidUiModes
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import dev.jfronny.zerointerest.SourceCodeUrl
-import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.service.Settings
+import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -72,7 +72,7 @@ fun HomeserverScreen(onContinue: (homeserver: String) -> Unit) {
         onSuggestedClick = {
             homeserver = it
             onContinue(it)
-        }
+        },
     )
 }
 
@@ -82,13 +82,13 @@ private fun HomeserverContent(
     homeserver: String,
     onHomeserverChange: (String) -> Unit,
     onContinue: () -> Unit,
-    onSuggestedClick: (String) -> Unit
+    onSuggestedClick: (String) -> Unit,
 ) = Scaffold(
     topBar = {
         TopAppBar(
-            title = { Text(stringResource(Res.string.app_name)) }
+            title = { Text(stringResource(Res.string.app_name)) },
         )
-    }
+    },
 ) { paddingValues ->
 
     Column(
@@ -97,19 +97,19 @@ private fun HomeserverContent(
             .padding(paddingValues)
             .safeContentPadding()
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Image(
             painter = painterResource(Res.drawable.app_icon),
             contentDescription = null,
-            modifier = Modifier.size(96.dp)
+            modifier = Modifier.size(96.dp),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
             text = stringResource(Res.string.select_homeserver),
-            style = MaterialTheme.typography.titleLarge
+            style = MaterialTheme.typography.titleLarge,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -119,14 +119,14 @@ private fun HomeserverContent(
             onValueChange = onHomeserverChange,
             label = { Text(stringResource(Res.string.homeserver_url)) },
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            singleLine = true,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = onContinue,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(Res.string.continue_button))
         }
@@ -136,7 +136,7 @@ private fun HomeserverContent(
         Text(
             text = stringResource(Res.string.suggested_homeservers),
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -149,16 +149,16 @@ private fun HomeserverContent(
                             .fillMaxWidth()
                             .clickable { onSuggestedClick(server) }
                             .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = server,
                             modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
                         )
                         Icon(
                             imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     }
                     if (server != suggestedHomeservers.last()) {
@@ -173,7 +173,7 @@ private fun HomeserverContent(
         val urlHandler = LocalUriHandler.current
         OutlinedButton(
             onClick = { urlHandler.openUri(SourceCodeUrl) },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(Res.string.source_code))
         }
@@ -187,7 +187,7 @@ private fun HomeserverScreenPreview() = AppTheme {
         homeserver = "https://matrix.org",
         onHomeserverChange = {},
         onContinue = {},
-        onSuggestedClick = {}
+        onSuggestedClick = {},
     )
 }
 
@@ -198,6 +198,6 @@ private fun HomeserverScreenPreviewDark() = AppTheme {
         homeserver = "https://matrix.org",
         onHomeserverChange = {},
         onContinue = {},
-        onSuggestedClick = {}
+        onSuggestedClick = {},
     )
 }

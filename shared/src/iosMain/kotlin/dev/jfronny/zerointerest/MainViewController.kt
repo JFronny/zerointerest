@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package dev.jfronny.zerointerest
 
 import androidx.compose.ui.window.ComposeUIViewController
@@ -13,11 +15,14 @@ import platform.UIKit.UIViewController
 fun MainViewController(): UIViewController {
     Backend.set(LognityWrangler)
     return ComposeUIViewController {
-        KoinApplication(configuration = koinConfiguration(declaration = {
-            logger(KoinLogWrangler)
-            loadKoinModules(listOf(createAppModule(), createExtraModule()))
-        }), content = {
-            App()
-        })
+        KoinApplication(
+            configuration = koinConfiguration(declaration = {
+                logger(KoinLogWrangler)
+                loadKoinModules(listOf(createAppModule(), createExtraModule()))
+            }),
+            content = {
+                App()
+            },
+        )
     }
 }

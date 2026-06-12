@@ -6,10 +6,11 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.room3.Room as Room3
-import io.ktor.client.engine.darwin.Darwin
-import kotlinx.cinterop.ExperimentalForeignApi
 import de.connect2x.trixnity.client.store.repository.room.TrixnityRoomDatabase
 import dev.jfronny.zerointerest.db.ZeroInterestRoomDatabase
+import io.ktor.client.engine.darwin.Darwin
+import kotlin.time.Instant
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.staticCFunction
 import okio.Path.Companion.toPath
 import org.koin.core.scope.Scope
@@ -29,12 +30,12 @@ import platform.Foundation.dateWithTimeIntervalSince1970
 import platform.Foundation.timeIntervalSinceDate
 import platform.UIKit.UIDevice
 import platform.posix.atexit
-import kotlin.time.Instant
 
 class IOSPlatform : AbstractPlatform(documentDirectory().toPath()) {
     override val name: String = UIDevice.currentDevice.systemName()
     override fun trixnityDatabaseBuilder() = Room.databaseBuilder<TrixnityRoomDatabase>("${documentDirectory()}/$TRIXNITY_NAME")
     override fun zerointerestDatabaseBuilder() = Room3.databaseBuilder<ZeroInterestRoomDatabase>("${documentDirectory()}/$ZEROINTEREST_NAME")
+
     @OptIn(ExperimentalForeignApi::class)
     override fun createDataStore(): DataStore<Preferences> = createDataStore {
         val documentDirectory: NSURL? = NSFileManager.defaultManager.URLForDirectory(
@@ -84,7 +85,7 @@ actual fun Instant.formatLocalized(style: TimestampStyle): String {
     val epochMillis = toEpochMilliseconds()
     val now = NSDate()
     val date = NSDate.dateWithTimeIntervalSince1970(
-        epochMillis / 1000.0
+        epochMillis / 1000.0,
     )
 
     val diffSeconds =
@@ -92,12 +93,11 @@ actual fun Instant.formatLocalized(style: TimestampStyle): String {
 
     // < 1 week -> relative
     if (diffSeconds < 7 * 24 * 60 * 60) {
-
         val relativeFormatter = NSRelativeDateTimeFormatter()
 
         return relativeFormatter.localizedStringForDate(
             date,
-            relativeToDate = now
+            relativeToDate = now,
         )
     }
 
@@ -111,10 +111,11 @@ actual fun Instant.formatLocalized(style: TimestampStyle): String {
         calendar.component(NSCalendarUnitYear, fromDate = date)
 
     formatter.dateStyle =
-        if (currentYear == targetYear)
+        if (currentYear == targetYear) {
             NSDateFormatterMediumStyle
-        else
+        } else {
             NSDateFormatterLongStyle
+        }
 
     formatter.timeStyle =
         NSDateFormatterNoStyle

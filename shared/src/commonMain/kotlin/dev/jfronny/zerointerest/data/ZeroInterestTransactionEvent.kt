@@ -8,9 +8,9 @@ import dev.jfronny.zerointerest.data.money.Money
 import dev.jfronny.zerointerest.data.money.sum
 import io.ktor.http.URLBuilder
 import io.ktor.http.appendPathSegments
+import kotlin.getValue
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlin.getValue
 
 @Serializable
 data class ZeroInterestTransactionEvent(
@@ -21,26 +21,37 @@ data class ZeroInterestTransactionEvent(
 ) : MessageEventContent {
     val total by lazy { receivers.values.sum() }
 
-    @SerialName("m.mentions") override val mentions: Mentions = Mentions(users = setOf(sender) + receivers.keys)
-    @SerialName("external_url") override val externalUrl: String? = null
+    @SerialName("m.mentions")
+    override val mentions: Mentions = Mentions(users = setOf(sender) + receivers.keys)
+
+    @SerialName("external_url")
+    override val externalUrl: String? = null
 
     override fun copyWith(relatesTo: RelatesTo?) = copy(relatesTo = relatesTo)
 
-    @SerialName("format") val format: String = "org.matrix.custom.html"
-    @SerialName("body") val body: String = "${sender.localpart} sent $total to ${receivers.keys.formatList { it.localpart }}"
-    @SerialName("formatted_body") val formattedBody: String = "${sender.mention()} sent $total to ${receivers.keys.formatList { it.mention() }}"
+    @SerialName("format")
+    val format: String = "org.matrix.custom.html"
+
+    @SerialName("body")
+    val body: String = "${sender.localpart} sent $total to ${receivers.keys.formatList { it.localpart }}"
+
+    @SerialName("formatted_body")
+    val formattedBody: String = "${sender.mention()} sent $total to ${receivers.keys.formatList { it.mention() }}"
 
     private fun <K> Iterable<K>.formatList(print: (K) -> String) = buildString {
         val iterator = this@formatList.iterator()
         while (iterator.hasNext()) {
             val next = print(iterator.next())
-            if (iterator.hasNext()) append(", ")
-            else append(" and ")
+            if (iterator.hasNext()) {
+                append(", ")
+            } else {
+                append(" and ")
+            }
             append(next)
         }
     }
 
-    private fun UserId.mention() = """<a href="${URLBuilder("https://matrix.to/#").appendPathSegments(full, encodeSlash = true).build()}">${localpart}</a>"""
+    private fun UserId.mention() = """<a href="${URLBuilder("https://matrix.to/#").appendPathSegments(full, encodeSlash = true).build()}">$localpart</a>"""
 
     fun apply(balances: MutableMap<UserId, Money>) {
         balances[sender] = (balances[sender] ?: Money.zero) - total

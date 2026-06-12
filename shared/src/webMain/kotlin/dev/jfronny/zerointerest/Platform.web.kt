@@ -30,12 +30,6 @@ import js.intl.RelativeTimeFormatUnit
 import js.intl.day
 import js.intl.hour
 import js.intl.minute
-import org.jetbrains.compose.resources.stringResource
-import org.koin.core.scope.Scope
-import org.w3c.dom.Worker
-import web.console.console
-import web.events.EventHandler
-import web.window.window
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
@@ -43,6 +37,12 @@ import kotlin.coroutines.startCoroutine
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.toJsString
 import kotlin.time.Instant
+import org.jetbrains.compose.resources.stringResource
+import org.koin.core.scope.Scope
+import org.w3c.dom.Worker
+import web.console.console
+import web.events.EventHandler
+import web.window.window
 
 private val log = KotlinLogging.logger {}
 
@@ -52,22 +52,25 @@ class WebPlatform : Platform {
     override suspend fun getMediaStoreModule(): MediaStoreModule = MediaStoreModule.indexedDB()
     override fun getHttpClientEngine(): HttpClientEngine = Js.create {}
     override fun createDataStore(): DataStore<Preferences> {
-        return PreferenceDataStoreFactory.create(WebLocalStorage(
-            name = "zerointerest",
-            serializer = PreferencesSerializer,
-        ))
+        return PreferenceDataStoreFactory.create(
+            WebLocalStorage(
+                name = "zerointerest",
+                serializer = PreferencesSerializer,
+            ),
+        )
     }
 
-    override fun zerointerestDatabaseBuilder(): RoomDatabase.Builder<ZeroInterestRoomDatabase> =
-        Room.databaseBuilder<ZeroInterestRoomDatabase>("zerointerest")
+    override fun zerointerestDatabaseBuilder(): RoomDatabase.Builder<ZeroInterestRoomDatabase> = Room.databaseBuilder<ZeroInterestRoomDatabase>("zerointerest")
 }
 
 actual fun Scope.getPlatform(): Platform = WebPlatform()
 
 @OptIn(ExperimentalWasmJsInterop::class)
-actual fun createSQLiteDriver(): SQLiteDriver = WebWorkerSQLiteDriver(createSQLiteWorker().apply {
-    onerror = { e -> console.error("Error in SQL.js worker".toJsString(), e) }
-})
+actual fun createSQLiteDriver(): SQLiteDriver = WebWorkerSQLiteDriver(
+    createSQLiteWorker().apply {
+        onerror = { e -> console.error("Error in SQL.js worker".toJsString(), e) }
+    },
+)
 
 expect fun WebWorkerSQLiteDriver(worker: Worker): WebWorkerSQLiteDriver
 
@@ -125,19 +128,19 @@ actual fun Instant.formatLocalized(style: TimestampStyle): String {
         diffMs < hour ->
             rtf.format(
                 -(diffMs / minute).toLong().toDouble(),
-                RelativeTimeFormatUnit.minute
+                RelativeTimeFormatUnit.minute,
             )
 
         diffMs < day ->
             rtf.format(
                 -(diffMs / hour).toLong().toDouble(),
-                RelativeTimeFormatUnit.hour
+                RelativeTimeFormatUnit.hour,
             )
 
         diffMs < 7 * day ->
             rtf.format(
                 -(diffMs / day).toLong().toDouble(),
-                RelativeTimeFormatUnit.day
+                RelativeTimeFormatUnit.day,
             )
 
         else -> {

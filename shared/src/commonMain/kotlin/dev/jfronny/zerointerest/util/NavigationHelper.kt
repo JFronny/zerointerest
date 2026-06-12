@@ -13,7 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import dev.jfronny.zerointerest.Destination
 
 class NavigationHelper(
-    val main: NavHostController
+    val main: NavHostController,
 ) {
     fun navigate(route: Destination) {
         main.navigate(route)
@@ -48,7 +48,7 @@ private fun NavBackStackEntry?.has(destination: Any): Boolean {
 }
 
 @Composable
-fun rememberNavigationHelper() : NavigationHelper {
+fun rememberNavigationHelper(): NavigationHelper {
     val mainNavController = rememberNavController()
     return remember(mainNavController) {
         NavigationHelper(mainNavController)
@@ -56,7 +56,7 @@ fun rememberNavigationHelper() : NavigationHelper {
 }
 
 @Composable
-fun NavigationHelper.room() : NavigationHelper.Room {
+fun NavigationHelper.room(): NavigationHelper.Room {
     val roomNavController = rememberNavController()
     return remember(this, roomNavController) {
         NavigationHelper.Room(this, roomNavController)

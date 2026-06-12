@@ -1,12 +1,12 @@
 package dev.jfronny.zerointerest.data.money
 
+import kotlin.jvm.JvmInline
+import kotlin.math.abs
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlin.jvm.JvmInline
-import kotlin.math.abs
 
 @JvmInline
 @Serializable(with = Money.Serializer::class)
@@ -37,7 +37,6 @@ value class Money(val amount: Long) : Comparable<Money> {
         val zero = Money(0)
 
         fun parse(input: String, unit: MonetaryUnit) = MoneyParser.parse(input, unit).toMoney()
-        fun parse(input: String, targetUnit: MonetaryUnit, exchangeRates: Map<MonetaryUnit, Double>) =
-            MoneyParser.parse(input, targetUnit, exchangeRates).toMoney()
+        fun parse(input: String, targetUnit: MonetaryUnit, exchangeRates: Map<MonetaryUnit, Double>) = MoneyParser.parse(input, targetUnit, exchangeRates).toMoney()
     }
 }

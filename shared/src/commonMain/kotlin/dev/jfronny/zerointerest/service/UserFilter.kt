@@ -17,15 +17,20 @@ fun ZiClient.getActive(roomId: RoomId, trustService: SummaryTrustService): Flow<
     return getUsers(roomId).combine(trustService.getSummary(roomId)) { users, summary ->
         val userFlows = users.map { (id, userFlow) ->
             userFlow.map { user ->
-                val isActive = if (user == null || summary == null) true
-                else if (user.event.content.membership == Membership.JOIN) true
-                else if (summary !is SummaryTrustService.Summary.Trusted) true
-                else (summary.event.balances[id]?.amount ?: 0L) != 0L
-                
+                val isActive = if (user == null || summary == null) {
+                    true
+                } else if (user.event.content.membership == Membership.JOIN) {
+                    true
+                } else if (summary !is SummaryTrustService.Summary.Trusted) {
+                    true
+                } else {
+                    (summary.event.balances[id]?.amount ?: 0L) != 0L
+                }
+
                 if (isActive) id to user else null
             }
         }
-        
+
         if (userFlows.isEmpty()) {
             flowOf(emptyMap())
         } else {

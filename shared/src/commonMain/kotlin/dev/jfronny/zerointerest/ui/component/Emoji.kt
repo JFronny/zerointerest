@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.em
+import kotlin.jvm.JvmInline
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -36,9 +37,8 @@ import org.kodein.emoji.EmojiTemplateCatalog
 import org.kodein.emoji.codePoints
 import org.kodein.emoji.findEmoji
 import org.kodein.emoji.list
-import kotlin.jvm.JvmInline
 
-/**
+/*
  * Based on the compose support in https://github.com/kosi-libs/Emoji.kt
  *
  * Adapted here to support the kotlin JS target and to use [WebImage]
@@ -91,7 +91,7 @@ fun TextWithEmoji(
             minLines = minLines,
             inlineContent = emojiInlineContent,
             onTextLayout = onTextLayout,
-            style = style
+            style = style,
         )
     }
 }
@@ -144,7 +144,7 @@ fun TextWithEmoji(
             minLines = minLines,
             inlineContent = inlineContent + emojiInlineContent,
             onTextLayout = onTextLayout,
-            style = style
+            style = style,
         )
     }
 }
@@ -160,7 +160,7 @@ fun TextWithEmoji(
 @Composable
 fun WithNotoImageEmoji(
     text: CharSequence,
-    content: @Composable (AnnotatedString, Map<String, InlineTextContent>) -> Unit
+    content: @Composable (AnnotatedString, Map<String, InlineTextContent>) -> Unit,
 ) {
     WithNotoEmoji(
         text = text,
@@ -168,7 +168,7 @@ fun WithNotoImageEmoji(
             details.notoImageRatio.takeIf { it > 0f }
                 ?: 1f
         },
-        content = content
+        content = content,
     )
 }
 
@@ -207,10 +207,11 @@ private fun WithNotoEmoji(
     val annotatedString = buildAnnotatedString {
         var start = 0
         all.forEach { found ->
-            if (text is AnnotatedString)
+            if (text is AnnotatedString) {
                 append(text.subSequence(start, found.start))
-            else
+            } else {
                 append(text.substring(start, found.start))
+            }
             val inlineContentID = "emoji:${found.emoji}"
             inlineContent[inlineContentID] = InlineTextContent(Placeholder(found.emoji.ratio().em, 1.em, PlaceholderVerticalAlign.Center)) {
                 WebImage(EmojiUrl.from(found.emoji).url, "${found.emoji.details.description} emoji", Modifier)
@@ -218,10 +219,11 @@ private fun WithNotoEmoji(
             appendInlineContent(inlineContentID)
             start = found.end
         }
-        if (text is AnnotatedString)
+        if (text is AnnotatedString) {
             append(text.subSequence(start, text.length))
-        else
+        } else {
             append(text.substring(start, text.length))
+        }
     }
 
     content(annotatedString, inlineContent)
@@ -229,11 +231,10 @@ private fun WithNotoEmoji(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @Composable
-private fun <T> Deferred<T>.consumeAsState(initialValue: T) =
-    produceState(
-        initialValue = if (isCompleted) getCompleted() else initialValue,
-        producer = { value = await() }
-    )
+private fun <T> Deferred<T>.consumeAsState(initialValue: T) = produceState(
+    initialValue = if (isCompleted) getCompleted() else initialValue,
+    producer = { value = await() },
+)
 
 /**
  * Centralized Emoji [catalog] and [finder] services.

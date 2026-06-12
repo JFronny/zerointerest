@@ -1,3 +1,5 @@
+@file:Suppress("ClassName")
+
 package dev.jfronny.zerointerest.db
 
 import androidx.room3.migration.Migration
@@ -13,35 +15,40 @@ object Migration1_2 : Migration(1, 2) {
                 `eventId` TEXT NOT NULL,
                 PRIMARY KEY(`roomId`, `eventId`)
              )
-            """.trimIndent()
+            """.trimIndent(),
         )
     }
 }
 
 object Migration2_3 : Migration(2, 3) {
     override suspend fun migrate(connection: SQLiteConnection) {
-        connection.execSQL("""
+        connection.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS `SummaryEntity` (
                 `roomId` TEXT NOT NULL,
                 `summaryId` TEXT NOT NULL,
                 `parentId` TEXT NOT NULL,
                 PRIMARY KEY(`roomId`, `summaryId`, `parentId`)
             )
-        """.trimIndent())
-        connection.execSQL("""
+            """.trimIndent(),
+        )
+        connection.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS `SummaryTransactionEntity` (
                 `roomId` TEXT NOT NULL,
                 `summaryId` TEXT NOT NULL,
                 `transactionId` TEXT NOT NULL,
                 PRIMARY KEY(`roomId`, `summaryId`, `transactionId`)
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
     }
 }
 
 object Migration3_4 : Migration(3, 4) {
     override suspend fun migrate(connection: SQLiteConnection) {
-        connection.execSQL("""
+        connection.execSQL(
+            """
             CREATE TABLE IF NOT EXISTS `TransactionTemplateEntity` (
                 `roomId` TEXT NOT NULL,
                 `id` TEXT NOT NULL,
@@ -50,6 +57,7 @@ object Migration3_4 : Migration(3, 4) {
                 `receivers` TEXT NOT NULL,
                 PRIMARY KEY(`roomId`, `id`)
             )
-        """.trimIndent())
+            """.trimIndent(),
+        )
     }
 }

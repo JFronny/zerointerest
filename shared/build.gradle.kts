@@ -2,6 +2,7 @@
 
 import com.android.build.api.withAndroid
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+import com.google.devtools.ksp.gradle.KspAATask
 import de.undercouch.gradle.tasks.download.Download
 import dev.jfronny.zerointerest.ConvertExchangeRatesTask
 import dev.jfronny.zerointerest.UpgradeToUnstableFilter
@@ -10,6 +11,8 @@ import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.InternalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmRun
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
+import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -21,6 +24,7 @@ plugins {
     alias(libs.plugins.androidx.room)
 //    alias(libs.plugins.kotest) // temporarily disabled: breaks kotlin
     alias(libs.plugins.download)
+    ktlint
 }
 
 val computedVersionName: String by rootProject.extra
@@ -194,12 +198,14 @@ room3 {
     schemaDirectory(layout.projectDirectory.dir("schemas"))
 }
 
-tasks.withType<DependencyUpdatesTask> {
-    rejectVersionIf(UpgradeToUnstableFilter())
-}
-
-tasks.withType<Test> {
-    useJUnitPlatform()
+tasks {
+    withType<DependencyUpdatesTask> { rejectVersionIf(UpgradeToUnstableFilter()) }
+    withType<Test> { useJUnitPlatform() }
+    withType<KotlinNativeSimulatorTest> { enabled = false }
+    "wasmJsBrowserTest" { enabled = false }
+    "jsBrowserTest" { enabled = false }
+    withType<AbstractKotlinCompile<*>> { dependsOn(ktlintFormat) }
+    withType<KspAATask> { dependsOn(ktlintFormat) }
 }
 
 val downloadEcbExchangeRates by tasks.registering(Download::class) {

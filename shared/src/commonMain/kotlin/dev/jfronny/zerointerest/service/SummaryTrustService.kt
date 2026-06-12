@@ -13,6 +13,7 @@ import dev.jfronny.zerointerest.service.client.computeMergedSummary
 import dev.jfronny.zerointerest.util.Timed
 import dev.jfronny.zerointerest.util.fold
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
@@ -21,11 +22,10 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.time.Duration.Companion.seconds
 
 class SummaryTrustService(
     private val clientProvider: ZiClientProvider,
-    private val database: ZeroInterestDatabase
+    private val database: ZeroInterestDatabase,
 ) {
     companion object {
         const val rejectionKey = "\uD83D\uDC4E"
@@ -90,11 +90,16 @@ class SummaryTrustService(
         log.info { "1. If a rejection for the summary exists, the summary is always rejected." }
         val reactions = client.getTimelineEventReactionAggregation(roomId, messageId).first()[rejectionKey]
         if (reactions?.isNotEmpty() ?: false) {
-            return reject(roomId, messageId, when {
-                reactions.size == 1 -> "rejection in timeline: ${reactions.first().eventId} by ${reactions.first().sender}"
-                reactions.size <= 10 -> "rejections in timeline: ${reactions.joinToString { "${it.eventId} by ${it.sender}" }}"
-                else -> "rejections in timeline: ${reactions.take(10).joinToString { "${it.eventId} by ${it.sender}" }} and ${reactions.size - 10} more"
-            }, send = false)
+            return reject(
+                roomId,
+                messageId,
+                when {
+                    reactions.size == 1 -> "rejection in timeline: ${reactions.first().eventId} by ${reactions.first().sender}"
+                    reactions.size <= 10 -> "rejections in timeline: ${reactions.joinToString { "${it.eventId} by ${it.sender}" }}"
+                    else -> "rejections in timeline: ${reactions.take(10).joinToString { "${it.eventId} by ${it.sender}" }} and ${reactions.size - 10} more"
+                },
+                send = false,
+            )
         }
 
         log.info { "2. Otherwise, if the summary event is the first summary event ever encountered in a room, it is trusted." }
@@ -118,7 +123,7 @@ class SummaryTrustService(
                 onNull = {
                     log.error { "Could not fetch event $eventId in room $roomId (in a timely manner). Continuing with other parents." }
                     continue@loop
-                }
+                },
             )
             summaries[eventId] = event
         }
@@ -133,7 +138,7 @@ class SummaryTrustService(
                 onNull = {
                     log.error { "Could not fetch event $eventId in room $roomId (in a timely manner). Aborting trust check" }
                     return@checkTrusted TrustState.UNTRUSTED
-                }
+                },
             )
             transactions[eventId] = event
         }
@@ -207,7 +212,8 @@ class SummaryTrustService(
         messageId: EventId,
         content: ZeroInterestSummaryEvent,
         override: Boolean = false,
-        isPropagation: Boolean = false,  // if we're overriding, we can assume all previous heads are invalid
+        // if we're overriding, we can assume all previous heads are invalid
+        isPropagation: Boolean = false,
     ): TrustState = withContext(NonCancellable) {
         if (override && database.checkTrust(roomId, messageId) == TrustState.TRUSTED) return@withContext TrustState.TRUSTED
         log.info { "Accepting $messageId" }
@@ -241,6 +247,5 @@ class SummaryTrustService(
         return database.getSummariesReferencingTransactions(roomId, transactions)
     }
 
-    private fun <T> List<T>.combinations(): List<Pair<T, T>> =
-        this.flatMapIndexed { index, a -> this.drop(index + 1).map { b -> a to b } }
+    private fun <T> List<T>.combinations(): List<Pair<T, T>> = this.flatMapIndexed { index, a -> this.drop(index + 1).map { b -> a to b } }
 }
