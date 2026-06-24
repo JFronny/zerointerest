@@ -56,8 +56,8 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.ui.NavDisplay
 import de.connect2x.trixnity.client.MatrixClient
 import de.connect2x.trixnity.client.room
 import de.connect2x.trixnity.client.room.RoomService
@@ -98,8 +98,9 @@ import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.component.PreviewUserUI
 import dev.jfronny.zerointerest.ui.component.UserUI
 import dev.jfronny.zerointerest.ui.theme.AppTheme
-import dev.jfronny.zerointerest.util.NavigationHelper
+import dev.jfronny.zerointerest.util.Navigator
 import dev.jfronny.zerointerest.util.room
+import dev.jfronny.zerointerest.util.toEntries
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -124,7 +125,7 @@ fun RoomScreen(
     onBack: () -> Unit,
     onAddTransaction: (TransactionTemplate?) -> Unit,
     openSettings: () -> Unit,
-    navHelper: NavigationHelper,
+    navHelper: Navigator,
 ) {
     val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
     val client = rxclient ?: return
@@ -261,40 +262,45 @@ fun RoomScreen(
             },
         ) { padding ->
             val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
-            NavHost(
-                navController = roomNavHelper.room,
-                startDestination = Destination.Room.RoomDestination.Balance,
-                typeMap = mapOf(),
-                modifier = Modifier.padding(padding),
-            ) {
-                composable<Destination.Room.RoomDestination.Balance> {
-                    event?.let {
-                        BalancesTab(
-                            summary = it,
-                            userUI = UserUI(client, roomId),
-                            flipBalances = flipBalances,
-                            debugHints = debugHints,
-                            monetaryUnit = monetaryUnit,
-                            forceTrust = {
-                                scope.launch {
-                                    trust.forceAccept(it)
-                                    forceReload++
-                                }
-                            },
-                        )
-                    } ?: run {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            LoadingIndicator(Modifier.size(128.dp))
+
+            val entryProvider = remember {
+                // type hint is needed for kotlin/js
+                entryProvider<Destination.Room.RoomDestination> {
+                    entry<Destination.Room.RoomDestination.Balance> {
+                        event?.let {
+                            BalancesTab(
+                                summary = it,
+                                userUI = UserUI(client, roomId),
+                                flipBalances = flipBalances,
+                                debugHints = debugHints,
+                                monetaryUnit = monetaryUnit,
+                                forceTrust = {
+                                    scope.launch {
+                                        trust.forceAccept(it)
+                                        forceReload++
+                                    }
+                                },
+                            )
+                        } ?: run {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                LoadingIndicator(Modifier.size(128.dp))
+                            }
                         }
                     }
-                }
-                composable<Destination.Room.RoomDestination.Transactions> {
-                    TransactionsTab(client, roomId, navHelper, monetaryUnit)
+                    entry<Destination.Room.RoomDestination.Transactions> {
+                        TransactionsTab(client, roomId, navHelper, monetaryUnit)
+                    }
                 }
             }
+
+            NavDisplay(
+                entries = roomNavHelper.stack.toEntries(entryProvider),
+                onBack = { roomNavHelper.main.goBack() },
+                modifier = Modifier.padding(padding),
+            )
         }
     }
 }
@@ -400,7 +406,7 @@ private fun BalancesTabPreview() = AppTheme {
 private fun TransactionsTab(
     client: MatrixClient,
     roomId: RoomId,
-    navHelper: NavigationHelper,
+    navHelper: Navigator,
     monetaryUnit: MonetaryUnit,
 ) {
     val roomService: RoomService = client.room

@@ -4,16 +4,15 @@ package dev.jfronny.zerointerest
 
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
+import com.github.terrakok.navigation3.browser.HierarchicalBrowserNavigation
+import com.github.terrakok.navigation3.browser.buildBrowserHistoryFragment
 import de.connect2x.lognity.api.backend.Backend
 import dev.jfronny.zerointerest.ui.App
 import dev.jfronny.zerointerest.ui.LoadingScreenExtras
 import dev.jfronny.zerointerest.util.KoinLogWrangler
 import dev.jfronny.zerointerest.util.LognityWrangler
-import dev.jfronny.zerointerest.util.rememberNavigationHelper
+import dev.jfronny.zerointerest.util.rememberNavigator
 import js.string.JsStrings.toKotlinString
-import kotlin.js.ExperimentalWasmJsInterop
-import kotlin.js.JsModule
-import kotlin.js.toJsString
 import org.koin.compose.KoinApplication
 import org.koin.dsl.koinConfiguration
 import org.koin.dsl.module
@@ -21,6 +20,9 @@ import web.console.console
 import web.history.history
 import web.url.URLSearchParams
 import web.window.window
+import kotlin.js.ExperimentalWasmJsInterop
+import kotlin.js.JsModule
+import kotlin.js.toJsString
 
 @OptIn(ExperimentalWasmJsInterop::class)
 @JsModule("@js-joda/timezone")
@@ -60,7 +62,13 @@ fun main() {
                 )
             }),
             content = {
-                val navHelper = rememberNavigationHelper()
+                val navHelper = rememberNavigator()
+
+                HierarchicalBrowserNavigation {
+                    val g = navHelper.state.rootBackStack.lastOrNull()
+                    buildBrowserHistoryFragment(g.toString())
+                }
+
                 App(navHelper = navHelper)
             },
         )

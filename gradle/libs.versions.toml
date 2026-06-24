@@ -13,6 +13,7 @@ androidx-lifecycle = "2.10.0"
 composeHotReload = "1.1.1"
 coil = "3.5.0"
 composeMultiplatform = "1.11.1"
+compose-multiplatform-navigation3-browser = "1.1.0"
 copyWebpackPlugin = "14.0.0" # https://github.com/webpack-contrib/copy-webpack-plugin/releases
 datastore = "1.3.0-alpha09"
 emojikt = "2.4.0"
@@ -34,6 +35,7 @@ ktlint = "1.8.0" # https://github.com/ktlint/ktlint/releases
 ktor = "3.5.0"
 material3 = "1.11.0-alpha07"
 materialIconsExtended = "1.7.3"
+navigation3 = "1.1.1"
 proguard = "7.9.1" # https://github.com/Guardsquare/proguard/releases
 room = "3.0.0-rc01"
 slf4jAndroid = "1.7.36"
@@ -58,6 +60,10 @@ androidx-datastore-preferences = { module = "androidx.datastore:datastore-prefer
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-espresso" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-viewmodel-navigation3 = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "androidx-lifecycle" }
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+androidx-navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
+navigation3-browser = { module = "com.github.terrakok:navigation3-browser", version.ref = "compose-multiplatform-navigation3-browser" }
 androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room" }
 androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
@@ -80,7 +86,6 @@ koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 koin-android-compat = { module = "io.insert-koin:koin-android-compat", version.ref = "koin" }
 koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
-koin-compose-viewmodel-navigation = { module = "io.insert-koin:koin-compose-viewmodel-navigation", version.ref = "koin" }
 koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin" }
 
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }

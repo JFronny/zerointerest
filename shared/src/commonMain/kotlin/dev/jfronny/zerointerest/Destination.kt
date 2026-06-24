@@ -1,11 +1,12 @@
 package dev.jfronny.zerointerest
 
+import androidx.navigation3.runtime.NavKey
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import kotlinx.serialization.Serializable
 
 @Serializable
-sealed class Destination {
+sealed class Destination : NavKey {
     @Serializable object LoadingScreen : Destination()
 
     @Serializable object SelectHomeserver : Destination()
@@ -15,7 +16,7 @@ sealed class Destination {
     @Serializable object PickRoom : Destination()
 
     @Serializable data class Room(val roomId: RoomId) : Destination() {
-        @Serializable sealed class RoomDestination {
+        @Serializable sealed class RoomDestination : NavKey {
             @Serializable object Balance : RoomDestination()
 
             @Serializable object Transactions : RoomDestination()

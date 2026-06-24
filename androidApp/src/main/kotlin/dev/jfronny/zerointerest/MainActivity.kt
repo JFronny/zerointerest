@@ -11,7 +11,7 @@ import de.connect2x.lognity.api.backend.Backend
 import dev.jfronny.zerointerest.service.AndroidSsoLoginHandler
 import dev.jfronny.zerointerest.ui.App
 import dev.jfronny.zerointerest.util.LognityWrangler
-import dev.jfronny.zerointerest.util.rememberNavigationHelper
+import dev.jfronny.zerointerest.util.rememberNavigator
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
                     modules(listOf(createAppModule(), createExtraModule()))
                 }),
                 content = {
-                    val navHelper = rememberNavigationHelper()
+                    val navHelper = rememberNavigator()
                     LaunchedEffect(Unit) {
                         callbackFlow {
                             val consumer = Consumer<Intent> { trySend(it) }

@@ -34,6 +34,7 @@ kotlin {
     sourceSets {
         webMain.dependencies {
             implementation(projects.shared)
+            implementation(libs.navigation3.browser)
             implementation(npm("copy-webpack-plugin", libs.versions.copyWebpackPlugin.get()))
             implementation(npm("@js-joda/timezone", libs.versions.jsJoda.get()))
             implementation(npm("sqlite-web-worker", layout.projectDirectory.dir("sqlite-web-worker").asFile))
