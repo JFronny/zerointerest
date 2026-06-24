@@ -57,7 +57,7 @@ kotlin {
 
     listOf(
         iosArm64(),
-        iosSimulatorArm64()
+        iosSimulatorArm64(),
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
             baseName = "Shared"
@@ -71,7 +71,8 @@ kotlin {
         }
         @OptIn(ExperimentalKotlinGradlePluginApi::class, InternalKotlinGradlePluginApi::class)
         mainRun {
-            @Suppress("UNCHECKED_CAST") val provider = javaClass.getMethod("getTask")(this) as TaskProvider<KotlinJvmRun>
+            @Suppress("UNCHECKED_CAST")
+            val provider = javaClass.getMethod("getTask")(this) as TaskProvider<KotlinJvmRun>
             provider.configure {
                 jvmArgs("--enable-native-access=ALL-UNNAMED")
             }

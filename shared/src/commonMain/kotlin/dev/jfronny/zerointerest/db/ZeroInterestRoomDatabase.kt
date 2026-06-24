@@ -1,5 +1,7 @@
 package dev.jfronny.zerointerest.db
 
+import androidx.room3.ColumnTypeConverter
+import androidx.room3.ColumnTypeConverters
 import androidx.room3.ConstructedBy
 import androidx.room3.Dao
 import androidx.room3.Database
@@ -9,8 +11,6 @@ import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import androidx.room3.RoomDatabase
 import androidx.room3.RoomDatabaseConstructor
-import androidx.room3.TypeConverter
-import androidx.room3.TypeConverters
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.data.TrustState
 import kotlinx.coroutines.flow.Flow
@@ -27,7 +27,7 @@ import kotlinx.serialization.json.Json
     version = 4,
 )
 @ConstructedBy(ZeroInterestRoomDatabaseConstructor::class)
-@TypeConverters(ZeroInterestTypeConverters::class)
+@ColumnTypeConverters(ZeroInterestTypeConverters::class)
 abstract class ZeroInterestRoomDatabase : RoomDatabase() {
     abstract fun summaryTrustDao(): SummaryTrustDao
     abstract fun summaryHeadDao(): SummaryHeadDao
@@ -120,16 +120,16 @@ interface SummaryTrustDao {
 }
 
 class ZeroInterestTypeConverters {
-    @TypeConverter
+    @ColumnTypeConverter
     fun toTrustState(value: String) = enumValueOf<TrustState>(value)
 
-    @TypeConverter
+    @ColumnTypeConverter
     fun fromTrustState(value: TrustState) = value.name
 
-    @TypeConverter
+    @ColumnTypeConverter
     fun toReceivers(value: String): Map<UserId, Long> = Json.decodeFromString(value)
 
-    @TypeConverter
+    @ColumnTypeConverter
     fun fromReceivers(value: Map<UserId, Long>): String = Json.encodeToString(value)
 }
 

@@ -9,6 +9,7 @@ import dev.jfronny.zerointerest.ui.App
 import dev.jfronny.zerointerest.ui.LoadingScreenExtras
 import dev.jfronny.zerointerest.util.KoinLogWrangler
 import dev.jfronny.zerointerest.util.LognityWrangler
+import dev.jfronny.zerointerest.util.rememberNavigationHelper
 import js.string.JsStrings.toKotlinString
 import kotlin.js.ExperimentalWasmJsInterop
 import kotlin.js.JsModule
@@ -59,7 +60,8 @@ fun main() {
                 )
             }),
             content = {
-                App()
+                val navHelper = rememberNavigationHelper()
+                App(navHelper = navHelper)
             },
         )
     }
