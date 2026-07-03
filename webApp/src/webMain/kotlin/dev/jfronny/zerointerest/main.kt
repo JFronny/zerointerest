@@ -13,6 +13,9 @@ import dev.jfronny.zerointerest.util.KoinLogWrangler
 import dev.jfronny.zerointerest.util.LognityWrangler
 import dev.jfronny.zerointerest.util.rememberNavigator
 import js.string.JsStrings.toKotlinString
+import kotlin.js.ExperimentalWasmJsInterop
+import kotlin.js.JsModule
+import kotlin.js.toJsString
 import org.koin.compose.KoinApplication
 import org.koin.dsl.koinConfiguration
 import org.koin.dsl.module
@@ -20,9 +23,6 @@ import web.console.console
 import web.history.history
 import web.url.URLSearchParams
 import web.window.window
-import kotlin.js.ExperimentalWasmJsInterop
-import kotlin.js.JsModule
-import kotlin.js.toJsString
 
 @OptIn(ExperimentalWasmJsInterop::class)
 @JsModule("@js-joda/timezone")
