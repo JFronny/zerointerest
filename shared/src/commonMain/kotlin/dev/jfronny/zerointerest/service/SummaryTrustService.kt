@@ -14,6 +14,8 @@ import dev.jfronny.zerointerest.util.Timed
 import dev.jfronny.zerointerest.util.fold
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
@@ -243,7 +245,7 @@ class SummaryTrustService(
         return@withContext TrustState.TRUSTED
     }
 
-    suspend fun getSummariesReferencingTransactions(roomId: RoomId, transactions: Set<EventId>): Map<EventId, Set<EventId>> {
+    suspend fun getSummariesReferencingTransactions(roomId: RoomId, transactions: Set<EventId>): ImmutableMap<EventId, ImmutableSet<EventId>> {
         return database.getSummariesReferencingTransactions(roomId, transactions)
     }
 

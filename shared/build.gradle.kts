@@ -24,6 +24,7 @@ plugins {
     alias(libs.plugins.androidx.room)
 //    alias(libs.plugins.kotest) // temporarily disabled: breaks kotlin
     alias(libs.plugins.download)
+    alias(libs.plugins.stability.analyzer)
     ktlint
 }
 
@@ -126,6 +127,7 @@ kotlin {
             implementation(libs.androidx.navigation3.ui)
             implementation(libs.androidx.navigation3.runtime)
             implementation(libs.compose.materialIconsExtended)
+            implementation(libs.kotlinx.collections.immutable)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.datetime)
             implementation(libs.koin.core)
@@ -199,6 +201,16 @@ dependencies {
 
 room3 {
     schemaDirectory(layout.projectDirectory.dir("schemas"))
+}
+
+composeCompiler {
+    stabilityConfigurationFiles.add(layout.projectDirectory.file("stability_config.conf"))
+}
+
+composeStabilityAnalyzer {
+    stabilityValidation {
+        stabilityConfigurationFiles.add(layout.projectDirectory.file("stability_config.conf"))
+    }
 }
 
 tasks {

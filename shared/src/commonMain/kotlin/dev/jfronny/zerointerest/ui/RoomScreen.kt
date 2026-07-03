@@ -103,6 +103,14 @@ import dev.jfronny.zerointerest.util.room
 import dev.jfronny.zerointerest.util.toEntries
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.PersistentList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.collections.immutable.plus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -413,7 +421,7 @@ private fun TransactionsTab(
     val trust = koinInject<SummaryTrustService>()
 
     // State to hold the list of transaction events
-    var transactionEvents by remember(roomId) { mutableStateOf<List<Pair<EventId, ZeroInterestTransactionEvent>>>(emptyList()) }
+    var transactionEvents by remember(roomId) { mutableStateOf<PersistentList<Pair<EventId, ZeroInterestTransactionEvent>>>(persistentListOf()) }
     var isLoading by remember(roomId) { mutableStateOf(true) }
     var hasMore by remember(roomId) { mutableStateOf(true) }
 
@@ -427,7 +435,7 @@ private fun TransactionsTab(
             emit(trust.getSummariesReferencingTransactions(roomId, transactionEvents.map { it.first }.toSet()))
         }
     }
-    val includedTransactions by includedTransactionsFlow.collectAsState(emptyMap())
+    val includedTransactions by includedTransactionsFlow.collectAsState(persistentMapOf())
 
     // Reuse name resolver so it isn't created per-row
     val userUI = UserUI(client, roomId)
@@ -493,7 +501,7 @@ private fun TransactionsTab(
     // Initial load
     LaunchedEffect(roomId) {
         isLoading = true
-        transactionEvents = emptyList()
+        transactionEvents = persistentListOf()
         hasMore = true
         loadedIds.clear()
         oldestLoadedId = null
@@ -553,9 +561,9 @@ private fun TransactionsTab(
 @Composable
 private fun TransactionsTabContent(
     isLoading: Boolean,
-    transactionEvents: List<Pair<EventId, ZeroInterestTransactionEvent>>,
+    transactionEvents: ImmutableList<Pair<EventId, ZeroInterestTransactionEvent>>,
     listState: LazyListState,
-    includedTransactions: Map<EventId, Set<EventId>>,
+    includedTransactions: ImmutableMap<EventId, ImmutableSet<EventId>>,
     userUI: UserUI,
     monetaryUnit: MonetaryUnit,
     onShowDetails: (EventId) -> Unit,
@@ -617,7 +625,7 @@ private fun TransactionsTabContent(
 private fun TransactionTabContentPreview() = AppTheme {
     TransactionsTabContent(
         isLoading = false,
-        transactionEvents = listOf(
+        transactionEvents = persistentListOf(
             EventId("1") to ZeroInterestTransactionEvent(
                 sender = UserId("@alice:example.org"),
                 description = ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION,
@@ -636,7 +644,7 @@ private fun TransactionTabContentPreview() = AppTheme {
             ),
         ),
         listState = rememberLazyListState(),
-        includedTransactions = mapOf(EventId("2") to setOf(EventId("sum"))),
+        includedTransactions = persistentMapOf(EventId("2") to persistentSetOf(EventId("sum"))),
         userUI = PreviewUserUI,
         monetaryUnit = MonetaryUnit.default,
         onShowDetails = {},

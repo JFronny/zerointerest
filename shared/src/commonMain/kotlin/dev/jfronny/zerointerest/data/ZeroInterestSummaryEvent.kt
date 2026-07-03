@@ -1,5 +1,6 @@
 package dev.jfronny.zerointerest.data
 
+import androidx.compose.runtime.Immutable
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.UserId
 import de.connect2x.trixnity.core.model.events.StateEventContent
@@ -8,6 +9,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+@Immutable
 data class ZeroInterestSummaryEvent(
     val balances: Map<UserId, Money>,
     val parents: Map<EventId, Set<EventId>>, // previous summary -> transactions between them

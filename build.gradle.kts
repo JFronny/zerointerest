@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.composeCompiler) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.kotlinxSerialization) apply false
+    alias(libs.plugins.stability.analyzer) apply false
     com.github.`ben-manes`.versions
 }
 

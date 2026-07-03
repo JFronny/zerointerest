@@ -1,5 +1,6 @@
 package dev.jfronny.zerointerest.data
 
+import androidx.compose.runtime.Immutable
 import de.connect2x.trixnity.core.model.UserId
 import de.connect2x.trixnity.core.model.events.MessageEventContent
 import de.connect2x.trixnity.core.model.events.m.Mentions
@@ -13,6 +14,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+@Immutable
 data class ZeroInterestTransactionEvent(
     val description: String,
     val sender: UserId,

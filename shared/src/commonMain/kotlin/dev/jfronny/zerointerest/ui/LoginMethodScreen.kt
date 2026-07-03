@@ -43,8 +43,12 @@ import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.theme.AppTheme
+import dev.jfronny.zerointerest.util.buildPersistentList
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.Url
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
@@ -78,8 +82,8 @@ fun LoginMethodScreen(
     val settings = koinInject<Settings>()
 
     var state by remember { mutableStateOf<LoginState>(LoginState.Loading) }
-    var availableLoginMethods by remember { mutableStateOf<List<LoginType>>(emptyList()) }
-    var ssoProviders by remember { mutableStateOf<List<LoginType.SSO.IdentityProvider>>(emptyList()) }
+    var availableLoginMethods by remember { mutableStateOf<ImmutableList<LoginType>>(persistentListOf()) }
+    var ssoProviders by remember { mutableStateOf<ImmutableList<LoginType.SSO.IdentityProvider>>(persistentListOf()) }
 
     // Determine available login methods
     val hasPasswordLogin = remember(availableLoginMethods) {
@@ -89,7 +93,7 @@ fun LoginMethodScreen(
         availableLoginMethods.any { it is LoginType.SSO }
     }
     val tabs = remember(hasPasswordLogin, hasSsoLogin) {
-        buildList {
+        buildPersistentList {
             if (hasPasswordLogin) add(LoginMethod.PASSWORD)
             if (hasSsoLogin) add(LoginMethod.SSO)
             add(LoginMethod.TOKEN)
@@ -112,12 +116,13 @@ fun LoginMethodScreen(
         tryAction {
             // Fetch available login types
             val loginTypes = matrixClient.getLoginTypes(Url(homeserver))
-            availableLoginMethods = loginTypes
+            availableLoginMethods = loginTypes.toPersistentList()
 
             // Extract SSO providers from all SSO login types
             ssoProviders = loginTypes
                 .filterIsInstance<LoginType.SSO>()
                 .flatMap { it.identityProviders }
+                .toPersistentList()
 
             state = LoginState.Idle
         }
@@ -171,8 +176,8 @@ private fun LoginMethodContent(
     onBack: () -> Unit,
     homeserver: String,
     state: LoginState,
-    tabs: List<LoginMethod>,
-    ssoProviders: List<LoginType.SSO.IdentityProvider>,
+    tabs: ImmutableList<LoginMethod>,
+    ssoProviders: ImmutableList<LoginType.SSO.IdentityProvider>,
     onUsernamePasswordLogin: (username: String, password: String) -> Unit,
     onTokenLogin: (token: String) -> Unit,
     onSsoLogin: (providerId: String?) -> Unit,
@@ -311,8 +316,8 @@ private fun LoginMethodScreenPreview() = AppTheme {
         onBack = {},
         homeserver = "https://matrix.org",
         state = LoginState.Idle,
-        tabs = listOf(LoginMethod.PASSWORD, LoginMethod.TOKEN, LoginMethod.SSO),
-        ssoProviders = emptyList(),
+        tabs = persistentListOf(LoginMethod.PASSWORD, LoginMethod.TOKEN, LoginMethod.SSO),
+        ssoProviders = persistentListOf(),
         onUsernamePasswordLogin = { _, _ -> },
         onTokenLogin = {},
         onSsoLogin = {},
@@ -399,7 +404,7 @@ private fun TokenLoginForm(
 
 @Composable
 private fun SsoLoginForm(
-    ssoProviders: List<LoginType.SSO.IdentityProvider>,
+    ssoProviders: ImmutableList<LoginType.SSO.IdentityProvider>,
     enabled: Boolean,
     onSsoLogin: (providerId: String?) -> Unit,
 ) {
@@ -481,7 +486,7 @@ private fun TokenLoginFormPreview() = AppTheme {
 @Composable
 private fun SsoLoginFormPreview() = AppTheme {
     SsoLoginForm(
-        ssoProviders = emptyList(),
+        ssoProviders = persistentListOf(),
         enabled = true,
         onSsoLogin = {},
     )
@@ -491,7 +496,7 @@ private fun SsoLoginFormPreview() = AppTheme {
 @Composable
 private fun SsoLoginFormPreviewDark() = AppTheme {
     SsoLoginForm(
-        ssoProviders = emptyList(),
+        ssoProviders = persistentListOf(),
         enabled = true,
         onSsoLogin = {},
     )

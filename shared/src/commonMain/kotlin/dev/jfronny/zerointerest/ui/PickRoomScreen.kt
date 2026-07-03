@@ -29,6 +29,10 @@ import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.theme.AppTheme
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.coroutines.flow.map
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
@@ -36,7 +40,7 @@ import org.koin.compose.koinInject
 fun PickRoomScreen(onPick: (RoomId) -> Unit, openSettings: () -> Unit) {
     val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
     val client = rxclient ?: return
-    val rooms by remember(client) { client.room.getAll().flattenValues() }.collectAsState(initial = setOf())
+    val rooms by remember(client) { client.room.getAll().flattenValues().map { it.toImmutableSet() } }.collectAsState(initial = persistentSetOf())
     PickRoomContent(
         rooms = rooms,
         onPick = onPick,
@@ -47,7 +51,7 @@ fun PickRoomScreen(onPick: (RoomId) -> Unit, openSettings: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PickRoomContent(
-    rooms: Set<Room>,
+    rooms: ImmutableSet<Room>,
     onPick: (RoomId) -> Unit,
     openSettings: () -> Unit,
 ) = Scaffold(
@@ -92,7 +96,7 @@ private fun PickRoomContent(
 @Composable
 private fun PickRoomScreenPreview() = AppTheme {
     PickRoomContent(
-        rooms = setOf(
+        rooms = persistentSetOf(
             Room(
                 roomId = RoomId("!room1:example.com"),
                 name = RoomDisplayName(explicitName = "Room 1", summary = null),

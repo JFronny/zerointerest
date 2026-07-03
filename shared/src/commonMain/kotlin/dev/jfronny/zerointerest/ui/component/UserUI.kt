@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -33,7 +34,7 @@ import dev.jfronny.zerointerest.ui.theme.AppTheme
 import kotlinx.coroutines.flow.Flow
 import org.jetbrains.compose.resources.stringResource
 
-interface UserUI {
+sealed interface UserUI {
     @Composable
     operator fun invoke(userId: UserId, iconSize: IconSize = IconSize.Regular) = component(userId)(iconSize = iconSize)
 
@@ -81,11 +82,11 @@ object PreviewUserUI : UserUI {
     }
 }
 
+@Stable
 class UserUIImpl(
     private val client: MatrixClient,
     private val users: Map<UserId, Flow<RoomUser?>>,
 ) : UserUI {
-
     @Composable
     override fun component(userId: UserId): UserUI.Component {
         val user = remember(userId, users) { users[userId] } ?: return PreviewUserUI.component(userId)

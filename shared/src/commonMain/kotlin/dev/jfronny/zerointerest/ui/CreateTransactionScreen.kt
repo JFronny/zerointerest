@@ -53,6 +53,11 @@ import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.component.SimpleFilledIconButton
 import dev.jfronny.zerointerest.ui.viewmodel.CreateTransactionViewModel
 import dev.jfronny.zerointerest.ui.viewmodel.CreateTransactionViewModel.MoneyState
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toImmutableList
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -77,7 +82,7 @@ fun CreateTransactionScreen(
         monetaryUnit = monetaryUnit,
         requestFullKeyboard = requestFullKeyboard,
         users = users,
-        userIds = users.keys.toList(),
+        userIds = users.keys.toImmutableList(),
         onDescriptionChanged = viewModel::onDescriptionChanged,
         onSenderChanged = viewModel::onSenderChanged,
         onTotalChanged = viewModel::onTotalChanged,
@@ -100,8 +105,8 @@ fun CreateTransactionContent(
     state: CreateTransactionViewModel.State,
     monetaryUnit: MonetaryUnit,
     requestFullKeyboard: Boolean,
-    users: Map<UserId, RoomUser?>,
-    userIds: List<UserId>,
+    users: ImmutableMap<UserId, RoomUser?>,
+    userIds: ImmutableList<UserId>,
     onDescriptionChanged: (String) -> Unit,
     onSenderChanged: (UserId) -> Unit,
     onTotalChanged: (String) -> Unit,
@@ -291,12 +296,12 @@ fun CreateTransactionScreenPreview() {
             description = "Pizza",
             sender = UserId("alice", "example.com"),
             total = MoneyState(1250L.toMoney()),
-            recipients = mapOf(UserId("bob", "example.com") to MoneyState(100L.toMoney())),
+            recipients = persistentMapOf(UserId("bob", "example.com") to MoneyState(100L.toMoney())),
         ),
         monetaryUnit = MonetaryUnit.default,
         requestFullKeyboard = false,
-        users = mapOf(UserId("alice", "example.com") to null, UserId("bob", "example.com") to null),
-        userIds = listOf(UserId("alice", "example.com"), UserId("bob", "example.com")),
+        users = persistentMapOf(UserId("alice", "example.com") to null, UserId("bob", "example.com") to null),
+        userIds = persistentListOf(UserId("alice", "example.com"), UserId("bob", "example.com")),
         onDescriptionChanged = {},
         onSenderChanged = {},
         onTotalChanged = {},

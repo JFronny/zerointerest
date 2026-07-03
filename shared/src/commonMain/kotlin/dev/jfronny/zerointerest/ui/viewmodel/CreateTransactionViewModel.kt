@@ -22,14 +22,20 @@ import dev.jfronny.zerointerest.service.getExchangeRates
 import dev.jfronny.zerointerest.shared.generated.resources.Res
 import dev.jfronny.zerointerest.shared.generated.resources.device_offline
 import dev.jfronny.zerointerest.ui.component.TransactionLauncher
+import dev.jfronny.zerointerest.util.buildPersistentHashMap
 import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toPersistentHashMap
+import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -51,7 +57,7 @@ class CreateTransactionViewModel(
             description = initialTemplate?.description ?: "",
             sender = initialTemplate?.sender ?: client.userId,
             total = initialTemplate?.receivers?.values?.sum()?.let(::MoneyState) ?: MoneyState.zero,
-            recipients = initialTemplate?.receivers?.mapValues { MoneyState(it.value) } ?: emptyMap(),
+            recipients = initialTemplate?.receivers?.mapValues { MoneyState(it.value) }?.toPersistentHashMap() ?: persistentMapOf(),
         ),
     )
     val state = _state.asStateFlow()
@@ -60,7 +66,7 @@ class CreateTransactionViewModel(
         val description: String = "",
         val sender: UserId,
         val total: MoneyState = MoneyState.zero,
-        val recipients: Map<UserId, MoneyState> = emptyMap(),
+        val recipients: PersistentMap<UserId, MoneyState> = persistentMapOf(),
         val isTemplateModified: Boolean = false,
         val submitAttempted: Boolean = false,
 
@@ -104,10 +110,10 @@ class CreateTransactionViewModel(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = false,
     )
-    val users = client.getActive(roomId, trustService).stateIn(
+    val users = client.getActive(roomId, trustService).map { it.toPersistentMap() }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyMap(),
+        initialValue = persistentMapOf(),
     )
 
     companion object {
@@ -131,17 +137,18 @@ class CreateTransactionViewModel(
 
     private fun distribute(total: Money, recipients: Set<UserId>) {
         if (recipients.isEmpty()) {
-            _state.update { it.copy(recipients = emptyMap()) }
+            _state.update { it.copy(recipients = persistentMapOf()) }
             return
         }
         val count = recipients.size
         val base = total.amount / count
         val remainder = total.amount % count
 
-        val newInputs = mutableMapOf<UserId, MoneyState>()
-        recipients.shuffled(distributeRandom).forEachIndexed { index, userId ->
-            val amount = base + if (index < remainder) 1 else 0
-            newInputs[userId] = MoneyState(amount.toMoney())
+        val newInputs = buildPersistentHashMap {
+            recipients.shuffled(distributeRandom).forEachIndexed { index, userId ->
+                val amount = base + if (index < remainder) 1 else 0
+                this@buildPersistentHashMap[userId] = MoneyState(amount.toMoney())
+            }
         }
         _state.update { it.copy(recipients = newInputs) }
         checkForModifications()
@@ -170,15 +177,14 @@ class CreateTransactionViewModel(
             distribute(total, newRecipients)
         } else {
             val newInputs = newRecipients.associateWith { _state.value.recipients[it] ?: MoneyState.zero }
-            _state.update { it.copy(recipients = newInputs) }
+            _state.update { it.copy(recipients = newInputs.toPersistentHashMap()) }
         }
         checkForModifications()
     }
 
     fun onIndividualAmountChanged(userId: UserId, newAmountStr: String) {
         _state.update {
-            val newInputs = it.recipients.toMutableMap()
-            newInputs[userId] = MoneyState(newAmountStr, monetaryUnit.value)
+            val newInputs = it.recipients.putting(userId, MoneyState(newAmountStr, monetaryUnit.value))
             val total = newInputs.values.sumOfM { it.amount ?: Money.zero }
             it.copy(
                 recipients = newInputs,
@@ -190,9 +196,8 @@ class CreateTransactionViewModel(
 
     fun onIndividualAmountBlurred(userId: UserId) {
         _state.update {
-            val newInputs = it.recipients.toMutableMap()
-            newInputs[userId] = newInputs[userId]?.copy(isBlurred = true) ?: MoneyState.zero
-            it.copy(recipients = newInputs)
+            val value = it.recipients[userId]?.copy(isBlurred = true) ?: MoneyState.zero
+            it.copy(recipients = it.recipients.putting(userId, value))
         }
     }
 

@@ -3,8 +3,10 @@ package dev.jfronny.zerointerest.service
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
 import dev.jfronny.zerointerest.data.money.Money
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 
-fun calculateSettlementTransactions(balances: Map<UserId, Money>): List<ZeroInterestTransactionEvent> {
+fun calculateSettlementTransactions(balances: Map<UserId, Money>): ImmutableList<ZeroInterestTransactionEvent> {
     val debtors = balances.filterValues { it.amount > 0 }.toList().sortedByDescending { it.second }.toMutableList()
     val creditors = balances.filterValues { it.amount < 0 }.toList().sortedBy { it.second }.toMutableList()
 
@@ -38,5 +40,5 @@ fun calculateSettlementTransactions(balances: Map<UserId, Money>): List<ZeroInte
         }
     }
 
-    return transactions
+    return transactions.toImmutableList()
 }

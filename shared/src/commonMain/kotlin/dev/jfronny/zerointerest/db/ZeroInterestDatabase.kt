@@ -8,6 +8,12 @@ import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.TrustState
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.money.Money
+import dev.jfronny.zerointerest.util.compute
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.PersistentSet
+import kotlinx.collections.immutable.persistentHashMapOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -74,12 +80,14 @@ class ZeroInterestDatabase(val db: ZeroInterestRoomDatabase) {
         return db.summaryDao().getParents(room.full, summary.full).map { EventId(it) }.toSet()
     }
 
-    suspend fun getSummariesReferencingTransactions(room: RoomId, transactions: Set<EventId>): Map<EventId, Set<EventId>> {
-        val result = mutableMapOf<EventId, MutableSet<EventId>>()
+    suspend fun getSummariesReferencingTransactions(room: RoomId, transactions: Set<EventId>): ImmutableMap<EventId, ImmutableSet<EventId>> {
+        val result = persistentHashMapOf<EventId, PersistentSet<EventId>>().builder()
         db.summaryDao().getSummariesForTransactions(room.full, transactions.map { it.full }).forEach {
-            result.getOrPut(EventId(it.transactionId)) { mutableSetOf() }.add(EventId(it.summaryId))
+            val key = EventId(it.transactionId)
+            val value = EventId(it.summaryId)
+            result.compute(key, ifMissing = { persistentSetOf(value) }, ifPresent = { it.adding(value) })
         }
-        return result
+        return result.build()
     }
 
     fun getTransactionTemplates(room: RoomId): Flow<List<TransactionTemplate>> {

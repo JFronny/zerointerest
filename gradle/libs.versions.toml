@@ -27,6 +27,7 @@ kotest = "6.2.1"
 kotlin = "2.4.0"
 kotlin-logging = "8.0.4"
 kotlinpoet = "2.3.0"
+kotlinx-collections-immutable = "0.5.1"
 kotlinx-coroutines = "1.11.0"
 kotlinx-datetime = "0.8.0"
 kotlinx-serialization = "1.11.0"
@@ -40,6 +41,7 @@ proguard = "7.9.1" # https://github.com/Guardsquare/proguard/releases
 room = "3.0.0"
 slf4jAndroid = "1.7.36"
 sqlite = "2.7.0"
+stability-analyzer = "0.10.0"
 trixnity = "5.6.0"
 
 [libraries]
@@ -72,6 +74,7 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version.ref = "kotlinx-collections-immutable" }
 
 trixnity-client = { module = "de.connect2x.trixnity:trixnity-client", version.ref = "trixnity" }
 trixnity-client-repository-room = { module = "de.connect2x.trixnity:trixnity-client-repository-room", version.ref = "trixnity" }
@@ -130,3 +133,4 @@ kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kotest = { id = "io.kotest", version.ref = "kotest" }
 download = { id = "de.undercouch.download", version.ref = "gradle-download" }
+stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version.ref = "stability-analyzer" }

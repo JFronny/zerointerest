@@ -52,6 +52,9 @@ import dev.jfronny.zerointerest.ui.component.TransactionLauncher
 import dev.jfronny.zerointerest.ui.component.UserUI
 import dev.jfronny.zerointerest.ui.component.rememberTransactionLauncher
 import dev.jfronny.zerointerest.ui.theme.AppTheme
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
@@ -92,7 +95,7 @@ fun SettleScreen(
 
     fun accept(transaction: ZeroInterestTransactionEvent) = launcher.tryLaunch {
         transactionService.sendTransaction(roomId, transaction)
-        remainingTransactions = remainingTransactions.filter { it != transaction }
+        remainingTransactions = remainingTransactions.filter { it != transaction }.toImmutableList()
         if (remainingTransactions.isEmpty()) {
             onBack()
         }
@@ -117,7 +120,7 @@ private fun SettleContent(
     onBack: () -> Unit,
     acceptAll: () -> Unit,
     accept: (ZeroInterestTransactionEvent) -> Unit,
-    remainingTransactions: List<ZeroInterestTransactionEvent>,
+    remainingTransactions: ImmutableList<ZeroInterestTransactionEvent>,
     monetaryUnit: MonetaryUnit,
     userUI: UserUI,
     launcherState: TransactionLauncher.State,
@@ -217,7 +220,7 @@ private fun SettleScreenPreview() = AppTheme {
         onBack = {},
         acceptAll = {},
         accept = {},
-        remainingTransactions = listOf(
+        remainingTransactions = persistentListOf(
             ZeroInterestTransactionEvent(
                 ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION,
                 sender = UserId("alice", "example.com"),
@@ -238,7 +241,7 @@ private fun SettleScreenPreviewError() = AppTheme {
         onBack = {},
         acceptAll = {},
         accept = {},
-        remainingTransactions = listOf(
+        remainingTransactions = persistentListOf(
             ZeroInterestTransactionEvent(
                 ZeroInterestTransactionEvent.PAYMENT_DESCRIPTION,
                 sender = UserId("alice", "example.com"),
