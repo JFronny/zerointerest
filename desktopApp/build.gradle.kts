@@ -12,8 +12,8 @@ plugins {
     ktlint
 }
 
-val computedVersionName: String by rootProject.extra
-val computedVersionCode: Int by rootProject.extra
+val computedVersionName: String = rootProject.extra["computedVersionName"] as String
+val computedVersionCode: Int = rootProject.extra["computedVersionCode"] as Int
 
 group = "dev.jfronny.zerointerest"
 version = computedVersionName
@@ -66,7 +66,7 @@ compose.desktop {
 }
 
 val appImageTool = layout.buildDirectory.file("tmp/appimagetool-x86_64.AppImage")
-val downloadAppImageTool by tasks.registering(Download::class) {
+val downloadAppImageTool = tasks.register("downloadAppImageTool", Download::class) {
     notCompatibleWithConfigurationCache("Uses build script variable as target for simplicity")
     src("https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage")
     dest(appImageTool)

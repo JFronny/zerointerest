@@ -18,9 +18,7 @@ val versionMinor = 1
 val versionPatch = 0
 val versionBuild = System.getenv("CI_PIPELINE_IID")?.toInt() ?: 0
 
-val computedVersionName by extra {
-    "$versionMajor.$versionMinor.$versionPatch+$versionBuild"
-}
+extra.set("computedVersionName", "$versionMajor.$versionMinor.$versionPatch+$versionBuild")
 
 // Version code: S VVVVV MMMMMMM PPPPP IIIIIIIIIIIIII (32-bit integer)
 // S (x1):  Sign bit. Must always be 0 for an android version code
@@ -35,17 +33,17 @@ val computedVersionName by extra {
 // If they are reached, the version codes "bleed over" into the next range,
 // so this should technically still produce valid, higher versions, but the format will be broken.
 
-val computedVersionCode by extra {
+extra.set("computedVersionCode", run {
     var bits = 0
     bits = (bits shl 5) or versionMajor
     bits = (bits shl 7) or versionMinor
     bits = (bits shl 5) or versionPatch
     bits = (bits shl 14) or versionBuild
     bits
-}
+})
 
 tasks {
-    val pages by registering(Copy::class) {
+    register("pages", Copy::class) {
         from(project(":webApp").tasks["jsBrowserDistribution"])
         from(project(":desktopApp").tasks["buildReleaseAppImage"])
         from(project(":androidApp").tasks["packageRelease"]) {

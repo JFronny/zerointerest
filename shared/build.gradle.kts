@@ -28,8 +28,8 @@ plugins {
     ktlint
 }
 
-val computedVersionName: String by rootProject.extra
-val computedVersionCode: Int by rootProject.extra
+val computedVersionName: String = rootProject.extra["computedVersionName"] as String
+val computedVersionCode: Int = rootProject.extra["computedVersionCode"] as Int
 
 group = "dev.jfronny.zerointerest"
 version = computedVersionName
@@ -242,28 +242,28 @@ tasks {
     withType<KspAATask> { dependsOn(ktlintFormat) }
 }
 
-val downloadEcbExchangeRates by tasks.registering(Download::class) {
+val downloadEcbExchangeRates = tasks.register("downloadEcbExchangeRates", Download::class) {
     src("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml")
     dest(layout.buildDirectory.file("tmp/exchange-rates.xml"))
     overwrite(true)
     onlyIfModified(false)
 }
 
-val downloadFrankfurterExchangeRates by tasks.registering(Download::class) {
+val downloadFrankfurterExchangeRates = tasks.register("downloadFrankfurterExchangeRates", Download::class) {
     src("https://api.frankfurter.dev/v2/rates?base=EUR")
     dest(layout.buildDirectory.file("tmp/exchange-rates.json"))
     overwrite(true)
     onlyIfModified(false)
 }
 
-val downloadSymbolMap by tasks.registering(Download::class) {
+val downloadSymbolMap = tasks.register("downloadSymbolMap", Download::class) {
     src("https://raw.githubusercontent.com/bengourley/currency-symbol-map/refs/heads/master/map.js")
     dest(layout.buildDirectory.file("tmp/currency-symbol-map.js"))
     overwrite(true)
     onlyIfModified(false)
 }
 
-val convertExchangeRates by tasks.registering(ConvertExchangeRatesTask::class) {
+val convertExchangeRates = tasks.register("convertExchangeRates", ConvertExchangeRatesTask::class) {
     dependsOn(downloadEcbExchangeRates, downloadFrankfurterExchangeRates, downloadSymbolMap)
     ecbExchangeRatesFile = downloadEcbExchangeRates.map { it.dest }
     frankfurterExchangeRatesFile = downloadFrankfurterExchangeRates.map { it.dest }

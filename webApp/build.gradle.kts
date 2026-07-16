@@ -11,8 +11,8 @@ plugins {
     ktlint
 }
 
-val computedVersionName: String by rootProject.extra
-val computedVersionCode: Int by rootProject.extra
+val computedVersionName: String = rootProject.extra["computedVersionName"] as String
+val computedVersionCode: Int = rootProject.extra["computedVersionCode"] as Int
 
 group = "dev.jfronny.zerointerest"
 version = computedVersionName
