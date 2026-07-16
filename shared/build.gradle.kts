@@ -196,7 +196,26 @@ kotlin {
 
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
-    ksp(libs.androidx.room.compiler)
+    val configurations = listOf(
+        "kspAndroid",
+        "kspAndroidMain",
+        "kspCommonMainMetadata",
+        "kspIosArm64",
+        "kspIosArm64Test",
+        "kspIosSimulatorArm64",
+        "kspIosSimulatorArm64Test",
+        "kspJs",
+        "kspJsTest",
+        "kspJvm",
+        "kspJvmTest",
+        "kspWasmJs",
+        "kspWasmJsTest",
+    )
+    require(project.configurations.map { it.name }
+        .filter { it != "ksp" && it.startsWith("ksp") }.toSet() == configurations.toSet()) {
+        "Unexpected KSP configuration"
+    }
+    configurations.forEach { it(libs.androidx.room.compiler) }
 }
 
 room3 {
