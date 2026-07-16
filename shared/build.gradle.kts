@@ -3,6 +3,7 @@
 import com.android.build.api.withAndroid
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import com.google.devtools.ksp.gradle.KspAATask
+import com.skydoves.compose.stability.gradle.StabilityCheckTask
 import de.undercouch.gradle.tasks.download.Download
 import dev.jfronny.zerointerest.ConvertExchangeRatesTask
 import dev.jfronny.zerointerest.UpgradeToUnstableFilter
@@ -143,7 +144,7 @@ kotlin {
             implementation(libs.androidx.datastore.preferences)
             api(libs.kotlin.logging)
             implementation(kotlin("reflect"))
-            implementation(libs.androidx.room.runtime)
+            api(libs.androidx.room.runtime)
             implementation(libs.compose.emojikt)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor3)
@@ -240,6 +241,7 @@ tasks {
     "jsBrowserTest" { enabled = false }
     withType<AbstractKotlinCompile<*>> { dependsOn(ktlintFormat) }
     withType<KspAATask> { dependsOn(ktlintFormat) }
+    withType<StabilityCheckTask> { enabled = false }
 }
 
 val downloadEcbExchangeRates = tasks.register("downloadEcbExchangeRates", Download::class) {
