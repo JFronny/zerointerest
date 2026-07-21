@@ -228,9 +228,7 @@ composeCompiler {
 }
 
 composeStabilityAnalyzer {
-    stabilityValidation {
-        stabilityConfigurationFiles.add(layout.projectDirectory.file("stability_config.conf"))
-    }
+    stabilityConfigurationFiles.add(layout.projectDirectory.file("stability_config.conf"))
 }
 
 tasks {

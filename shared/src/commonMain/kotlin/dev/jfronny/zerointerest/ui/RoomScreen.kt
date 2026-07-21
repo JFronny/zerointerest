@@ -558,6 +558,7 @@ private fun TransactionsTab(
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TransactionsTabContent(
     isLoading: Boolean,

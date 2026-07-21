@@ -171,6 +171,7 @@ fun LoginMethodScreen(
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun LoginMethodContent(
     onBack: () -> Unit,
