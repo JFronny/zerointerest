@@ -26,6 +26,8 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 private val xlogger = KotlinLogging.logger {}
 
@@ -119,13 +121,13 @@ object LognityWrangler : Backend {
             if (level < this.level) return
             val actualMarker = marker ?: context[LLogger.DefaultMarker]?.marker
             if (actualMarker?.isEnabled == false) return
-            val messageContent = message(MessageScope) ?: return
-            val timestamp = Clock.System.now()
+            val messageContent = message(MessageScope) ?: "null"
+            val timestamp = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
             for (appender in config.appenders) {
                 appender.append(
                     this,
                     level,
-                    appender.formatter(this, level, messageContent, marker, timestamp, appender.pattern),
+                    appender.formatter(this, appender, level, messageContent, marker, timestamp),
                     marker,
                 )
             }
