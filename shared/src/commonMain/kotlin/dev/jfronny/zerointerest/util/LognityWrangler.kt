@@ -136,7 +136,7 @@ object LognityWrangler : Backend {
 
     object OAppender : Appender {
         override val name: String = "OAppender"
-        override val formatter: Formatter get() = Formatter { logger, level, content, marker, timestamp, s -> content.toString() }
+        override val formatter: Formatter get() = Formatter.identity
         override val pattern: String get() = "{{message}}"
 
         override fun append(
