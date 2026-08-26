@@ -124,11 +124,7 @@ private fun VerificationContent(
                             onDismissRequest = onCancel,
                             title = { Text(stringResource(Res.string.compare)) },
                             text = {
-                                // technically, this means that the list of emojis could be leaked to Google,
-                                // but unless I am mistaken in my assumptions about Matrix,
-                                // this should not be a problem, as the emojis are randomly generated for each verification
-                                // and do not leak any information about the user or the device.
-                                TextWithEmoji(
+                                Text(
                                     stringResource(
                                         Res.string.compare_emoji_sequence,
                                         activeSasState.emojis.joinToString(" ") { it.second },

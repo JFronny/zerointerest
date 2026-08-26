@@ -145,7 +145,6 @@ kotlin {
             api(libs.kotlin.logging)
             implementation(kotlin("reflect"))
             api(libs.androidx.room.runtime)
-            implementation(libs.compose.emojikt)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor3)
             implementation(libs.coil.svg)

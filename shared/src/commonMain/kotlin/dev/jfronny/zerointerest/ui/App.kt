@@ -24,7 +24,6 @@ import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.client.MatrixClientService
-import dev.jfronny.zerointerest.ui.component.EmojiService
 import dev.jfronny.zerointerest.ui.component.VerificationDialog
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import dev.jfronny.zerointerest.util.CoilMxcFetcher
@@ -41,7 +40,6 @@ const val appName = "zerointerest"
 @OptIn(coil3.annotation.ExperimentalCoilApi::class)
 @Composable
 fun App(navHelper: Navigator = rememberNavigator()) {
-    remember { EmojiService.initialize() }
     val service = koinInject<MatrixClientService>()
     val settings = koinInject<Settings>()
     val database = koinInject<ZeroInterestDatabase>()
