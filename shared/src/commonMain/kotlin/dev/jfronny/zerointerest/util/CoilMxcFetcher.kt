@@ -19,7 +19,7 @@ class CoilMxcFetcher(
     private val options: Options,
 ) : Fetcher {
     override suspend fun fetch(): FetchResult? {
-        val result = client.media.getMedia(url).getOrNull()?.toByteArray() ?: return null
+        val result = client.media.getMedia(url, maxSize = 10L shl 20).getOrNull()?.toByteArray() ?: return null
         return SourceFetchResult(
             source = ImageSource(
                 source = Buffer().apply { write(result) },
