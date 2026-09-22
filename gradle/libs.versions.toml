@@ -41,7 +41,7 @@ room = "3.0.3"
 slf4jAndroid = "1.7.36"
 sqlite = "2.7.1"
 stability-analyzer = "0.13.0"
-trixnity = "5.9.1"
+trixnity = "5.9.2"
 
 [libraries]
 kotest-framework-engine = { module = "io.kotest:kotest-framework-engine", version.ref = "kotest" }
