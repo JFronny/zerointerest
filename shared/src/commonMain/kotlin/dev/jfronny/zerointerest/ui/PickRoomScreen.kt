@@ -13,7 +13,6 @@ import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -40,6 +39,7 @@ import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.component.IconSize
+import dev.jfronny.zerointerest.ui.component.ListItem
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.component.WebImageOrFallback
 import dev.jfronny.zerointerest.ui.theme.AppTheme

@@ -7,7 +7,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ForkRight
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -23,6 +22,7 @@ import dev.jfronny.zerointerest.SourceCodeUrl
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.component.BackButton
+import dev.jfronny.zerointerest.ui.component.ListItem
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource

@@ -16,21 +16,8 @@ config.module.rules =
 
 // Minification
 if (config.mode === "production") {
-    const TerserPlugin = require("minimizer-webpack-plugin");
     config.optimization = {
         minimize: true,
-        minimizer: [
-            new TerserPlugin({
-                extractComments: true,
-                terserOptions: {
-                    compress: {
-                        collapse_vars: false, // > 5 min
-                        reduce_vars: false, // 30 secs
-                    },
-                    mangle: true,
-                },
-            }),
-        ],
     };
 } else {
     config.optimization = {
