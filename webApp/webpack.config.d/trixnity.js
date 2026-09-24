@@ -16,7 +16,7 @@ config.module.rules =
 
 // Minification
 if (config.mode === "production") {
-    const TerserPlugin = require("terser-webpack-plugin");
+    const TerserPlugin = require("minimizer-webpack-plugin");
     config.optimization = {
         minimize: true,
         minimizer: [

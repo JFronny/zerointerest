@@ -10,7 +10,7 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.kotlinxSerialization) apply false
     alias(libs.plugins.stability.analyzer) apply false
-    com.github.`ben-manes`.versions
+    io.github.`ben-manes`.versions
 }
 
 val versionMajor = 1

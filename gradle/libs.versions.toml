@@ -115,7 +115,7 @@ compose-material3AdaptiveNavigationSuite = { module = "org.jetbrains.compose.mat
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
-gradleVersions = { module = "com.github.ben-manes.versions:com.github.ben-manes.versions.gradle.plugin", version.ref = "gradle-versions" }
+gradleVersions = { module = "io.github.ben-manes.versions.settings:io.github.ben-manes.versions.settings.gradle.plugin", version.ref = "gradle-versions" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

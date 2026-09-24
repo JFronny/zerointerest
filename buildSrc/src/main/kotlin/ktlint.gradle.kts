@@ -5,7 +5,11 @@ plugins {
 val ktlintConfig = configurations.create("ktlint")
 
 dependencies {
-    ktlintConfig(versionCatalogs.named("libs").findLibrary("ktlint").get())
+    ktlintConfig(versionCatalogs.named("libs").findLibrary("ktlint").get()) {
+        attributes {
+            attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
+        }
+    }
 }
 
 val outputDir = project.layout.buildDirectory.dir("reports/ktlint/")
@@ -33,7 +37,7 @@ tasks {
         mainClass.set("com.pinterest.ktlint.Main")
         classpath = ktlintConfig
         args = listOf("--editorconfig=$editorconfig", "-F", "src/**/*.kt")
-        jvmArgs = listOf("--add-opens", "java.base/java.lang=ALL-UNNAMED")
+        jvmArgs = listOf("--add-opens", "java.base/java.lang=ALL-UNNAMED", "--sun-misc-unsafe-memory-access=allow")
     }
 
     check { dependsOn(ktlintRun) }
