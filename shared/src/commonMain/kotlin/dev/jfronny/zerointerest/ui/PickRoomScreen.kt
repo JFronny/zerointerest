@@ -121,9 +121,10 @@ private fun RoomListItem(
     onClick: () -> Unit,
 ) {
     val name = room.name?.explicitName ?: room.roomId.full
-    ListItem(modifier = Modifier.clickable { onClick() }) {
-        Text(name)
-    }
+    ListItem(
+        headlineContent = { Text(name) },
+        modifier = Modifier.clickable { onClick() },
+    )
 }
 
 @Preview
