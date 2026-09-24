@@ -101,7 +101,6 @@ private fun SettingsContent(
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
             ListItem(
-                headlineContent = { Text(stringResource(Res.string.flip_balances)) },
                 supportingContent = { Text(stringResource(Res.string.flip_balances_description)) },
                 trailingContent = {
                     Switch(
@@ -110,10 +109,11 @@ private fun SettingsContent(
                     )
                 },
                 modifier = Modifier.clickable { setFlipBalances(!flipBalances) },
-            )
+            ) {
+                Text(stringResource(Res.string.flip_balances))
+            }
 
             ListItem(
-                headlineContent = { Text(stringResource(Res.string.debug_hints)) },
                 supportingContent = { Text(stringResource(Res.string.debug_hints_description)) },
                 trailingContent = {
                     Switch(
@@ -122,10 +122,11 @@ private fun SettingsContent(
                     )
                 },
                 modifier = Modifier.clickable { setDebugHints(!debugHints) },
-            )
+            ) {
+                Text(stringResource(Res.string.debug_hints))
+            }
 
             ListItem(
-                headlineContent = { Text(stringResource(Res.string.request_full_keyboard)) },
                 supportingContent = { Text(stringResource(Res.string.request_full_keyboard_description)) },
                 trailingContent = {
                     Switch(
@@ -134,15 +135,18 @@ private fun SettingsContent(
                     )
                 },
                 modifier = Modifier.clickable { setRequestFullKeyboard(!requestFullKeyboard) },
-            )
+            ) {
+                Text(stringResource(Res.string.request_full_keyboard))
+            }
 
             var showMonetaryUnitDialog by remember { mutableStateOf(false) }
             ListItem(
-                headlineContent = { Text(stringResource(Res.string.monetary_unit)) },
                 supportingContent = { Text(stringResource(Res.string.monetary_unit_description)) },
                 trailingContent = { Text(monetaryUnit.code, style = MaterialTheme.typography.labelMedium) },
                 modifier = Modifier.clickable { showMonetaryUnitDialog = true },
-            )
+            ) {
+                Text(stringResource(Res.string.monetary_unit))
+            }
 
             if (showMonetaryUnitDialog) {
                 MonetaryUnitDialog(
@@ -153,17 +157,19 @@ private fun SettingsContent(
             }
 
             ListItem(
-                headlineContent = { Text(stringResource(Res.string.source_code)) },
                 supportingContent = { Text(SourceCodeUrl) },
                 leadingContent = { Icon(Icons.Default.ForkRight, null) },
                 modifier = Modifier.clickable { onViewSourceCode() },
-            )
+            ) {
+                Text(stringResource(Res.string.source_code))
+            }
 
             ListItem(
-                headlineContent = { Text(stringResource(Res.string.logout)) },
                 leadingContent = { Icon(Icons.AutoMirrored.Filled.Logout, null) },
                 modifier = Modifier.clickable { onLogout() },
-            )
+            ) {
+                Text(stringResource(Res.string.logout))
+            }
         }
     }
 }
