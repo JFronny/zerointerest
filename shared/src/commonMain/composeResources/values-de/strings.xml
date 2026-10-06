@@ -10,6 +10,10 @@
     <string name="pick_a_room">Raum auswählen</string>
     <string name="logout">Abmelden</string>
     <string name="no_rooms_available">Keine Räume verfügbar</string>
+    <string name="favorites">Favoriten</string>
+    <string name="favorite">Favorit</string>
+    <string name="favorite_room">Als Favorit markieren</string>
+    <string name="unfavorite_room">Aus Favoriten entfernen</string>
     <string name="balances">Salden</string>
     <string name="transactions">Transaktionen</string>
     <string name="room">Raum</string>

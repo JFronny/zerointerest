@@ -177,6 +177,7 @@ private fun AppNavigation(
                         scope.launch {
                             service.logout()
                             settings.clearRememberedRoom()
+                            settings.clearFavoriteRooms()
                             navHelper.navigate(Destination.SelectHomeserver)
                         }
                     },

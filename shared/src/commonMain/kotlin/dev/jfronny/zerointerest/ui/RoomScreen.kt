@@ -19,7 +19,9 @@ import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Paid
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -77,22 +79,7 @@ import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.service.client.MatrixClientService
-import dev.jfronny.zerointerest.shared.generated.resources.Res
-import dev.jfronny.zerointerest.shared.generated.resources.add_transaction
-import dev.jfronny.zerointerest.shared.generated.resources.balances
-import dev.jfronny.zerointerest.shared.generated.resources.debug_new_summary
-import dev.jfronny.zerointerest.shared.generated.resources.debug_reset_trust
-import dev.jfronny.zerointerest.shared.generated.resources.latest_summary_not_trusted
-import dev.jfronny.zerointerest.shared.generated.resources.new_transaction
-import dev.jfronny.zerointerest.shared.generated.resources.no_balances_yet
-import dev.jfronny.zerointerest.shared.generated.resources.no_transactions_yet
-import dev.jfronny.zerointerest.shared.generated.resources.not_included_in_summary
-import dev.jfronny.zerointerest.shared.generated.resources.override
-import dev.jfronny.zerointerest.shared.generated.resources.payment
-import dev.jfronny.zerointerest.shared.generated.resources.room
-import dev.jfronny.zerointerest.shared.generated.resources.settle_up
-import dev.jfronny.zerointerest.shared.generated.resources.summary_is_merge
-import dev.jfronny.zerointerest.shared.generated.resources.transactions
+import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.component.PreviewUserUI
@@ -161,6 +148,7 @@ fun RoomScreen(
         val settings = koinInject<Settings>()
         val debugHints by settings.debugHints.collectAsState(initial = false)
         val flipBalances by settings.flipBalances.collectAsState(initial = true)
+        val favoriteRooms by settings.favoriteRooms.collectAsState(initial = emptyList())
 
         var forceReload by remember { mutableIntStateOf(0) }
         val flow = remember(roomId, forceReload) { trust.getSummary(roomId) }
@@ -178,6 +166,27 @@ fun RoomScreen(
                     },
                     actions = {
                         MoreOptionsButton(openSettings = openSettings) { close ->
+                            val isFavorite = favoriteRooms.any { it == roomId }
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stringResource(
+                                            if (isFavorite) Res.string.unfavorite_room else Res.string.favorite_room,
+                                        ),
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
+                                        contentDescription = stringResource(Res.string.favorite),
+                                    )
+                                },
+                                onClick = {
+                                    close()
+                                    scope.launch { settings.setFavoriteRoom(roomId, !isFavorite) }
+                                },
+                            )
+
                             if (roomIs(Destination.Room.RoomDestination.Balance)) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(Res.string.settle_up)) },

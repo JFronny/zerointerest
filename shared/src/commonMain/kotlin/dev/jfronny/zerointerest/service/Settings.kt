@@ -8,6 +8,7 @@ import de.connect2x.trixnity.core.model.RoomId
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.Json
 
 class Settings(private val store: DataStore<Preferences>) {
     private val rememberedRoom = stringPreferencesKey("rememberedRoom")
@@ -16,11 +17,15 @@ class Settings(private val store: DataStore<Preferences>) {
     private val debugHintsKey = booleanPreferencesKey("debugHints")
     private val monetaryUnitKey = stringPreferencesKey("monetaryUnit")
     private val requestFullKeyboardKey = booleanPreferencesKey("requestFullKeyboard")
+    private val favoriteRoomsKey = stringPreferencesKey("favoriteRooms")
+
+    private val json = Json
 
     val flipBalances = store.data.map { it[flipBalancesKey] ?: true }
     val debugHints = store.data.map { it[debugHintsKey] ?: false }
     val monetaryUnit = store.data.map { it[monetaryUnitKey]?.let(::MonetaryUnit) ?: MonetaryUnit.default }
     val requestFullKeyboard = store.data.map { it[requestFullKeyboardKey] ?: false }
+    val favoriteRooms = store.data.map { it.favoriteRoomIds() }
 
     suspend fun setFlipBalances(flip: Boolean) {
         store.updateData {
@@ -65,6 +70,35 @@ class Settings(private val store: DataStore<Preferences>) {
             }
         }
     }
+
+    suspend fun setFavoriteRoom(roomId: RoomId, favorite: Boolean) {
+        store.updateData { prefs ->
+            prefs.toMutablePreferences().apply {
+                val current = prefs.favoriteRoomIds()
+                val updated = if (favorite) {
+                    if (current.any { it == roomId }) current else current + roomId
+                } else {
+                    current.filterNot { it == roomId }
+                }
+                set(favoriteRoomsKey, json.encodeToString(updated.map { it.full }))
+            }
+        }
+    }
+
+    suspend fun clearFavoriteRooms() {
+        store.updateData {
+            it.toMutablePreferences().apply {
+                remove(favoriteRoomsKey)
+            }
+        }
+    }
+
+    private fun Preferences.favoriteRoomIds(): List<RoomId> = this[favoriteRoomsKey]
+        ?.let { raw ->
+            runCatching { json.decodeFromString<List<String>>(raw) }.getOrDefault(emptyList())
+        }
+        .orEmpty()
+        .map { RoomId(it) }
 
     suspend fun setDefaultHomeserver(homeserver: String) {
         store.updateData {
