@@ -8,7 +8,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +44,7 @@ fun MoreOptionsButton(
         expanded = expanded,
         onDismissRequest = { expanded = false },
     ) {
+        extraOptions({ expanded = false })
         DropdownMenuItem(
             text = { Text(stringResource(Res.string.settings)) },
             onClick = {
@@ -52,7 +52,6 @@ fun MoreOptionsButton(
                 openSettings()
             },
         )
-        extraOptions({ expanded = false })
     }
 }
 
@@ -72,7 +71,6 @@ private fun IconButtonsPreview() = AppTheme {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SimpleIconButton(icon: ImageVector, description: String, onClick: () -> Unit) {
     TooltipBox(
@@ -86,7 +84,6 @@ fun SimpleIconButton(icon: ImageVector, description: String, onClick: () -> Unit
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SimpleFilledIconButton(icon: ImageVector, description: String, onClick: () -> Unit) {
     TooltipBox(

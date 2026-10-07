@@ -1,12 +1,14 @@
 package dev.jfronny.zerointerest.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,11 +21,10 @@ import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Paid
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonMenu
@@ -54,6 +55,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.entryProvider
@@ -61,11 +64,13 @@ import androidx.navigation3.ui.NavDisplay
 import de.connect2x.trixnity.client.MatrixClient
 import de.connect2x.trixnity.client.room
 import de.connect2x.trixnity.client.room.RoomService
+import de.connect2x.trixnity.client.room.getState
 import de.connect2x.trixnity.client.store.eventId
 import de.connect2x.trixnity.clientserverapi.model.room.GetEvents
 import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
+import de.connect2x.trixnity.core.model.events.m.room.TopicEventContent
 import dev.jfronny.zerointerest.Destination
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
@@ -83,8 +88,10 @@ import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.MonetaryUnitDialog
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.component.PreviewUserUI
+import dev.jfronny.zerointerest.ui.component.RoomInfoSheet
 import dev.jfronny.zerointerest.ui.component.UnsupportedRoomProtocolContent
 import dev.jfronny.zerointerest.ui.component.UserUI
+import dev.jfronny.zerointerest.ui.component.rememberRoomInfoSheetData
 import dev.jfronny.zerointerest.ui.component.rememberTransactionLauncher
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import dev.jfronny.zerointerest.util.Navigator
@@ -102,6 +109,7 @@ import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.plus
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -110,7 +118,7 @@ import org.koin.compose.koinInject
 
 private val log = KotlinLogging.logger {}
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RoomScreen(
     roomId: RoomId,
@@ -146,9 +154,8 @@ fun RoomScreen(
         )
     }) {
         val settings = koinInject<Settings>()
-        val debugHints by settings.debugHints.collectAsState(initial = false)
         val flipBalances by settings.flipBalances.collectAsState(initial = true)
-        val favoriteRooms by settings.favoriteRooms.collectAsState(initial = emptyList())
+        val debugHints by settings.debugHints.collectAsState(initial = false)
 
         // Do NOT use rxroomConfig since that will cause the remembered entryProvider to capture the value
         val roomConfig by ziClient.getRoomConfigFlow(roomId).collectAsState(ZiConfigStateEvent.Unknown)
@@ -176,91 +183,48 @@ fun RoomScreen(
         val flow = remember(roomId, forceReload) { trust.getSummary(roomId) }
         val event by flow.collectAsState(null)
 
+        var showRoomInfoSheet by remember { mutableStateOf(false) }
+
+        val room by client.room.getById(roomId).collectAsState(null)
+        val topic by client.room.getState<TopicEventContent>(roomId)
+            .map { it?.content?.topic?.text?.plain ?: "" }
+            .collectAsState("")
+
         Scaffold(
             topBar = {
                 TopAppBar(
+                    modifier = Modifier.height(64.dp),
                     title = {
-                        val room by client.room.getById(roomId).collectAsState(null)
-                        Text(room?.name?.explicitName ?: stringResource(Res.string.room))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clickable { showRoomInfoSheet = true },
+                            horizontalAlignment = Alignment.Start,
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            Text(text = room?.name?.explicitName ?: stringResource(Res.string.room))
+                            if (topic.isNotBlank()) {
+                                Text(
+                                    text = topic,
+                                    style = TextStyle.Default,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
                     },
                     navigationIcon = {
                         BackButton(onBack = onBack)
                     },
                     actions = {
                         MoreOptionsButton(openSettings = openSettings) { close ->
-                            val isFavorite = favoriteRooms.any { it == roomId }
                             DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        stringResource(
-                                            if (isFavorite) Res.string.unfavorite_room else Res.string.favorite_room,
-                                        ),
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
-                                        contentDescription = stringResource(Res.string.favorite),
-                                    )
-                                },
+                                text = { Text(stringResource(Res.string.room_info)) },
                                 onClick = {
                                     close()
-                                    scope.launch { settings.setFavoriteRoom(roomId, !isFavorite) }
+                                    showRoomInfoSheet = true
                                 },
                             )
-
-                            when (roomConfig) {
-                                is ZiConfigStateEvent.V1 -> DropdownMenuItem(
-                                    text = { Text(stringResource(Res.string.room_currency)) },
-                                    onClick = {
-                                        close()
-                                        showCurrencyDialog = true
-                                    },
-                                )
-
-                                is ZiConfigStateEvent.V0 -> DropdownMenuItem(
-                                    text = { Text(stringResource(Res.string.upgrade_room)) },
-                                    onClick = {
-                                        close()
-                                        showUpgradeDialog = true
-                                    },
-                                )
-
-                                is ZiConfigStateEvent.Newer, ZiConfigStateEvent.Unknown -> Unit
-                            }
-
-                            if (roomConfig !is ZiConfigStateEvent.Newer && roomIs(Destination.Room.RoomDestination.Balance)) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(Res.string.settle_up)) },
-                                    onClick = {
-                                        close()
-                                        navHelper.navigate(Destination.SettleScreen(roomId))
-                                    },
-                                )
-
-                                if (debugHints) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(Res.string.debug_new_summary)) },
-                                        onClick = {
-                                            close()
-                                            scope.launch {
-                                                val preparedSummary = transactions.prepareSummaryCreation(roomId, emptyList())
-                                                transactions.createSummary(preparedSummary, emptyList())
-                                            }
-                                        },
-                                    )
-
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(Res.string.debug_reset_trust)) },
-                                        onClick = {
-                                            close()
-                                            scope.launch {
-                                                database.resetTrust(roomId)
-                                            }
-                                        },
-                                    )
-                                }
-                            }
                         }
                     },
                 )
@@ -372,6 +336,42 @@ fun RoomScreen(
                 entries = roomNavHelper.stack.toEntries(entryProvider),
                 onBack = { roomNavHelper.main.goBack() },
                 modifier = Modifier.padding(padding),
+            )
+        }
+
+        if (showRoomInfoSheet) {
+            RoomInfoSheet(
+                data = rememberRoomInfoSheetData(roomId, room, roomConfig, topic),
+                onDismiss = { showRoomInfoSheet = false },
+                onToggleFavorite = {
+                    scope.launch { settings.setFavoriteRoom(roomId, it) }
+                },
+                onSetTopic = { topic ->
+                    scope.launch {
+                        client.api.room.sendStateEvent(
+                            roomId = roomId,
+                            eventContent = TopicEventContent(topic),
+                        )
+                    }
+                },
+                onSettleUp = {
+                    navHelper.navigate(Destination.SettleScreen(roomId))
+                },
+                onSetCurrency = { showCurrencyDialog = true },
+                onUpgradeRoom = { showUpgradeDialog = true },
+                onDebugNewSummary = {
+                    scope.launch {
+                        val preparedSummary =
+                            transactions.prepareSummaryCreation(roomId, emptyList())
+                        transactions.createSummary(preparedSummary, emptyList())
+                    }
+                },
+                onDebugResetTrust = {
+                    scope.launch {
+                        database.resetTrust(roomId)
+                    }
+                },
+                onOpenSettings = openSettings,
             )
         }
 

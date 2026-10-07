@@ -12,8 +12,8 @@
     <string name="no_rooms_available">Keine Räume verfügbar</string>
     <string name="favorites">Favoriten</string>
     <string name="favorite">Favorit</string>
-    <string name="favorite_room">Als Favorit markieren</string>
-    <string name="unfavorite_room">Aus Favoriten entfernen</string>
+    <string name="favorite_room">Favorit setzen</string>
+    <string name="unfavorite_room">Favorit entfernen</string>
     <string name="balances">Salden</string>
     <string name="transactions">Transaktionen</string>
     <string name="room">Raum</string>
@@ -112,4 +112,9 @@
     <string name="timestamp_minutes_ago">Vor %1$d Minuten</string>
     <string name="timestamp_hours_ago">Vor %1$d Stunden</string>
     <string name="timestamp_days_ago">Vor %1$d Tagen</string>
+    <string name="room_info">Raum-Info</string>
+    <string name="room_topic">Thema</string>
+    <string name="add_topic">Thema hinzufügen</string>
+    <string name="save_topic">Speichern</string>
+    <string name="cancel_topic">Abbrechen</string>
 </resources>

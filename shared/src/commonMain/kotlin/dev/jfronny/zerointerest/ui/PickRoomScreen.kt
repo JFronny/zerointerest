@@ -39,10 +39,11 @@ import de.connect2x.trixnity.core.model.RoomId
 import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.shared.generated.resources.*
+import dev.jfronny.zerointerest.ui.component.IconSize
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
+import dev.jfronny.zerointerest.ui.component.WebImageOrFallback
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableSet
@@ -212,6 +213,9 @@ private fun RoomListItem(
     val name = room.name?.explicitName ?: room.roomId.full
     ListItem(
         headlineContent = { Text(name) },
+        leadingContent = {
+            WebImageOrFallback(size = IconSize.Regular, name = name, url = room.avatarUrl, contentDescription = stringResource(Res.string.avatar))
+        },
         modifier = Modifier.combinedClickable(
             onClick = onClick,
             onLongClick = onLongClick,
