@@ -150,8 +150,8 @@ fun RoomScreen(
         val flipBalances by settings.flipBalances.collectAsState(initial = true)
         val favoriteRooms by settings.favoriteRooms.collectAsState(initial = emptyList())
 
-        val rxroomConfig by ziClient.getRoomConfigFlow(roomId).collectAsState(ZiConfigStateEvent.Unknown)
-        val roomConfig = rxroomConfig
+        // Do NOT use rxroomConfig since that will cause the remembered entryProvider to capture the value
+        val roomConfig by ziClient.getRoomConfigFlow(roomId).collectAsState(ZiConfigStateEvent.Unknown)
         val launcher = rememberTransactionLauncher(ziClient)
         var showUpgradeDialog by remember { mutableStateOf(false) }
         var showCurrencyDialog by remember { mutableStateOf(false) }
@@ -338,6 +338,7 @@ fun RoomScreen(
                 entryProvider<Destination.Room.RoomDestination> {
                     entry<Destination.Room.RoomDestination.Balance> {
                         event?.let {
+                            val roomConfig = roomConfig as? ZiConfigStateEvent.Acceptable ?: return@entry
                             BalancesTab(
                                 summary = it,
                                 userUI = UserUI(client, roomId),
@@ -361,6 +362,7 @@ fun RoomScreen(
                         }
                     }
                     entry<Destination.Room.RoomDestination.Transactions> {
+                        val roomConfig = roomConfig as? ZiConfigStateEvent.Acceptable ?: return@entry
                         TransactionsTab(client, roomId, navHelper, roomConfig.currency)
                     }
                 }
