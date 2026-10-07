@@ -14,7 +14,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -35,10 +34,10 @@ import androidx.compose.ui.unit.dp
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.ZiConfigStateEvent
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
 import dev.jfronny.zerointerest.data.money.sum
 import dev.jfronny.zerointerest.data.money.toMoney
-import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
 import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.service.calculateSettlementTransactions
@@ -49,6 +48,7 @@ import dev.jfronny.zerointerest.ui.component.ErrorDialog
 import dev.jfronny.zerointerest.ui.component.PreviewUserUI
 import dev.jfronny.zerointerest.ui.component.SimpleFilledIconButton
 import dev.jfronny.zerointerest.ui.component.TransactionLauncher
+import dev.jfronny.zerointerest.ui.component.UnsupportedRoomProtocolContent
 import dev.jfronny.zerointerest.ui.component.UserUI
 import dev.jfronny.zerointerest.ui.component.rememberTransactionLauncher
 import dev.jfronny.zerointerest.ui.theme.AppTheme
@@ -58,7 +58,6 @@ import kotlinx.collections.immutable.toImmutableList
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettleScreen(
     client: MatrixZiClient,
@@ -67,8 +66,9 @@ fun SettleScreen(
 ) {
     val trustService = koinInject<SummaryTrustService>()
     val transactionService = koinInject<TransactionService>()
-    val settings = koinInject<Settings>()
     val userUI = UserUI(client.client, roomId)
+    val rxroomConfig by client.getRoomConfigFlow(roomId).collectAsState(ZiConfigStateEvent.Unknown)
+    val roomConfig = rxroomConfig
 
     val summaryState by trustService.getSummary(roomId).collectAsState(null)
 
@@ -101,18 +101,36 @@ fun SettleScreen(
         }
     }
 
-    val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
+    when (roomConfig) {
+        is ZiConfigStateEvent.Newer, ZiConfigStateEvent.Unknown -> {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text(stringResource(Res.string.settle_up)) },
+                        navigationIcon = { BackButton(onBack = onBack) },
+                    )
+                },
+            ) { padding ->
+                UnsupportedRoomProtocolContent(
+                    version = roomConfig.version,
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                )
+            }
+        }
 
-    SettleContent(
-        acceptAll = ::acceptAll,
-        accept = ::accept,
-        onBack = onBack,
-        remainingTransactions = remainingTransactions,
-        monetaryUnit = monetaryUnit,
-        userUI = userUI,
-        launcherState = launcher.state,
-        onDismissError = launcher::clearError,
-    )
+        is ZiConfigStateEvent.Acceptable -> {
+            SettleContent(
+                acceptAll = ::acceptAll,
+                accept = ::accept,
+                onBack = onBack,
+                remainingTransactions = remainingTransactions,
+                monetaryUnit = roomConfig.currency,
+                userUI = userUI,
+                launcherState = launcher.state,
+                onDismissError = launcher::clearError,
+            )
+        }
+    }
 }
 
 @Composable

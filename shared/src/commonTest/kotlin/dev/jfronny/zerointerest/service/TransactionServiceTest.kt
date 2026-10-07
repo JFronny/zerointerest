@@ -1,15 +1,18 @@
 package dev.jfronny.zerointerest.service
 
 import de.connect2x.trixnity.core.model.UserId
+import de.connect2x.trixnity.core.model.events.ClientEvent
 import dev.jfronny.zerointerest.client.TestZiClient
 import dev.jfronny.zerointerest.client.TestZiServer
 import dev.jfronny.zerointerest.client.restoreHistory
 import dev.jfronny.zerointerest.client.toGraphviz
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.ZiConfigStateEvent
 import dev.jfronny.zerointerest.data.money.toMoney
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import dev.jfronny.zerointerest.readTestResource
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import org.koin.test.inject
@@ -93,6 +96,52 @@ class TransactionServiceTest : CoreServicesTest() {
             client.sync()
 
             server.toGraphviz() shouldBe readTestResource("history_heads.dot")
+        }
+
+        test("TransactionService refuses to write to rooms with a newer protocol version") {
+            val server by inject<TestZiServer>()
+            val client by inject<TestZiClient>()
+            val transactionService by inject<TransactionService>()
+
+            server.stateEvents[roomId to ZiConfigStateEvent.TYPE] = ClientEvent.RoomEvent.StateEvent(
+                content = ZiConfigStateEvent.Newer(2),
+                id = server.nextEventId(),
+                sender = bob,
+                roomId = roomId,
+                originTimestamp = server.nextTimestamp(),
+                stateKey = ZiConfigStateEvent.TYPE,
+            )
+            client.sync()
+
+            client.getRoomConfigFlow(roomId).first() shouldBe ZiConfigStateEvent.Newer(2)
+
+            runCatching {
+                transactionService.sendTransaction(roomId, ZeroInterestTransactionEvent("Tx", alice, mapOf(bob to 5L.toMoney())))
+            }.exceptionOrNull().shouldBeInstanceOf<TransactionService.UnsupportedRoomProtocolException>()
+            runCatching {
+                transactionService.sendTransactions(roomId, listOf(ZeroInterestTransactionEvent("Tx", alice, mapOf(bob to 5L.toMoney()))))
+            }.exceptionOrNull().shouldBeInstanceOf<TransactionService.UnsupportedRoomProtocolException>()
+            runCatching {
+                transactionService.createSummary(
+                    transactionService.prepareSummaryCreation(roomId, emptyList()),
+                    emptyList(),
+                )
+            }.exceptionOrNull().shouldBeInstanceOf<TransactionService.UnsupportedRoomProtocolException>()
+        }
+
+        test("sending a ZiConfigStateEvent upgrades the room to protocol version 1 with a room currency") {
+            val client by inject<TestZiClient>()
+
+            client.getRoomConfigFlow(roomId).first() shouldBe ZiConfigStateEvent.V0()
+
+            client.sendStateEvent(
+                roomId,
+                ZiConfigStateEvent.V1(rawCurrency = "EUR"),
+                ZiConfigStateEvent.TYPE,
+            )
+            client.sync()
+
+            client.getRoomConfigFlow(roomId).first() shouldBe ZiConfigStateEvent.V1(rawCurrency = "EUR")
         }
     }
 }

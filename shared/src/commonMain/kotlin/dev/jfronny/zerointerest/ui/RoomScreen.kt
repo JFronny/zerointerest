@@ -24,7 +24,6 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonMenu
@@ -54,7 +53,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -72,6 +70,7 @@ import dev.jfronny.zerointerest.Destination
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.ZiConfigStateEvent
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
 import dev.jfronny.zerointerest.data.money.Money
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
@@ -81,9 +80,12 @@ import dev.jfronny.zerointerest.service.TransactionService
 import dev.jfronny.zerointerest.service.client.MatrixClientService
 import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.component.BackButton
+import dev.jfronny.zerointerest.ui.component.MonetaryUnitDialog
 import dev.jfronny.zerointerest.ui.component.MoreOptionsButton
 import dev.jfronny.zerointerest.ui.component.PreviewUserUI
+import dev.jfronny.zerointerest.ui.component.UnsupportedRoomProtocolContent
 import dev.jfronny.zerointerest.ui.component.UserUI
+import dev.jfronny.zerointerest.ui.component.rememberTransactionLauncher
 import dev.jfronny.zerointerest.ui.theme.AppTheme
 import dev.jfronny.zerointerest.util.Navigator
 import dev.jfronny.zerointerest.util.room
@@ -98,7 +100,6 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.plus
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.mapNotNull
@@ -109,11 +110,7 @@ import org.koin.compose.koinInject
 
 private val log = KotlinLogging.logger {}
 
-@OptIn(
-    ExperimentalComposeUiApi::class,
-    ExperimentalMaterial3Api::class,
-    ExperimentalMaterial3ExpressiveApi::class,
-)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RoomScreen(
     roomId: RoomId,
@@ -122,8 +119,11 @@ fun RoomScreen(
     openSettings: () -> Unit,
     navHelper: Navigator,
 ) {
-    val rxclient by koinInject<MatrixClientService>().client.collectAsState(null)
+    val service = koinInject<MatrixClientService>()
+    val rxclient by service.client.collectAsState(null)
     val client = rxclient ?: return
+    val rxziClient by service.ziClient.collectAsState(null)
+    val ziClient = rxziClient ?: return
     val trust = koinInject<SummaryTrustService>()
     val transactions = koinInject<TransactionService>()
     val database = koinInject<ZeroInterestDatabase>()
@@ -149,6 +149,28 @@ fun RoomScreen(
         val debugHints by settings.debugHints.collectAsState(initial = false)
         val flipBalances by settings.flipBalances.collectAsState(initial = true)
         val favoriteRooms by settings.favoriteRooms.collectAsState(initial = emptyList())
+
+        val rxroomConfig by ziClient.getRoomConfigFlow(roomId).collectAsState(ZiConfigStateEvent.Unknown)
+        val roomConfig = rxroomConfig
+        val launcher = rememberTransactionLauncher(ziClient)
+        var showUpgradeDialog by remember { mutableStateOf(false) }
+        var showCurrencyDialog by remember { mutableStateOf(false) }
+
+        fun sendRoomConfig(currency: MonetaryUnit) {
+            launcher.tryLaunch {
+                (ziClient.getRoomConfig(roomId) as? ZiConfigStateEvent.Newer)?.let { newer ->
+                    throw TransactionService.UnsupportedRoomProtocolException(newer.version)
+                }
+                ziClient.sendStateEvent(
+                    roomId,
+                    ZiConfigStateEvent.V1(rawCurrency = currency.code),
+                    ZiConfigStateEvent.TYPE,
+                ).fold(
+                    onSuccess = {},
+                    onFailure = { throw TransactionService.FailedSendMessageException(cause = it) },
+                )
+            }
+        }
 
         var forceReload by remember { mutableIntStateOf(0) }
         val flow = remember(roomId, forceReload) { trust.getSummary(roomId) }
@@ -187,7 +209,27 @@ fun RoomScreen(
                                 },
                             )
 
-                            if (roomIs(Destination.Room.RoomDestination.Balance)) {
+                            when (roomConfig) {
+                                is ZiConfigStateEvent.V1 -> DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.room_currency)) },
+                                    onClick = {
+                                        close()
+                                        showCurrencyDialog = true
+                                    },
+                                )
+
+                                is ZiConfigStateEvent.V0 -> DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.upgrade_room)) },
+                                    onClick = {
+                                        close()
+                                        showUpgradeDialog = true
+                                    },
+                                )
+
+                                is ZiConfigStateEvent.Newer, ZiConfigStateEvent.Unknown -> Unit
+                            }
+
+                            if (roomConfig !is ZiConfigStateEvent.Newer && roomIs(Destination.Room.RoomDestination.Balance)) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(Res.string.settle_up)) },
                                     onClick = {
@@ -224,6 +266,7 @@ fun RoomScreen(
                 )
             },
             floatingActionButton = fab@{
+                if (roomConfig is ZiConfigStateEvent.Newer) return@fab
                 if (event == null || event is SummaryTrustService.Summary.Untrusted) return@fab
 
                 val templatesFlow = remember(roomId) { database.getTransactionTemplates(roomId) }
@@ -278,7 +321,17 @@ fun RoomScreen(
                 }
             },
         ) { padding ->
-            val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
+            when (roomConfig) {
+                is ZiConfigStateEvent.Newer, ZiConfigStateEvent.Unknown -> {
+                    UnsupportedRoomProtocolContent(
+                        version = roomConfig.version,
+                        modifier = Modifier.fillMaxSize().padding(padding),
+                    )
+                    return@Scaffold
+                }
+
+                is ZiConfigStateEvent.Acceptable -> {}
+            }
 
             val entryProvider = remember {
                 // type hint is needed for kotlin/js
@@ -290,7 +343,7 @@ fun RoomScreen(
                                 userUI = UserUI(client, roomId),
                                 flipBalances = flipBalances,
                                 debugHints = debugHints,
-                                monetaryUnit = monetaryUnit,
+                                monetaryUnit = roomConfig.currency,
                                 forceTrust = {
                                     scope.launch {
                                         trust.forceAccept(it)
@@ -308,7 +361,7 @@ fun RoomScreen(
                         }
                     }
                     entry<Destination.Room.RoomDestination.Transactions> {
-                        TransactionsTab(client, roomId, navHelper, monetaryUnit)
+                        TransactionsTab(client, roomId, navHelper, roomConfig.currency)
                     }
                 }
             }
@@ -317,6 +370,34 @@ fun RoomScreen(
                 entries = roomNavHelper.stack.toEntries(entryProvider),
                 onBack = { roomNavHelper.main.goBack() },
                 modifier = Modifier.padding(padding),
+            )
+        }
+
+        if (launcher.state.error != null) {
+            launcher.ErrorDialog(onDismiss = launcher::clearError)
+        }
+
+        if (showUpgradeDialog) {
+            MonetaryUnitDialog(
+                title = stringResource(Res.string.upgrade_room),
+                current = MonetaryUnit.default,
+                onClose = { showUpgradeDialog = false },
+                onSave = {
+                    showUpgradeDialog = false
+                    sendRoomConfig(it)
+                },
+            )
+        }
+
+        if (showCurrencyDialog) {
+            MonetaryUnitDialog(
+                title = stringResource(Res.string.room_currency),
+                current = (roomConfig as? ZiConfigStateEvent.Acceptable)?.currency ?: MonetaryUnit.default,
+                onClose = { showCurrencyDialog = false },
+                onSave = {
+                    showCurrencyDialog = false
+                    sendRoomConfig(it)
+                },
             )
         }
     }
@@ -418,7 +499,6 @@ private fun BalancesTabPreview() = AppTheme {
     )
 }
 
-@OptIn(ExperimentalCoroutinesApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TransactionsTab(
     client: MatrixClient,

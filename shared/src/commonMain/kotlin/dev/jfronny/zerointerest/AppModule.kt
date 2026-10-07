@@ -10,6 +10,7 @@ import de.connect2x.trixnity.core.serialization.events.messageOf
 import de.connect2x.trixnity.core.serialization.events.stateOf
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.ZiConfigStateEvent
 import dev.jfronny.zerointerest.db.Migration1_2
 import dev.jfronny.zerointerest.db.Migration2_3
 import dev.jfronny.zerointerest.db.Migration3_4
@@ -60,6 +61,7 @@ fun createAppMatrixModule() = module {
         EventContentSerializerMappings.default(
             EventContentSerializerMappings {
                 stateOf<ZeroInterestSummaryEvent>(ZeroInterestSummaryEvent.TYPE)
+                stateOf<ZiConfigStateEvent>(ZiConfigStateEvent.TYPE)
                 messageOf<ZeroInterestTransactionEvent>(ZeroInterestTransactionEvent.TYPE)
             },
         )

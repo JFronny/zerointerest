@@ -5,6 +5,7 @@ import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.ZiConfigStateEvent
 import dev.jfronny.zerointerest.data.money.Money
 import dev.jfronny.zerointerest.db.ZeroInterestDatabase
 import dev.jfronny.zerointerest.service.client.ZiClientProvider
@@ -50,6 +51,7 @@ class TransactionService(
     }
 
     suspend fun createSummary(preparedSummary: PreparedSummary, newTransactionIds: List<EventId>) = withContext(NonCancellable) {
+        requireCurrentProtocol(preparedSummary.roomId)
         require(preparedSummary.contents.size == newTransactionIds.size) { "Size of contents and newTransactionIds must match" }
         val roomId = preparedSummary.roomId
         val contents = preparedSummary.contents
@@ -86,6 +88,7 @@ class TransactionService(
     }
 
     suspend fun sendTransactions(roomId: RoomId, contents: List<ZeroInterestTransactionEvent>) = withContext(NonCancellable) {
+        requireCurrentProtocol(roomId)
         if (contents.isEmpty()) return@withContext
         val preparedSummary = try {
             prepareSummaryCreation(roomId, contents)
@@ -108,8 +111,27 @@ class TransactionService(
         createSummary(preparedSummary, txIds)
     }
 
+    /**
+     * Thrown when a write is attempted on a room whose zerointerest protocol version is newer than
+     * this client supports.
+     */
+    class UnsupportedRoomProtocolException(
+        val version: Int?,
+    ) : Exception(
+        "Room uses zerointerest protocol version ${version ?: "unknown"}, which is newer than the supported version",
+    )
+
     class FailedPrepareSummaryException(cause: Throwable) : Exception("Failed to prepare summary", cause)
     class FailedSendMessageException(message: String = "Failed to send message", cause: Throwable? = null) : Exception(message, cause)
+
+    /**
+     * Rooms with a zerointerest protocol version newer than this client supports must not receive writes.
+     */
+    private suspend fun requireCurrentProtocol(roomId: RoomId) {
+        (client.getRoomConfig(roomId) as? ZiConfigStateEvent.Newer)?.let { newer ->
+            throw UnsupportedRoomProtocolException(newer.version)
+        }
+    }
 
     suspend fun sendTransaction(roomId: RoomId, content: ZeroInterestTransactionEvent) {
         sendTransactions(roomId, listOf(content))

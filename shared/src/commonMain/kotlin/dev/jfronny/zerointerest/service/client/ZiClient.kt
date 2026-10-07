@@ -10,6 +10,7 @@ import de.connect2x.trixnity.core.model.events.MessageEventContent
 import de.connect2x.trixnity.core.model.events.StateEventContent
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.ZiConfigStateEvent
 import dev.jfronny.zerointerest.util.Timed
 import kotlinx.coroutines.flow.Flow
 
@@ -28,6 +29,18 @@ interface ZiClient {
 
     suspend fun reactToEvent(roomId: RoomId, eventId: EventId, key: String): Result<Unit>
     suspend fun redactEvent(roomId: RoomId, eventId: EventId, reason: String? = null): Result<Unit>
+
+    /**
+     * The zerointerest protocol configuration of the given room.
+     *
+     * Rooms without a [ZiConfigStateEvent] (or with a version older than
+     * [ZiConfigStateEvent.CURRENT_PROTOCOL_VERSION]) yield a [ZiConfigStateEvent.V0]. Rooms with a
+     * newer protocol version yield a [ZiConfigStateEvent.Newer] and must not be written to.
+     */
+    fun getRoomConfigFlow(roomId: RoomId): Flow<ZiConfigStateEvent>
+
+    /** One-shot fetch of the current [ZiConfigStateEvent] of the given room. */
+    suspend fun getRoomConfig(roomId: RoomId): ZiConfigStateEvent
 
     fun getSummaryStateFlow(roomId: RoomId): Flow<ClientEvent.RoomEvent.StateEvent<ZeroInterestSummaryEvent>?>
 

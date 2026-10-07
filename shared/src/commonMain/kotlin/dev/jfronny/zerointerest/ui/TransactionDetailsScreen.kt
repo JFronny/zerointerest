@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -39,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import de.connect2x.trixnity.client.MatrixClient
 import de.connect2x.trixnity.client.room
 import de.connect2x.trixnity.client.store.originTimestamp
 import de.connect2x.trixnity.client.store.sender
@@ -47,15 +45,17 @@ import de.connect2x.trixnity.core.model.EventId
 import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.ZiConfigStateEvent
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
 import dev.jfronny.zerointerest.data.money.toMoney
 import dev.jfronny.zerointerest.formatLocalized
-import dev.jfronny.zerointerest.service.Settings
 import dev.jfronny.zerointerest.service.SummaryTrustService
+import dev.jfronny.zerointerest.service.client.MatrixZiClient
 import dev.jfronny.zerointerest.shared.generated.resources.*
 import dev.jfronny.zerointerest.ui.component.BackButton
 import dev.jfronny.zerointerest.ui.component.IconSize
 import dev.jfronny.zerointerest.ui.component.PreviewUserUI
+import dev.jfronny.zerointerest.ui.component.UnsupportedRoomProtocolContent
 import dev.jfronny.zerointerest.ui.component.UserUI
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
@@ -63,16 +63,15 @@ import kotlinx.coroutines.flow.flow
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TransactionDetailsScreen(
-    client: MatrixClient,
+    client: MatrixZiClient,
     roomId: RoomId,
     transactionId: EventId,
     onBack: () -> Unit,
 ) {
     val event by remember(roomId, transactionId) {
-        client.room.getTimelineEvent(roomId, transactionId) {
+        client.client.room.getTimelineEvent(roomId, transactionId) {
             fetchTimeout = 5.seconds
             allowReplaceContent = false
         }
@@ -84,9 +83,9 @@ fun TransactionDetailsScreen(
         }
     }
     val included by includedFlow.collectAsState(emptyMap())
-    val userUI = UserUI(client, roomId)
-    val settings = koinInject<Settings>()
-    val monetaryUnit by settings.monetaryUnit.collectAsState(initial = MonetaryUnit.default)
+    val userUI = UserUI(client.client, roomId)
+    val rxroomConfig by client.getRoomConfigFlow(roomId).collectAsState(ZiConfigStateEvent.Unknown)
+    val roomConfig = rxroomConfig
     val includedInSummary = included[transactionId]?.isNotEmpty() == true
     val eventx = event?.let {
         TransactionDetailsEvent(
@@ -96,12 +95,38 @@ fun TransactionDetailsScreen(
         )
     }
 
-    TransactionDetailsContent(eventx, includedInSummary, userUI, monetaryUnit, onBack)
+    when (roomConfig) {
+        is ZiConfigStateEvent.Newer, ZiConfigStateEvent.Unknown -> {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text(stringResource(Res.string.transaction_details)) },
+                        navigationIcon = { BackButton(onBack = onBack) },
+                    )
+                },
+            ) { padding ->
+                UnsupportedRoomProtocolContent(
+                    version = roomConfig.version,
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                )
+            }
+        }
+
+        is ZiConfigStateEvent.Acceptable -> {
+            TransactionDetailsContent(
+                eventx,
+                includedInSummary,
+                userUI,
+                roomConfig.currency,
+                onBack,
+            )
+        }
+    }
 }
 
 data class TransactionDetailsEvent(val content: ZeroInterestTransactionEvent, val sender: UserId, val timestamp: Long)
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TransactionDetailsContent(
     event: TransactionDetailsEvent?,

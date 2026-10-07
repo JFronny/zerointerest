@@ -97,9 +97,11 @@
     <string name="debug_hints_description">Zeige zusätzliche Informationen, die bei der Fehlersuche helfen können</string>
     <string name="debug_reset_trust">Vertrauen zurücksetzen</string>
     <string name="debug_new_summary">Neue Zusammenfassung</string>
-    <string name="monetary_unit">Währungseinheit</string>
-    <string name="monetary_unit_description">Währungssymbol für die Anzeige von Beträgen</string>
     <string name="monetary_unit_warning">zerointerest geht davon aus, dass alle Nutzer in einem Raum die gleiche Währung nutzen</string>
+    <string name="room_currency">Raumwährung</string>
+    <string name="upgrade_room">Raum auf Version 1 aktualisieren</string>
+    <string name="room_protocol_too_new">Dieser Raum nutzt die zerointerest-Protokollversion %1$s, die neuer ist als die von dieser App unterstützte Version. Bitte aktualisiere die App.</string>
+    <string name="version_unknown">unbekannt</string>
     <string name="invalid_amount">Ungültiger Betrag</string>
     <string name="select_all">Alle Auswählen</string>
     <string name="deselect">Abwählen</string>

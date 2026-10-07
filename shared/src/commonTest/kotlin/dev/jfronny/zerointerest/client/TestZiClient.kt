@@ -15,11 +15,14 @@ import de.connect2x.trixnity.core.model.events.m.room.MemberEventContent
 import de.connect2x.trixnity.core.model.events.m.room.Membership
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.ZiConfigStateEvent
 import dev.jfronny.zerointerest.service.client.ZiClient
 import dev.jfronny.zerointerest.util.Timed
 import io.kotest.engine.flatMap
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 class TestZiClient(
     val server: TestZiServer,
@@ -29,7 +32,7 @@ class TestZiClient(
 ) : ZiClient {
     val localEventHistory = linkedSetOf<Pair<RoomId, ClientEvent.RoomEvent<*>>>()
     val localStateEvents = mutableMapOf<Pair<RoomId, String>, ClientEvent.RoomEvent.StateEvent<*>>()
-    val stateFlows = mutableMapOf<RoomId, MutableStateFlow<ClientEvent.RoomEvent.StateEvent<ZeroInterestSummaryEvent>?>>()
+    val stateFlows = mutableMapOf<Pair<RoomId, String>, MutableStateFlow<ClientEvent.RoomEvent.StateEvent<*>?>>()
 
     // Simulating delay and queue
     val queuedMessages = mutableMapOf<String, MessageEventContent>()
@@ -45,10 +48,7 @@ class TestZiClient(
         server.eventHistory.forEach { localEventHistory.add(it) }
         server.stateEvents.forEach { (key, value) ->
             localStateEvents[key] = value
-            if (value.content is ZeroInterestSummaryEvent) {
-                stateFlows.getOrPut(key.first) { MutableStateFlow(null) }.value =
-                    value as ClientEvent.RoomEvent.StateEvent<ZeroInterestSummaryEvent>
-            }
+            stateFlows.getOrPut(key.first to value.stateKey) { MutableStateFlow(null) }.value = value
         }
 
         // Push queued to server
@@ -88,10 +88,7 @@ class TestZiClient(
         server.eventHistory.forEach { localEventHistory.add(it) }
         server.stateEvents.forEach { (key, value) ->
             localStateEvents[key] = value
-            if (value.content is ZeroInterestSummaryEvent) {
-                stateFlows.getOrPut(key.first) { MutableStateFlow(null) }.value =
-                    value as ClientEvent.RoomEvent.StateEvent<ZeroInterestSummaryEvent>
-            }
+            stateFlows.getOrPut(key.first to value.stateKey) { MutableStateFlow(null) }.value = value
         }
     }
 
@@ -187,9 +184,13 @@ class TestZiClient(
         return Result.success(Unit)
     }
 
-    override fun getSummaryStateFlow(roomId: RoomId): Flow<ClientEvent.RoomEvent.StateEvent<ZeroInterestSummaryEvent>?> {
-        return stateFlows.getOrPut(roomId) { MutableStateFlow(null) }
-    }
+    override fun getRoomConfigFlow(roomId: RoomId): Flow<ZiConfigStateEvent> = stateFlows.getOrPut(roomId to ZiConfigStateEvent.TYPE) { MutableStateFlow(null) }
+        .map { event -> event?.content as ZiConfigStateEvent? ?: ZiConfigStateEvent.V0() }
+
+    override suspend fun getRoomConfig(roomId: RoomId): ZiConfigStateEvent = getRoomConfigFlow(roomId).first()
+
+    override fun getSummaryStateFlow(roomId: RoomId): Flow<ClientEvent.RoomEvent.StateEvent<ZeroInterestSummaryEvent>?> = stateFlows.getOrPut(roomId to ZeroInterestSummaryEvent.TYPE) { MutableStateFlow(null) }
+        as Flow<ClientEvent.RoomEvent.StateEvent<ZeroInterestSummaryEvent>?>
 
     override fun getTimelineEventReactionAggregation(roomId: RoomId, eventId: EventId): Flow<Map<String, Set<TimelineEvent>>> {
         val sf = MutableStateFlow<Map<String, Set<TimelineEvent>>>(emptyMap())

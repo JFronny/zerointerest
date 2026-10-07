@@ -6,6 +6,7 @@ import de.connect2x.trixnity.core.model.RoomId
 import de.connect2x.trixnity.core.model.UserId
 import dev.jfronny.zerointerest.data.TransactionTemplate
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.ZiConfigStateEvent
 import dev.jfronny.zerointerest.data.money.MonetaryUnit
 import dev.jfronny.zerointerest.data.money.Money
 import dev.jfronny.zerointerest.data.money.MoneyParser
@@ -100,11 +101,14 @@ class CreateTransactionViewModel(
         }
     }
 
-    val monetaryUnit: StateFlow<MonetaryUnit> = settings.monetaryUnit.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = MonetaryUnit.default,
-    )
+    val monetaryUnit: StateFlow<MonetaryUnit> = client.getRoomConfigFlow(roomId)
+        .map { it as? ZiConfigStateEvent.Acceptable }
+        .map { it?.currency ?: MonetaryUnit.default }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = MonetaryUnit.default,
+        )
     val requestFullKeyboard = settings.requestFullKeyboard.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -264,7 +268,7 @@ class CreateTransactionViewModel(
                 transactionService.sendTransaction(roomId, content)
                 onDone()
             } catch (e: Exception) {
-                _state.update { it.copy(errorMessage = getString(TransactionLauncher.logAndLocalize(e), e.message ?: "")) }
+                _state.update { it.copy(errorMessage = TransactionLauncher.logAndLocalize(e)) }
             } finally {
                 _state.update { it.copy(isRunning = false) }
             }

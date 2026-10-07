@@ -20,18 +20,20 @@ import de.connect2x.trixnity.core.model.events.MessageEventContent
 import de.connect2x.trixnity.core.model.events.StateEventContent
 import dev.jfronny.zerointerest.data.ZeroInterestSummaryEvent
 import dev.jfronny.zerointerest.data.ZeroInterestTransactionEvent
+import dev.jfronny.zerointerest.data.ZiConfigStateEvent
 import dev.jfronny.zerointerest.util.Timed
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.util.collections.ConcurrentMap
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.any
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 
 private val log = KotlinLogging.logger {}
@@ -116,8 +118,7 @@ class MatrixZiClient(
         return try {
             val outbox = client.room.getOutbox(roomId, transactionId)
                 .filterNotNull()
-                .filter { it.eventId != null || it.sendError != null }
-                .firstOrNull()
+                .firstOrNull { it.eventId != null || it.sendError != null }
             if (outbox == null || outbox.sendError != null) {
                 Result.failure(Exception(outbox?.sendError?.toString() ?: "Outbox entry disappeared for tx $transactionId"))
             } else {
@@ -147,6 +148,12 @@ class MatrixZiClient(
             Result.failure(e)
         }
     }
+
+    override fun getRoomConfigFlow(roomId: RoomId): Flow<ZiConfigStateEvent> = client.room.getState<ZiConfigStateEvent>(roomId, ZiConfigStateEvent.TYPE)
+        .map { event -> event?.content ?: ZiConfigStateEvent.V0() } // TODO after a few versions, make this default to Unknown (also update TestZiClient!)
+        .distinctUntilChanged()
+
+    override suspend fun getRoomConfig(roomId: RoomId): ZiConfigStateEvent = withTimeout(1.seconds) { getRoomConfigFlow(roomId).first() }
 
     override fun getSummaryStateFlow(roomId: RoomId): Flow<ClientEvent.RoomEvent.StateEvent<ZeroInterestSummaryEvent>?> {
         return client.room.getState<ZeroInterestSummaryEvent>(roomId, ZeroInterestSummaryEvent.TYPE)

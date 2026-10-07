@@ -5,7 +5,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import de.connect2x.trixnity.core.model.RoomId
-import dev.jfronny.zerointerest.data.money.MonetaryUnit
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
@@ -15,7 +14,6 @@ class Settings(private val store: DataStore<Preferences>) {
     private val defaultHomeserver = stringPreferencesKey("defaultHomeserver")
     private val flipBalancesKey = booleanPreferencesKey("flipBalances")
     private val debugHintsKey = booleanPreferencesKey("debugHints")
-    private val monetaryUnitKey = stringPreferencesKey("monetaryUnit")
     private val requestFullKeyboardKey = booleanPreferencesKey("requestFullKeyboard")
     private val favoriteRoomsKey = stringPreferencesKey("favoriteRooms")
 
@@ -23,7 +21,6 @@ class Settings(private val store: DataStore<Preferences>) {
 
     val flipBalances = store.data.map { it[flipBalancesKey] ?: true }
     val debugHints = store.data.map { it[debugHintsKey] ?: false }
-    val monetaryUnit = store.data.map { it[monetaryUnitKey]?.let(::MonetaryUnit) ?: MonetaryUnit.default }
     val requestFullKeyboard = store.data.map { it[requestFullKeyboardKey] ?: false }
     val favoriteRooms = store.data.map { it.favoriteRoomIds() }
 
@@ -110,14 +107,6 @@ class Settings(private val store: DataStore<Preferences>) {
 
     suspend fun defaultHomeserver(): String {
         return store.data.map { it[defaultHomeserver] ?: FALLBACK_HOMESERVER }.first()
-    }
-
-    suspend fun setMonetaryUnit(unit: MonetaryUnit) {
-        store.updateData {
-            it.toMutablePreferences().apply {
-                set(monetaryUnitKey, unit.code)
-            }
-        }
     }
 
     companion object {

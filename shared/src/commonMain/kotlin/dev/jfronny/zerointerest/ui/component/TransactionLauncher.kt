@@ -55,7 +55,7 @@ class TransactionLauncher(
             try {
                 block()
             } catch (e: Exception) {
-                error = getString(logAndLocalize(e), e.message ?: "")
+                error = logAndLocalize(e)
                 return@launch
             } finally {
                 isRunning = false
@@ -76,20 +76,28 @@ class TransactionLauncher(
     )
 
     companion object {
-        fun logAndLocalize(e: Exception) = when (e) {
+        suspend fun logAndLocalize(e: Exception): String = when (e) {
+            is TransactionService.UnsupportedRoomProtocolException -> {
+                log.error(e) { "Room protocol version is newer than supported" }
+                getString(
+                    Res.string.room_protocol_too_new,
+                    e.version?.toString() ?: getString(Res.string.version_unknown),
+                )
+            }
+
             is TransactionService.FailedPrepareSummaryException -> {
                 log.error(e) { "Could not prepare summary creation" }
-                Res.string.failed_prepare_trust_summary
+                getString(Res.string.failed_prepare_trust_summary, e.message ?: "")
             }
 
             is TransactionService.FailedSendMessageException -> {
                 log.error(e) { "Could not send transactions" }
-                Res.string.failed_send_message_with_error
+                getString(Res.string.failed_send_message_with_error, e.message ?: "")
             }
 
             else -> {
                 log.error(e) { "Could not submit summary" }
-                Res.string.failed_create_trust_summary
+                getString(Res.string.failed_create_trust_summary, e.message ?: "")
             }
         }
     }

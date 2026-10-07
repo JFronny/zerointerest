@@ -156,7 +156,7 @@ private fun AppNavigation(
             }
             entry<Destination.TransactionDetails> { route ->
                 TransactionDetailsScreen(
-                    client = service.getMatrixClient(),
+                    client = service.get(),
                     roomId = route.roomId,
                     transactionId = route.transactionId,
                     onBack = { navHelper.goBack() },
