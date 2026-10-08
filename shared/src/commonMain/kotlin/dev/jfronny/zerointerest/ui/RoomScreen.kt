@@ -40,6 +40,7 @@ import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.rememberTooltipState
@@ -193,11 +194,12 @@ fun RoomScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    modifier = Modifier.height(64.dp),
+                    expandedHeight = TopAppBarDefaults.TopAppBarExpandedHeight,
                     title = {
                         Column(
                             modifier = Modifier
-                                .fillMaxSize()
+                                .height(TopAppBarDefaults.TopAppBarExpandedHeight)
+                                .fillMaxWidth()
                                 .clickable { showRoomInfoSheet = true },
                             horizontalAlignment = Alignment.Start,
                             verticalArrangement = Arrangement.Center,
