@@ -22,7 +22,7 @@ object OS {
     }
     val stateDir by lazy {
         when (OS.type) {
-            Type.WINDOWS -> Path(getDir("{3EB685DB-65F9-4CF6-A03A-E3EF65729F3D}"))
+            Type.WINDOWS -> Path(getDir("{3EB685DB-65F9-4CF6-A03A-E3EF65729F3D}")) / appName
 
             Type.MAC_OS -> OS.userDir / "Library/Application Support/$appName"
 
