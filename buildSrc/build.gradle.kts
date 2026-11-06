@@ -6,6 +6,13 @@ plugins {
 repositories {
     mavenCentral()
     gradlePluginPortal()
+    google {
+        mavenContent {
+            includeGroupAndSubgroups("androidx")
+            includeGroupAndSubgroups("com.android")
+            includeGroupAndSubgroups("com.google")
+        }
+    }
 }
 
 dependencies {
@@ -13,4 +20,5 @@ dependencies {
     implementation(libs.kotlinpoet)
 
     implementation(libs.gradleVersions)
+    implementation(libs.agp.settings.api)
 }

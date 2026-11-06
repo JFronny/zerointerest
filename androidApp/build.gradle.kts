@@ -1,3 +1,4 @@
+import dev.jfronny.zerointerest.parse
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 
@@ -26,7 +27,7 @@ base {
 
 android {
     namespace = "dev.jfronny.zerointerest"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    compileSdk { version = parse(libs.versions.android.compileSdk.get()) }
     buildToolsVersion = libs.versions.android.buildTools.get()
 
     defaultConfig {

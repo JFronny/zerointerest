@@ -7,6 +7,7 @@ import com.skydoves.compose.stability.gradle.StabilityCheckTask
 import de.undercouch.gradle.tasks.download.Download
 import dev.jfronny.zerointerest.ConvertExchangeRatesTask
 import dev.jfronny.zerointerest.UpgradeToUnstableFilter
+import dev.jfronny.zerointerest.parse
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.InternalKotlinGradlePluginApi
@@ -43,7 +44,7 @@ repositories {
 kotlin {
     android {
         namespace = "dev.jfronny.zerointerest.shared"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        compileSdk { version = parse(libs.versions.android.compileSdk.get()) }
         minSdk = libs.versions.android.minSdk.get().toInt()
         buildToolsVersion = libs.versions.android.buildTools.get()
         androidResources.enable = true
