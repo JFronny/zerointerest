@@ -154,13 +154,6 @@ private fun PickRoomContent(
         val isFavorite = favoriteRooms.any { it.roomId == room.roomId }
         ModalBottomSheet(onDismissRequest = { sheetRoom = null }) {
             ListItem(
-                headlineContent = {
-                    Text(
-                        stringResource(
-                            if (isFavorite) Res.string.unfavorite_room else Res.string.favorite_room,
-                        ),
-                    )
-                },
                 leadingContent = {
                     Icon(
                         imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
@@ -173,7 +166,13 @@ private fun PickRoomContent(
                         onToggleFavorite(room.roomId, !isFavorite)
                         sheetRoom = null
                     },
-            )
+            ) {
+                Text(
+                    stringResource(
+                        if (isFavorite) Res.string.unfavorite_room else Res.string.favorite_room,
+                    ),
+                )
+            }
         }
     }
 }
@@ -212,7 +211,6 @@ private fun RoomListItem(
 ) {
     val name = room.name?.explicitName ?: room.roomId.full
     ListItem(
-        headlineContent = { Text(name) },
         leadingContent = {
             WebImageOrFallback(size = IconSize.Regular, name = name, url = room.avatarUrl, contentDescription = stringResource(Res.string.avatar))
         },
@@ -220,7 +218,9 @@ private fun RoomListItem(
             onClick = onClick,
             onLongClick = onLongClick,
         ),
-    )
+    ) {
+        Text(name)
+    }
 }
 
 @Preview
