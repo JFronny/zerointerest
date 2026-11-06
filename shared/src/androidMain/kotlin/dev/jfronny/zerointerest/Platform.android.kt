@@ -11,8 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.room.Room
-import androidx.room3.Room as Room3
+import androidx.room3.Room
 import de.connect2x.trixnity.client.store.repository.room.TrixnityRoomDatabase
 import dev.jfronny.zerointerest.db.ZeroInterestRoomDatabase
 import dev.jfronny.zerointerest.shared.generated.resources.Res
@@ -38,7 +37,7 @@ class AndroidPlatform(private val context: Context) : AbstractPlatform(context.d
 
     override val name: String = "Android"
     override fun trixnityDatabaseBuilder() = Room.databaseBuilder(context, TrixnityRoomDatabase::class.java, TRIXNITY_NAME)
-    override fun zerointerestDatabaseBuilder() = Room3.databaseBuilder(context, ZeroInterestRoomDatabase::class.java, ZEROINTEREST_NAME)
+    override fun zerointerestDatabaseBuilder() = Room.databaseBuilder(context, ZeroInterestRoomDatabase::class.java, ZEROINTEREST_NAME)
     override fun createDataStore(): DataStore<Preferences> = createDataStore {
         context.filesDir.resolve(DATASTORE_NAME).toOkioPath()
     }

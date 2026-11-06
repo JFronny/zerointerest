@@ -3,7 +3,7 @@ package dev.jfronny.zerointerest
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import androidx.room.RoomDatabase
+import androidx.room3.RoomDatabase
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import de.connect2x.trixnity.client.MediaStoreModule
 import de.connect2x.trixnity.client.RepositoriesModule

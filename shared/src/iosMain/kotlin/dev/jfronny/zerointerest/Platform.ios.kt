@@ -4,8 +4,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.room.Room
-import androidx.room3.Room as Room3
+import androidx.room3.Room
 import de.connect2x.trixnity.client.store.repository.room.TrixnityRoomDatabase
 import dev.jfronny.zerointerest.db.ZeroInterestRoomDatabase
 import io.ktor.client.engine.darwin.Darwin
@@ -34,7 +33,7 @@ import platform.posix.atexit
 class IOSPlatform : AbstractPlatform(documentDirectory().toPath()) {
     override val name: String = UIDevice.currentDevice.systemName()
     override fun trixnityDatabaseBuilder() = Room.databaseBuilder<TrixnityRoomDatabase>("${documentDirectory()}/$TRIXNITY_NAME")
-    override fun zerointerestDatabaseBuilder() = Room3.databaseBuilder<ZeroInterestRoomDatabase>("${documentDirectory()}/$ZEROINTEREST_NAME")
+    override fun zerointerestDatabaseBuilder() = Room.databaseBuilder<ZeroInterestRoomDatabase>("${documentDirectory()}/$ZEROINTEREST_NAME")
 
     @OptIn(ExperimentalForeignApi::class)
     override fun createDataStore(): DataStore<Preferences> = createDataStore {
